@@ -1,9 +1,9 @@
 import React from "react";
 import { Link, Stack } from "expo-router";
-// import LoginForm from "@/components/Form/LoginForm";
 import { View, Text, ScrollView, SafeAreaView, Platform } from "react-native";
 import * as WebBrowser from "expo-web-browser";
-// import GoogleSignInButton from "@/components/Button/GoogleSignInButton";
+import LoginForm from "@/components/Form/LoginForm";
+import GoogleSignIn from "@/components/Button/GoogleSignIn";
 
 // Hook to warm up and cool down the web browser for authentication.
 export const useWarmUpBrowser = () => {
@@ -29,7 +29,7 @@ const Login = () => {
         <Text className="text-[28px] font-bold mt-48 ml-5">Welcome Back!</Text>
         <Text className="text-[15px] ml-6 mt-1">Sign in to your account</Text>
 
-        {/* <LoginForm /> */}
+        <LoginForm />
 
         <View className="flex-row items-center justify-center mt-6 mb-8 mx-6">
           <View className="flex-1 h-[1px] bg-gray-300" />
@@ -37,13 +37,13 @@ const Login = () => {
           <View className="flex-1 h-[1px] bg-gray-300" />
         </View>
 
-        {/* <GoogleSignInButton isLoading={isLoading} setIsLoading={setIsLoading} /> */}
+        <GoogleSignIn isLoading={isLoading} setIsLoading={setIsLoading} />
 
         <View className="flex-row items-center justify-center mt-6 mb-10">
-          <Text> Don't have an account? </Text>
+          <Text className="text-[13px]"> Don't have an account? </Text>
           <Link
             href="/(auth)/register"
-            className="text-[#00657A] underline font-medium ml-1"
+            className="text-[#00657A] underline font-medium ml-1 text-[13px]"
           >
             Create Account
           </Link>

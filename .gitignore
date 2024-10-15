@@ -9,6 +9,17 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 web-build/
+myenv/
+__pycache__
 
 # macOS
 .DS_Store
+
+# Environment files
+.env
+.env*.local
+
+
+# Expo Prebuild
+/android/
+/ios/

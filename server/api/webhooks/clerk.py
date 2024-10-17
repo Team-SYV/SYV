@@ -69,8 +69,6 @@ def handle_user_updated(data: dict, supabase: Client):
         first_name=data.get("first_name"),
         last_name=data.get("last_name"),
         image=data.get("profile_image_url"),
-        last_interview=data.get("last_interview"),
-        total_score=data.get("total_score")
     )
 
     user_response = supabase.table('users').select('*').eq('user_id', user_id).execute()
@@ -85,10 +83,6 @@ def handle_user_updated(data: dict, supabase: Client):
         updated_data['last_name'] = user_update.last_name
     if user_update.image:
         updated_data['image'] = user_update.image
-    if user_update.last_interview:
-        updated_data['last_interview'] = user_update.last_interview
-    if user_update.total_score:
-        updated_data['total_score'] = user_update.total_score
 
     supabase.table('users').update(updated_data).eq('user_id', user_id).execute()
 

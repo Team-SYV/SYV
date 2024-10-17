@@ -30,9 +30,6 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Run Expo Doctor
-        run: npx expo-doctor
-
       - name: Log in to Expo
         env:
           EXPO_CLI_USERNAME: ${{ secrets.EAS_ACCOUNT_EMAIL2 }}

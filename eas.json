@@ -1,0 +1,31 @@
+{
+    "cli": {
+      "version": ">= 10.2.4"
+    },
+    "build": {
+      "development": {
+        "developmentClient": true,
+        "distribution": "internal",
+        "env": {
+          "ANDROID_PACKAGE": "com.savy.savy"
+        }
+      },
+      "preview": {
+        "distribution": "internal"
+      },
+  
+      "production": {
+        "android": {
+          "buildType": "apk"
+        },
+        "distribution": "store",
+        "env": {
+          "ANDROID_PACKAGE": "com.savy.savy"
+        }
+      }  
+    },
+    "submit": {
+      "production": {}
+    }
+  }
+  

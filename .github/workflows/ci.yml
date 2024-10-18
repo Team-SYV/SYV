@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build Expo App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install EXPO CLI
+        run: npm install -g expo-cli
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Log in to Expo
+        env:
+          EXPO_CLI_USERNAME: ${{ secrets.EAS_ACCOUNT_EMAIL2 }}
+          EXPO_CLI_PASSWORD: ${{ secrets.EAS_ACCOUNT_PASSWORD2 }}
+        run: expo login -u $EXPO_CLI_USERNAME -p $EXPO_CLI_PASSWORD
+
+      - name: Configure Project
+        run: eas init
+
+      - name: Build Expo project
+        env:
+          EXPO_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN2 }}
+        run: eas build --platform android --non-interactive

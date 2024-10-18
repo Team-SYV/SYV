@@ -10,7 +10,6 @@ const EditProfileButton = () => {
     if (!isNavigating) {
       setIsNavigating(true);
       router.push("/profile/edit-profile");
-
       setTimeout(() => setIsNavigating(false), 1000);
     }
   };

@@ -1,11 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import AntDesign from "@expo/vector-icons/AntDesign";
 
 const EditProfileButton = () => {
+  const [isNavigating, setIsNavigating] = useState(false);
+
   const navigateToEditProfile = () => {
-    router.push("/profile/edit-profile");
+    if (!isNavigating) {
+      setIsNavigating(true);
+      router.push("/profile/edit-profile");
+
+      setTimeout(() => setIsNavigating(false), 1000);
+    }
   };
 
   return (
@@ -14,7 +21,8 @@ const EditProfileButton = () => {
 
       <Pressable
         onPress={navigateToEditProfile}
-        className="flex-row items-center justify-between p-4  rounded-lg mx-4 mt-4"
+        className="flex-row items-center justify-between p-4 rounded-lg mx-4 mt-4"
+        disabled={isNavigating}
       >
         <View className="flex-row items-center">
           <AntDesign name="edit" size={17} className="mr-2" />

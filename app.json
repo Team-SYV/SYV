@@ -16,6 +16,15 @@
       ]
     ],
     "name": "Savy",
-    "slug": "Savy"
+    "slug": "savy",
+    "extra": {
+      "eas": {
+        "projectId": "a4ded030-ff21-4d2d-9e5d-84dd6d5cf20d"
+      }
+    },
+    "owner": "syv",
+    "android": {
+      "package": "com.savy.savy" 
+    }
   }
 }

@@ -22,11 +22,7 @@ const InterviewTipsLayout = () => {
       <Stack.Screen
         name="[id]"
         options={{
-          headerTitle: () => (
-            <Text className="text-center text-[17px] font-bold text-[#2a2a2a]">
-              Interview Tips
-            </Text>
-          ),
+          headerTitle: "",
           headerBackVisible: false,
         }}
       />

@@ -10,10 +10,20 @@ import { FontAwesome } from "@expo/vector-icons";
 const TabLayout = () => {
   const { isSignedIn } = useAuth();
 
-  // Helper function to hide tab bar on specific routes
-  const shouldTabBarBeVisible = (route: Route<string>) => {
+  // Helper function to hide tab bar and header on specific routes
+  const shouldProfileTabBarBeVisible = (route: Route<string>) => {
     const routeName = getFocusedRouteNameFromRoute(route) ?? "profile";
     return !(routeName === "edit-profile");
+  };
+
+  const shouldHomeTabBarBeVisible = (route: Route<string>) => {
+    const routeName = getFocusedRouteNameFromRoute(route) ?? "home";
+    return !(routeName === "interview-tips" || routeName === "[id]");
+  };
+
+  const shouldHeaderBeShown = (route: Route<string>) => {
+    const routeName = getFocusedRouteNameFromRoute(route) ?? "home";
+    return !(routeName === "interview-tips" || routeName === "[id]");
   };
 
   const HeaderLeft = () => (
@@ -55,22 +65,34 @@ const TabLayout = () => {
     >
       <Tabs.Screen
         name="home"
-        options={{
+        options={({ route }) => ({
           tabBarIcon: ({ size, color }) => (
             <FontAwesome name="home" size={size} color={color} />
           ),
           tabBarLabel: "Home",
-          headerShown: true,
+          headerShown: shouldHeaderBeShown(route),
+          tabBarStyle: shouldHomeTabBarBeVisible(route)
+            ? {
+                height: 54,
+                position: "absolute",
+                bottom: 10,
+                left: 10,
+                right: 10,
+                borderRadius: 15,
+                borderTopWidth: 0,
+                shadowColor: "#000",
+                elevation: 5,
+              }
+            : { display: "none" },
           headerStyle: {
             backgroundColor: "#009CBD",
             height: 75,
           },
           headerLeft: () => <HeaderLeft />,
           headerTitle: () => null,
-        }}
+        })}
         redirect={!isSignedIn}
       />
-
       <Tabs.Screen
         name="history"
         options={{
@@ -100,7 +122,7 @@ const TabLayout = () => {
             <FontAwesome5 name="user-circle" size={size} color={color} />
           ),
           tabBarLabel: "Profile",
-          tabBarStyle: shouldTabBarBeVisible(route)
+          tabBarStyle: shouldProfileTabBarBeVisible(route)
             ? {
                 height: 56,
                 position: "absolute",

@@ -29,15 +29,15 @@ const Home = () => {
         <Card
           imageSource={require("@/assets/images/virtual-interview.png")}
           text="Talk with Virtual Interviewer"
-          textClassName="text-[14px]"
-          onPress={() => router.push("/(tabs)/home/virtual-interview")}
+          textClassName="text-[13px]"
+          onPress={() => router.push("/(tabs)/home/virtual-interview/job-information")}
         />
       </View>
 
       <Card
         imageSource={require("@/assets/images/record-yourself.png")}
         text="Record Yourself"
-        textClassName="text-[15px]"
+        textClassName="text-[14px]"
         onPress={() => router.push("/(tabs)/home/record-yourself")}
       />
 

@@ -11,8 +11,9 @@ const HomeLayout = () => {
         },
       }}
     >
-      <Stack.Screen name="index"/>
-      <Stack.Screen name="interview-tips"/>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="interview-tips" />
+      <Stack.Screen name="virtual-interview" />
     </Stack>
   );
 };

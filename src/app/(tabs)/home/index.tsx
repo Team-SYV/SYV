@@ -9,8 +9,8 @@ const Home = () => {
 
   return (
     <View className="p-4 bg-white min-h-full">
-      <View className="flex flex-row items-center mt-5">
-        <Text className="text-[21px] font-semibold">Welcome</Text>
+      <View className="flex flex-row items-center mt-7">
+        <Text className="text-[20px] font-semibold">Welcome</Text>
         <Image
           source={require("@/assets/icons/hand.png")}
           className="ml-1 w-7 h-7"

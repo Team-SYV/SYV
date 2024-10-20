@@ -106,6 +106,7 @@ const VirtualInterviewStepContent: React.FC<StepContentProps> = ({
             isSelected={formData.selectedInterviewType === "Behavioral"}
             onPress={() => {
               updateFormData("selectedInterviewType", "Behavioral");
+              setShouldProceed(true);
             }}
           />
           <InterviewTypeCard
@@ -115,6 +116,7 @@ const VirtualInterviewStepContent: React.FC<StepContentProps> = ({
             isSelected={formData.selectedInterviewType === "Technical"}
             onPress={() => {
               updateFormData("selectedInterviewType", "Technical");
+              setShouldProceed(true);
             }}
           />
         </View>

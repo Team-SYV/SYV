@@ -153,7 +153,7 @@ const JobInformation = () => {
   // Creates job information
   const handleSubmit = async () => {
     console.log("Form data:", formData)
-    router.push("/(tabs)/home/file-upload");
+    router.push("/(tabs)/home/virtual-interview/file-upload");
   };
 
   // When file upload is skipped

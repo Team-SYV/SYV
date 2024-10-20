@@ -21,9 +21,9 @@ import {
   getErrorMessage,
   validateStep,
 } from "@/utils/validators/validateJobInfo";
-import VirtualInterviewStepContent from "@/components/StepContent/VirtualInterviewStepContent";
 import Stepper from "@/components/Stepper/Stepper";
 import Toast from "react-native-toast-message";
+import StepContent from "@/components/StepContent/StepContent";
 
 const JobInformation = () => {
   const [formData, setFormData] = useState<JobInfo>({
@@ -196,7 +196,7 @@ const JobInformation = () => {
                 />
                 {index === activeStep && (
                   <>
-                    <VirtualInterviewStepContent
+                    <StepContent
                       activeStep={activeStep}
                       formData={formData}
                       updateFormData={updateFormData}

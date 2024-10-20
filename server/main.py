@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.webhooks.clerk import clerk_webhook_handler
 from utils.supabase import get_supabase_client
 from api.routes.job_information import router as job_information_router
+from api.routes.interview import router as interview_router
 
 import os
 import logging
@@ -23,6 +24,7 @@ app.add_middleware(
 )
 
 app.include_router(job_information_router, prefix="/api/job_information", tags=["job_information"])
+app.include_router(interview_router, prefix="/api/interview", tags=["interview"])
 
 @app.post("/api/webhooks/", status_code=status.HTTP_204_NO_CONTENT)
 async def webhook_handler(request: Request, response: Response):

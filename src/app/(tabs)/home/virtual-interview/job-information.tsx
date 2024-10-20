@@ -160,6 +160,7 @@ const JobInformation = () => {
   const handleSkip = async () => {
     console.log("Form data:", formData)
     router.push("/(tabs)/home/virtual-interview");
+    
   };
 
   return (

@@ -18,12 +18,20 @@ const TabLayout = () => {
 
   const shouldHomeTabBarBeVisible = (route: Route<string>) => {
     const routeName = getFocusedRouteNameFromRoute(route) ?? "home";
-    return !(routeName === "interview-tips" || routeName === "[id]");
+    return !(
+      routeName === "interview-tips" ||
+      routeName === "[id]" ||
+      routeName === "virtual-interview"
+    );
   };
 
   const shouldHeaderBeShown = (route: Route<string>) => {
     const routeName = getFocusedRouteNameFromRoute(route) ?? "home";
-    return !(routeName === "interview-tips" || routeName === "[id]");
+    return !(
+      routeName === "interview-tips" ||
+      routeName === "[id]" ||
+      routeName === "virtual-interview"
+    );
   };
 
   const HeaderLeft = () => (

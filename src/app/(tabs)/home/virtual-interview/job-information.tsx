@@ -152,19 +152,18 @@ const JobInformation = () => {
 
   // Creates job information
   const handleSubmit = async () => {
-    console.log("Form data:", formData)
+    console.log("Form data:", formData);
     router.push("/(tabs)/home/virtual-interview/file-upload");
   };
 
   // When file upload is skipped
   const handleSkip = async () => {
-    console.log("Form data:", formData)
+    console.log("Form data:", formData);
     router.push("/(tabs)/home/virtual-interview");
-    
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white pt-2">
       <Spinner visible={loading} color="#00AACE" />
 
       <KeyboardAvoidingView

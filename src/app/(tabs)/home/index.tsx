@@ -38,7 +38,7 @@ const Home = () => {
         imageSource={require("@/assets/images/record-yourself.png")}
         text="Record Yourself"
         textClassName="text-[14px]"
-        onPress={() => router.push("/(tabs)/home/record-yourself")}
+        onPress={() => router.push("/(tabs)/home/record-yourself/job-information")}
       />
 
       <Text className="text-[13px] font-medium mt-8 mb-3">

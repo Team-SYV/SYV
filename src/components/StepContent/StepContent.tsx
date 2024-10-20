@@ -10,7 +10,7 @@ import CompanyFormField from "../FormField/CompanyFormField";
 import JobDescriptionTextArea from "../TextArea/JobDescriptionTextArea";
 import { StepContentProps } from "@/types/stepContent";
 
-const VirtualInterviewStepContent: React.FC<StepContentProps> = ({
+const StepContent: React.FC<StepContentProps> = ({
   activeStep,
   formData,
   updateFormData,
@@ -187,4 +187,4 @@ const VirtualInterviewStepContent: React.FC<StepContentProps> = ({
   }
 };
 
-export default VirtualInterviewStepContent;
+export default StepContent;

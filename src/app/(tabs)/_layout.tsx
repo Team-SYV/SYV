@@ -21,7 +21,8 @@ const TabLayout = () => {
     return !(
       routeName === "interview-tips" ||
       routeName === "[id]" ||
-      routeName === "virtual-interview"
+      routeName === "virtual-interview" ||
+      routeName === "record-yourself"
     );
   };
 
@@ -30,7 +31,8 @@ const TabLayout = () => {
     return !(
       routeName === "interview-tips" ||
       routeName === "[id]" ||
-      routeName === "virtual-interview"
+      routeName === "virtual-interview" ||
+      routeName === "record-yourself"
     );
   };
 

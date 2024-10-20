@@ -34,7 +34,7 @@ const Slider = () => {
             <View className="mr-4 w-[155px]">
               <Image
                 source={{ uri: item.image }}
-                className="h-[155px] rounded-2xl"
+                className="h-[145px] rounded-2xl"
                 resizeMode="cover"
               />
               <Text className="text-[11px] p-1">{item.title}</Text>

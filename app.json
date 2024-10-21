@@ -22,6 +22,12 @@
         "projectId": "a4ded030-ff21-4d2d-9e5d-84dd6d5cf20d"
       }
     },
+    "icon": "./src/assets/images/app-icon.png",
+    "splash": {
+      "image": "./src/assets/images/splash-screen.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "owner": "syv",
     "android": {
       "package": "com.savy.savy" 

@@ -15,10 +15,11 @@ import {
   BackHandler,
 } from "react-native";
 import NextModal from "@/components/Modal/NextModal";
+import { getQuestions } from "@/api";
 
 const Record: React.FC = () => {
   const router = useRouter();
-  const { jobId } = useLocalSearchParams();
+  const { interviewId } = useLocalSearchParams();
   const cameraRef = useRef(null);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordingTime, setRecordingTime] = useState(60);
@@ -48,6 +49,19 @@ const Record: React.FC = () => {
       setHasMicrophonePermission(microphonePermission.status === "granted");
     })();
   }, []);
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const fetchedQuestions = await getQuestions(interviewId);
+        setQuestions(fetchedQuestions.questions);
+      } catch (error) {
+        console.error("Error", error.message);
+      }
+    };
+    fetchQuestions();
+  }, [interviewId]);
+
 
   useEffect(() => {
     let timer: NodeJS.Timeout;

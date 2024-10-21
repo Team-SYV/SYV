@@ -1,6 +1,9 @@
+import shutil
+from tempfile import NamedTemporaryFile
 from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from api.webhooks.clerk import clerk_webhook_handler
+from services.transcribe_video import extract_audio, transcribe_audio
 from services.question_generator import generate_interview_questions
 from services.pdf_reader import read_pdf
 from utils.supabase import get_supabase_client
@@ -81,3 +84,19 @@ async def generate_questions(
         logging.error(f"Error generating questions: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate questions")
     
+@app.post("/api/transcribe-video/")
+async def transcribe_video(file: UploadFile = File(...)):
+    """Receive a video, extract audio, and return transcription text."""
+    try:
+        with NamedTemporaryFile(suffix=".mp4", delete=True) as temp_video:
+            shutil.copyfileobj(file.file, temp_video)
+            temp_video.seek(0)
+
+            temp_audio = extract_audio(temp_video.name)
+
+            transcription = transcribe_audio(temp_audio.name)
+
+            return {"transcription": transcription}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")

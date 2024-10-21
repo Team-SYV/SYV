@@ -141,7 +141,6 @@ const Record: React.FC = () => {
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);
           await handleTranscription(recordedVideo.uri);
-          console.log(transcriptions);
           setIsModalVisible(true);
         }
       } catch (error) {
@@ -162,22 +161,26 @@ const Record: React.FC = () => {
     }
   };
 
-  const handleTranscription = async (videoUri: string) => {
-    try {
-      setIsLoading(true);
-      const videoFile = {
-        uri: videoUri,
-        type: "video/mp4",
-        name: videoUri.split("/").pop(),
-      } as unknown as File;
+  const handleTranscription = (videoUri: string): Promise<void> => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        setIsLoading(true);
+        const videoFile = {
+          uri: videoUri,
+          type: "video/mp4",
+          name: videoUri.split("/").pop(),
+        } as unknown as File;
 
-      const transcription = await transcribeVideo(videoFile);
-      setTranscriptions((prev) => [...prev, transcription]);
-    } catch (error) {
-      console.error("Error transcribing video:", error.message);
-    } finally {
-      setIsLoading(false);
-    }
+        const transcription = await transcribeVideo(videoFile);
+        setTranscriptions((prev) => [...prev, transcription]);
+        resolve(); // Resolve when transcription is complete
+      } catch (error) {
+        console.error("Error transcribing video:", error.message);
+        reject(error); // Reject on error
+      } finally {
+        setIsLoading(false);
+      }
+    });
   };
 
   // Going to next question
@@ -186,14 +189,22 @@ const Record: React.FC = () => {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
       setIsModalVisible(false);
     } else {
+      // Await the last transcription to ensure it's added
+      if (recordedVideos.length > 0) {
+        await handleTranscription(recordedVideos[recordedVideos.length - 1]);
+      }
+
       const answersToSend = transcriptions.map((transcription, index) => ({
-        question_id: questionIds[index],
-        answer: transcription,
+        question_id: questionIds[index] || null,
+        answer: transcription || "",
       }));
 
       try {
         for (const answer of answersToSend) {
-          await createAnswer(answer);
+          // Only send answers with valid question_id and answer
+          if (answer.question_id && answer.answer) {
+            await createAnswer(answer);
+          }
         }
         console.log("All answers successfully saved.");
       } catch (error) {

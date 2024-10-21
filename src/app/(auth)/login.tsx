@@ -40,10 +40,10 @@ const Login = () => {
         <GoogleSignIn isLoading={isLoading} setIsLoading={setIsLoading} />
 
         <View className="flex-row items-center justify-center mt-6 mb-10">
-          <Text className="text-[13px]"> Don't have an account? </Text>
+          <Text className="text-[14px]"> Don't have an account? </Text>
           <Link
             href="/(auth)/register"
-            className="text-[#00657A] underline font-medium ml-1 text-[13px]"
+            className="text-[#00657A] underline font-medium ml-1 text-[14px]"
           >
             Create Account
           </Link>

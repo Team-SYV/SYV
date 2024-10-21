@@ -6,4 +6,5 @@ class CreateQuestion(BaseModel):
     question: str
    
 class GetQuestionByInterviewId(BaseModel):
+    question_id: List [str]
     questions: List [str]

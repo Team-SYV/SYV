@@ -33,7 +33,9 @@ def get_questions(interview_id: str, supabase: Client = Depends(get_supabase)):
         raise HTTPException(status_code=500, detail="Failed to retrieve questions")
 
     questions = [question['question'] for question in response.data]
+    question_id = [question['question_id'] for question in response.data]
 
     return GetQuestionByInterviewId(
+        question_id=question_id,
         questions=questions  
     )

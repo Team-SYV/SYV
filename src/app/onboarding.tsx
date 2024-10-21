@@ -71,18 +71,42 @@ const OnboardingPage = () => {
 
       {/* Page Indicator */}
       <View className="absolute bottom-[210px] w-full flex-row justify-center z-10">
-        {onBoarding.map((_, index) => (
-          <View
-            key={index}
-            style={{
-              width: 9,
-              height: 9,
-              borderRadius: 4,
-              backgroundColor: currentIndex === index ? "#00AACE" : "#DFDFDF",
-              marginHorizontal: 5,
-            }}
-          />
-        ))}
+        {onBoarding.map((_, index) => {
+          const opacity = scrollX.interpolate({
+            inputRange: [
+              (index - 1) * width,
+              index * width,
+              (index + 1) * width,
+            ],
+            outputRange: [0.3, 1, 0.3],
+            extrapolate: "clamp",
+          });
+
+          const scale = scrollX.interpolate({
+            inputRange: [
+              (index - 1) * width,
+              index * width,
+              (index + 1) * width,
+            ],
+            outputRange: [0.8, 1.4, 0.8],
+            extrapolate: "clamp",
+          });
+
+          return (
+            <Animated.View
+              key={index}
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: 4,
+                backgroundColor: "#00AACE",
+                marginHorizontal: 5,
+                opacity,
+                transform: [{ scale }],
+              }}
+            />
+          );
+        })}
       </View>
 
       <View className="absolute bottom-0 w-full px-6 py-8">

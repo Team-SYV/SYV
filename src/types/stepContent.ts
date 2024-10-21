@@ -8,5 +8,5 @@ export interface StepContentProps {
   handleSubmit: () => void;
   handleSubmitRoute: string;
   handleSkip: () => void;
-  jobInformationId: string | null;
+  interviewId: string | null;
 }

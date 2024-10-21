@@ -22,3 +22,18 @@ async def create_interview(interview_data: CreateInterview, supabase: Client= De
 
     return CreateInterviewResponse(interview_id=response.data[0]['interview_id'])
 
+@router.get("/get/{interview_id}", response_model=CreateInterview)
+async def get_interview(interview_id: str,supabase: Client= Depends(get_supabase)):
+    response = supabase.table('interview').select('*').eq('interview_id', interview_id).execute()
+
+    if not response.data:
+        raise HTTPException(status_code=404, detail="Interview not found")
+
+    if hasattr(response, 'error') and response.error:
+        raise HTTPException(status_code=500, detail="Failed to retrieve interview")
+
+    return CreateInterview(
+    user_id=response.data[0]['user_id'],
+    job_information_id=response.data[0]['job_information_id'],
+    type=response.data[0]['type']     
+    )

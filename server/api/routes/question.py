@@ -22,17 +22,20 @@ def create_questions(question_data: CreateQuestion, supabase: Client=Depends(get
     
     return {'message':"Questions Created Succesfully"}
 
-@router.post('/get/{interview_id}', response_model=GetQuestionByInterviewId)
-def get_questions(interview_id: str, supabase: Client= Depends(get_supabase)):
-    response = supabase.table('questions').select("*").eq('job_information_id', interview_id).execute()
+@router.get('/get/{interview_id}', response_model=GetQuestionByInterviewId)
+def get_questions(interview_id: str, supabase: Client = Depends(get_supabase)):
+    response = supabase.table('questions').select("*").eq('interview_id', interview_id).execute()
 
     if not response.data:
-        raise HTTPException(status_code=404, detail="No questions found for the given job ID")
+        raise HTTPException(status_code=404, detail="No questions found for the given interview ID")
 
     if hasattr(response, 'error') and response.error:
         raise HTTPException(status_code=500, detail="Failed to retrieve questions")
-    
+
+    questions = [question['question'] for question in response.data]
+    question_id = [question['question_id'] for question in response.data]
 
     return GetQuestionByInterviewId(
-        question=response.data[0]['question']
+        question_id=question_id,
+        questions=questions  
     )

@@ -17,10 +17,10 @@ const Register = () => {
         <RegisterForm />
 
         <View className="flex-row items-center justify-center mt-2 mb-10">
-          <Text className="text-[13px]"> Already have an account? </Text>
+          <Text className="text-[14px]"> Already have an account? </Text>
           <Link
             href="/(auth)/login"
-            className="text-[#00657A] underline font-medium ml-1 text-[13px]"
+            className="text-[#00657A] underline font-medium ml-1 text-[14px]"
           >
             Sign in
           </Link>

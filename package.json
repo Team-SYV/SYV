@@ -11,6 +11,7 @@
   "dependencies": {
     "@clerk/clerk-expo": "^2.2.25",
     "@react-navigation/native": "^6.1.18",
+    "cookie": "^0.7.2",
     "expo": "~51.0.38",
     "expo-av": "^14.0.7",
     "expo-camera": "^15.0.16",
@@ -41,6 +42,7 @@
     "react-native-screens": "3.31.1",
     "react-native-toast-message": "^2.2.1",
     "react-native-web": "~0.19.10",
+    "send": "^0.19.1",
     "tailwindcss": "^3.4.0"
   },
   "devDependencies": {

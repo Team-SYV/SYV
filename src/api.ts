@@ -2,6 +2,7 @@ import axios from "axios";
 import { InterviewData } from "./types/InterviewData";
 import { QuestionData } from "./types/QuestionData";
 import { JobInformationData } from "./types/JobInformationData";
+import { AnswerData } from "./types/AnswerData";
 
 const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL,
@@ -89,6 +90,36 @@ export const getQuestions = async (interview_id: string | string[]) => {
   } catch (error) {
     throw new Error(
       error.response?.data?.detail || "Failed to retrieve questions"
+    );
+  }
+};
+
+export const transcribeVideo = async (videoFile: File) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", videoFile);
+
+    const response = await api.post("/api/transcribe-video/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data.transcription; 
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to transcribe video"
+    );
+  }
+};
+
+export const createAnswer = async (answerData: AnswerData) => {
+  try {
+    const response = await api.post(`/api/answer/create`, answerData);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to create questions"
     );
   }
 };

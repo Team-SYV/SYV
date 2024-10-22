@@ -9,7 +9,7 @@ const Home = () => {
 
   return (
     <View className="p-4 bg-white min-h-full">
-      <View className="flex flex-row items-center mt-7">
+      <View className="flex flex-row items-center mt-8">
         <Text className="text-[20px] font-semibold">Welcome</Text>
         <Image
           source={require("@/assets/icons/hand.png")}
@@ -21,7 +21,7 @@ const Home = () => {
         Get ready to ace interviews and advance your career with ease.
       </Text>
 
-      <Text className="text-[13px] font-medium mt-8 mb-3">
+      <Text className="text-[13px] font-medium mt-9 mb-3">
         Practice Interview
       </Text>
 
@@ -29,8 +29,10 @@ const Home = () => {
         <Card
           imageSource={require("@/assets/images/virtual-interview.png")}
           text="Talk with Virtual Interviewer"
-          textClassName="text-[13px]"
-          onPress={() => router.push("/(tabs)/home/virtual-interview/job-information")}
+          textClassName="text-[12px]"
+          onPress={() =>
+            router.push("/(tabs)/home/virtual-interview/job-information")
+          }
         />
       </View>
 
@@ -38,10 +40,12 @@ const Home = () => {
         imageSource={require("@/assets/images/record-yourself.png")}
         text="Record Yourself"
         textClassName="text-[14px]"
-        onPress={() => router.push("/(tabs)/home/record-yourself/job-information")}
+        onPress={() =>
+          router.push("/(tabs)/home/record-yourself/job-information")
+        }
       />
 
-      <Text className="text-[13px] font-medium mt-8 mb-3">
+      <Text className="text-[13px] font-medium mt-9 mb-3">
         Read Interview Tips
       </Text>
 

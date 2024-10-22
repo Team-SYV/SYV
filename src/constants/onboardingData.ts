@@ -1,13 +1,13 @@
 export const onBoarding = [
   {
     source: require("@/assets/images/onboarding1.png"),
-    title: "Welcome to Savy!",
+    title: "Welcome to Savy",
     description:
       "Enhance your interview performance and confidence effortlessly, anytime and anywhere.",
   },
   {
     source: require("@/assets/images/onboarding2.png"),
-    title: "Personalized Interview Questions",
+    title: "Personalize Your Interview Questions",
     description:
       "Receive tailored interview questions based on your job information or uploaded resume.",
   },
@@ -21,6 +21,6 @@ export const onBoarding = [
     source: require("@/assets/images/onboarding4.png"),
     title: "Instant AI Feedback and Ratings",
     description:
-      "Get instant ai feedback and ratings after each session to improve your performance.",
+      "Receive instant AI feedback and ratings after each session to improve your performance.",
   },
 ];

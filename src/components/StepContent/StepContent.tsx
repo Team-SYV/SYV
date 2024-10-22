@@ -18,7 +18,7 @@ const StepContent: React.FC<StepContentProps> = ({
   handleSubmit,
   handleSubmitRoute,
   handleSkip,
-  jobInformationId,
+  interviewId,
 }) => {
   const router = useRouter();
   const [shouldProceed, setShouldProceed] = useState(false);
@@ -56,10 +56,10 @@ const StepContent: React.FC<StepContentProps> = ({
   }, [shouldProceed]);
 
   useEffect(() => {
-    if (proceedClicked && jobInformationId) {
-      router.push(`${handleSubmitRoute + jobInformationId}`);
+    if (proceedClicked && interviewId) {
+      router.push(`${handleSubmitRoute + interviewId}`);
     }
-  }, [proceedClicked, jobInformationId, router]);
+  }, [proceedClicked, interviewId, router]);
 
   switch (activeStep) {
     case 0:

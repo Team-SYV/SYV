@@ -15,10 +15,11 @@ import {
   BackHandler,
 } from "react-native";
 import NextModal from "@/components/Modal/NextModal";
+import { createAnswer, getQuestions, transcribeVideo } from "@/api";
 
 const Record: React.FC = () => {
   const router = useRouter();
-  const { jobId } = useLocalSearchParams();
+  const { interviewId } = useLocalSearchParams();
   const cameraRef = useRef(null);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordingTime, setRecordingTime] = useState(60);
@@ -29,7 +30,11 @@ const Record: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
 
+  const [transcriptions, setTranscriptions] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const [questions, setQuestions] = useState<string[]>([]);
+  const [questionIds, setQuestionIds] = useState<string[]>([]);
 
   const [hasCameraPermission, setHasCameraPermission] = useState<
     boolean | null
@@ -48,6 +53,19 @@ const Record: React.FC = () => {
       setHasMicrophonePermission(microphonePermission.status === "granted");
     })();
   }, []);
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const fetchedQuestions = await getQuestions(interviewId);
+        setQuestions(fetchedQuestions.questions);
+        setQuestionIds(fetchedQuestions.question_id);
+      } catch (error) {
+        console.error("Error", error.message);
+      }
+    };
+    fetchQuestions();
+  }, [interviewId]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -122,6 +140,7 @@ const Record: React.FC = () => {
           );
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);
+          await handleTranscription(recordedVideo.uri);
           setIsModalVisible(true);
         }
       } catch (error) {
@@ -142,12 +161,55 @@ const Record: React.FC = () => {
     }
   };
 
+  const handleTranscription = (videoUri: string): Promise<void> => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        setIsLoading(true);
+        const videoFile = {
+          uri: videoUri,
+          type: "video/mp4",
+          name: videoUri.split("/").pop(),
+        } as unknown as File;
+
+        const transcription = await transcribeVideo(videoFile);
+        setTranscriptions((prev) => [...prev, transcription]);
+        resolve(); // Resolve when transcription is complete
+      } catch (error) {
+        console.error("Error transcribing video:", error.message);
+        reject(error); // Reject on error
+      } finally {
+        setIsLoading(false);
+      }
+    });
+  };
+
   // Going to next question
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
       setIsModalVisible(false);
     } else {
+      // Await the last transcription to ensure it's added
+      if (recordedVideos.length > 0) {
+        await handleTranscription(recordedVideos[recordedVideos.length - 1]);
+      }
+
+      const answersToSend = transcriptions.map((transcription, index) => ({
+        question_id: questionIds[index] || null,
+        answer: transcription || "",
+      }));
+
+      try {
+        for (const answer of answersToSend) {
+          // Only send answers with valid question_id and answer
+          if (answer.question_id && answer.answer) {
+            await createAnswer(answer);
+          }
+        }
+        console.log("All answers successfully saved.");
+      } catch (error) {
+        console.error("Error saving answers:", error.message);
+      }
       setAllQuestionsRecorded(true);
       setIsModalVisible(false);
       console.log("Recorded-videos:", recordedVideos);

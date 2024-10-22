@@ -173,7 +173,7 @@ const ResetPasswordForm = () => {
               />
             </View>
 
-            <Text className="text-[24px] text-center font-semibold mt-5">
+            <Text className="text-[24px] text-center font-semibold mt-3">
               Forgot Password?
             </Text>
 
@@ -186,7 +186,7 @@ const ResetPasswordForm = () => {
               placeholder="Enter your email"
               value={emailAddress}
               onChangeText={(text) => setEmailAddress(text)}
-              otherStyles="mb- mt-12"
+              otherStyles="mb- mt-8"
               keyboardType="email-address"
             />
 
@@ -216,11 +216,11 @@ const ResetPasswordForm = () => {
               />
             </View>
 
-            <Text className="text-[24px] text-center font-semibold mt-5">
+            <Text className="text-[24px] text-center font-semibold mt-3">
               Set New Password
             </Text>
 
-            <Text className="text-center mt-2 mb-4">
+            <Text className="text-center mt-1 mb-8">
               Please enter your new password
             </Text>
 

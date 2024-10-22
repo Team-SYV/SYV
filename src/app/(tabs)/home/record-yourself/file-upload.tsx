@@ -8,6 +8,8 @@ import ProgressBar from "react-native-progress/Bar";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Image } from "react-native";
 import Spinner from "react-native-loading-spinner-overlay";
+import { createQuestions, generateQuestions, getInterview, getJobInformation } from "@/api";
+import { cleanQuestion } from "@/utils/cleanQuestion";
 
 const FileUpload = () => {
   const router = useRouter();
@@ -15,7 +17,7 @@ const FileUpload = () => {
   const [fileName, setFileName] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [loading, setLoading] = useState(false);
-  const { jobId } = useLocalSearchParams();
+  const { interviewId } = useLocalSearchParams();
 
   // Select a file
   const handleFilePick = async () => {
@@ -65,8 +67,66 @@ const FileUpload = () => {
       );
       return;
     }
+
     setLoading(true);
-    router.push("/(tabs)/home/record-yourself");
+
+    try {
+      // Fetch the job information
+      const interview = await getInterview(interviewId);
+      const jobInformationId = interview.job_information_id
+      const jobInfo = await getJobInformation(jobInformationId);
+
+      const {
+        industry,
+        job_role,
+        interview_type,
+        experience_level,
+        company_name,
+        job_description,
+      } = jobInfo;
+      const fileUri = selectedFile.uri;
+
+      const formData = new FormData();
+
+      formData.append("file", {
+        uri: fileUri,
+        name: selectedFile.name,
+        type: "application/pdf",
+      } as unknown as Blob);
+
+      // Append job info to formData for question generation
+      formData.append("industry", industry);
+      formData.append("job_role", job_role);
+      formData.append("interview_type", interview_type);
+      formData.append("experience_level", experience_level);
+      formData.append("company_name", company_name);
+      formData.append("job_description", job_description);
+      formData.append("type", "RECORD");
+
+      console.log("form Data:", formData);
+
+      // Generate questions
+      const questions = await generateQuestions(formData);
+
+      for (const question of questions) {
+        if (typeof question === "string") {
+          const cleanedQuestion = cleanQuestion(question);
+
+          const questionData = {
+            interview_id: interviewId,
+            question: cleanedQuestion,
+          }
+          await createQuestions(questionData);
+        } else {
+          console.error("Invalid question format:", question);
+        }
+      }
+      router.push(`/(tabs)/home/record-yourself?interviewId=${interviewId}`);
+    } catch (error) {
+      Alert.alert("Upload Failed", error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

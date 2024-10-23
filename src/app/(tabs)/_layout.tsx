@@ -1,11 +1,11 @@
 import { Tabs } from "expo-router";
-import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { useAuth } from "@clerk/clerk-expo";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { getFocusedRouteNameFromRoute, Route } from "@react-navigation/native";
 import { Text, View, Image } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
+import Feather from '@expo/vector-icons/Feather';
 
 const TabLayout = () => {
   const { isSignedIn } = useAuth();
@@ -129,7 +129,7 @@ const TabLayout = () => {
         name="profile"
         options={({ route }) => ({
           tabBarIcon: ({ size, color }) => (
-            <FontAwesome5 name="user-circle" size={size} color={color} />
+            <Feather name="user" size={size} color={color} />
           ),
           tabBarLabel: "Profile",
           tabBarStyle: shouldProfileTabBarBeVisible(route)

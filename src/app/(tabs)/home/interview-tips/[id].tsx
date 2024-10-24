@@ -15,9 +15,9 @@ const ArticleDetails = () => {
   }
 
   return (
-    <ScrollView className="px-5 py-3 bg-white">
+    <ScrollView className="px-5 py-2 bg-white">
       <Text className="text-[20px] font-bold">{tip.title}</Text>
-      <Text className="text-[12px] font-light mt-3"> {tip.author} </Text>
+      <Text className="text-[12px] font-light mt-3 mb-1"> {tip.author} </Text>
 
       {tip.image && (
         <Image
@@ -34,21 +34,21 @@ const ArticleDetails = () => {
               <Text className="font-bold text-[15px]">{item.question}</Text>
               <Text className="mt-1 text-sm">{item.description}</Text>
 
-              <Text className="font-medium mt-3 text-[14px]">
+              <Text className="font-semibold mt-3 text-[14px]">
                 What it means:
               </Text>
               <Text className="mt-1 text-sm">{item.whatItMeans} </Text>
 
-              <Text className="font-medium mt-3 mb-1 text-[14px]">
+              <Text className="font-semibold mt-3 mb-1 text-[14px]">
                 How to answer:
               </Text>
               {item.howToAnswer.map((step, stepIndex) => (
-                <Text key={stepIndex} className="ml-1 mb-1 text-sm">
+                <Text key={stepIndex} className="mb-1 text-sm">
                   - {step}
                 </Text>
               ))}
 
-              <Text className="font-medium mt-3 text-[14px]">
+              <Text className="font-semibold mt-3 text-[14px]">
                 Sample answer:
               </Text>
               <Text className="mt-1 text-sm">{item.sampleAnswer}</Text>
@@ -64,7 +64,7 @@ const ArticleDetails = () => {
               <Text className="font-bold text-[15px]">{item.mistake}</Text>
               <Text className="mt-1 text-sm">{item.description}</Text>
 
-              <Text className="font-semibold mt-3 text-[13px]">
+              <Text className="font-medium mt-3 text-[13px]">
                 How to Avoid:
               </Text>
               <Text className="mt-1 text-sm">{item.howToAvoid}</Text>
@@ -80,9 +80,9 @@ const ArticleDetails = () => {
               <Text className="font-bold text-[15px]">{item.step}</Text>
               <Text className="mt-1 text-sm">{item.description}</Text>
 
-              <Text className="font-semibold mt-3 mb-2 text-[13px]">Tips:</Text>
+              <Text className="font-medium mt-3 mb-1 text-[13px]">Tips:</Text>
               {item.tips.map((tip, tipIndex) => (
-                <Text key={tipIndex} className="ml-1 mb-1 text-sm">
+                <Text key={tipIndex} className="mb-1 text-sm">
                   - {tip}
                 </Text>
               ))}

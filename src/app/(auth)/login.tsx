@@ -26,7 +26,7 @@ const Login = () => {
     <SafeAreaView className="bg-white min-h-full">
       <ScrollView>
         <Stack.Screen options={{ headerShown: false }} />
-        <Text className="text-[28px] font-semibold mt-48 ml-5">Welcome Back!</Text>
+        <Text className="text-[26px] font-semibold mt-48 ml-5">Welcome Back!</Text>
         <Text className="text-[15px] ml-6 mt-1">Sign in to your account</Text>
 
         <LoginForm />

@@ -9,7 +9,7 @@ const Register = () => {
       <ScrollView>
         <Stack.Screen options={{ headerShown: false }} />
 
-        <Text className="text-[28px] font-semibold mt-40"> Create Account </Text>
+        <Text className="text-[26px] font-semibold mt-40"> Create Account </Text>
         <Text className="text-[15px] ml-2 mt-1">
           Create your account by filling the information below
         </Text>

@@ -31,10 +31,10 @@ const Slider = () => {
             activeOpacity={0.8}
             disabled={isNavigating}
           >
-            <View className="mr-4 w-[155px]">
+            <View className="mr-4 w-[135px]">
               <Image
                 source={{ uri: item.image }}
-                className="h-[145px] rounded-2xl"
+                className="h-[130px] rounded-2xl"
                 resizeMode="cover"
               />
               <Text className="text-[11px] p-1">{item.title}</Text>

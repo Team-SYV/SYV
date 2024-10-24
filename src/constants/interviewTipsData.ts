@@ -4,7 +4,7 @@ export const interviewTipsData = [
     title: "Most Common Interview Questions with Answers",
     author: "Jobstreet content team – updated on 18 April, 2024",
     image:
-      "https://media.graphassets.com/resize=fit:crop,width:1280,height:660/y2lzUQ0WRI6GZL7FKjpF",
+      "https://www.knowledgecity.com/blog/wp-content/uploads/2021/11/unique-interview-questions.jpg",
     type: "qa",
     contents: [
       {
@@ -75,14 +75,14 @@ export const interviewTipsData = [
           "Discuss the positive outcome and what you learned from the experience.",
         ],
         sampleAnswer:
-          "During a tight deadline for a major project, I faced a big technical issue that threatened to delay the delivery. I didn't panic. Instead, I quickly gathered the team, assessed the problem, and brainstormed solutions. Together, we developed a workaround that allowed us to meet the deadline and deliver a high-quality product. This experience taught me the importance of staying calm under pressure and the value of collaboration.",
+          "During a tight deadline for a major project, I faced a big technical issue that threatened to delay the delivery. I didn't panic. Instead, I quickly gathered the team, assessed the problem, and brainstormed solutions. Together, we developed a workaround that allowed us to meet the deadline and deliver a high-quality product. This experience taught me the importance of staying calm under pressure. It also taught me the importance of working well with a team to overcome challenges. ",
       },
       {
         question: "6. How do you handle working in a team?",
         description:
           "Employers usually ask this if the role requires collaboration or if their work culture values teamwork.",
         whatItMeans:
-          "Collaboration is essential in working towards common business goals, meeting project deadlines, and promoting positive relations within the company.",
+          "Collaboration is essential in working towards common business goals, meeting project deadlines, and promoting positive relations within the company. With this question, interviewers want to know about your interpersonal skills and if you fit their culture.",
         howToAnswer: [
           "Describe the team and the project or task you worked on.",
           "Highlight your contribution to the team's success.",
@@ -104,7 +104,7 @@ export const interviewTipsData = [
           "Discuss the positive outcome and how your leadership benefited the team.",
         ],
         sampleAnswer:
-          "In my previous role as a team lead, I spearheaded a project that was stalling due to unclear objectives. I stepped up to clarify the goals, delegated tasks based on individual strengths, and set up weekly check-ins for accountability and support. As a result, we delivered the project early and 10% under budget, showcasing the value of clear leadership.",
+          "In my previous role as a team lead, I spearheaded a project that was stalling due to unclear objectives. I stepped up to clarify the goals. I delegated tasks based on individual strengths. I set up weekly check-ins for accountability and moral support. I was proactive. I communicated and decided fast. This made our team more collaborative. We delivered the project early and 10% under budget. This experience underscored the value of clear leadership and the positive impact it can have on team efficiency and morale. ",
       },
       {
         question: "8. Where do you see yourself in five years?",
@@ -118,7 +118,7 @@ export const interviewTipsData = [
           "Highlight how you plan to contribute to the company's success.",
         ],
         sampleAnswer:
-          "In five years, I see myself as an expert in digital marketing, having taken on challenging projects that drive company growth and innovation. This position is a crucial step towards that goal, allowing me to gain experience with marketing technology while helping the company achieve its business objectives.",
+          "In five years, I see myself as an expert in digital marketing. I will have taken on tough projects that drive company growth and innovation. This position is a crucial step towards that goal. It will let me gain more experience with marketing technology. It will also let me help the company’s business goals. I will use my skills in managing people and communication to excel in my role. I will also use them to mentor others and to foster a culture of improvement in the team. I aspire to grow with the company. I want to take on bigger roles that fit with XYZ Co.'s vision and my career growth. ",
       },
       {
         question: "9. What are your salary expectations?",
@@ -141,9 +141,9 @@ export const interviewTipsData = [
         whatItMeans:
           "Employers ask this to see if you have done your homework on their organization. It shows how engaged you are in the conversation.",
         howToAnswer: [
-          "Ask insightful questions about the role, team dynamics, and company culture.",
-          "Inquire about the next steps in the hiring process.",
-          "Express your enthusiasm for the position.",
+          "Ask about the company culture and values.",
+          "Inquire about growth opportunities within the company.",
+          "Ask about the interviewer's personal experience with the company.",
         ],
         sampleAnswer:
           "Yes, I would love to hear more about the team I would be working with and how this role contributes to the company's overall goals. Additionally, what does success look like in this position over the next six months?",
@@ -156,7 +156,7 @@ export const interviewTipsData = [
     title: "Common Mistakes To Avoid In Job Inteview",
     author: "Dominique Placer – updated on 15 October, 2024",
     image:
-      "https://newsroom.haas.berkeley.edu/wp-content/uploads/2018/07/AdobeStock_267017177-job-interview-tiny-scaled.jpeg",
+      "https://media.licdn.com/dms/image/v2/D5612AQFhPNw1HvQlTg/article-cover_image-shrink_720_1280/article-cover_image-shrink_720_1280/0/1724771048438?e=2147483647&v=beta&t=6s1nisrIQCyjpFCdA76PHFj8NMsH75-Y19h0wmATDIk",
     type: "mistakes",
     content: [
       {
@@ -237,7 +237,7 @@ export const interviewTipsData = [
     title: "How to Prepare for a Job Interview",
     author: "Michael Page – updated on 20 January, 2023",
     image:
-      "https://www.michaelpage.com.ph/sites/michaelpage.com.ph/files/styles/advice_node_tablet/public/2024-09/prepare%20for%20job%20interview_1.jpg.webp?itok=LOYUifv8",
+      "https://www.job-hunt.org/wp-content/uploads/2021/08/10-Step-Interview-Preparation-Plan-The-Winning-Difference-in-2021.jpg",
     type: "prepare",
     content: [
       {
@@ -245,16 +245,16 @@ export const interviewTipsData = [
         description:
           "Researching the company you are interviewing with is crucial to learn about its culture, values, and background. Read up on any recent news about the company and find out what their current and previous employees say about them on platforms like LinkedIn and Glassdoor.",
         tips: [
-          "Take some time to prepare thoughtful questions.",
-          "Demonstrate to the interviewer your understanding of the business.",
+          "Take some time to prepare thoughtful questions. A modern company likely has social media accounts and blogs where they discuss their company culture and industry.",
+          "Demonstrate to the interviewer what you understand the business, and explain how you would fit in and add value to it.",
         ],
       },
       {
         step: "2. Pay Close Attention to the Job Description",
         description:
-          "A job description provides information about the skills and experience required for a particular role. By reading the JD, you can get a sense of the candidate profile that the particular company is looking to hire and the specific qualifications they are looking for.",
+          "A job description provides information about the skills and experience required for a particular role. By reading the job description, you can get a sense of the candidate profile that the particular company is looking to hire and the specific qualifications they are looking for.",
         tips: [
-          "Consider taking online courses to align with the JD.",
+          "Consider taking online courses that align with the job description.",
           "Analyze the tone and writing style for company culture insights.",
         ],
       },

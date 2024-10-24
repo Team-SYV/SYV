@@ -10,12 +10,12 @@ export const steps = [
 
 export const industry = [
   { key: "SI", value: "Software Industry" },
-  { key: "ET", value: "Education and Training" },
+  { key: "ET", value: "Education" },
   { key: "RS", value: "Retail Services" },
   { key: "TR", value: "Tourism" },
   { key: "EN", value: "Engineering" },
   { key: "HS", value: "Health Science" },
-  { key: "BM", value: "Business Management and Administration" },
+  { key: "BM", value: "Business Management" },
 ].sort((a, b) => a.value.localeCompare(b.value));
 
 export const jobRole = {
@@ -53,7 +53,7 @@ export const jobRole = {
     { key: "sales_associate", value: "Sales Associate" },
     { key: "warehouse_clerk", value: "Warehouse Clerk" },
   ],
-  "Education and Training": [
+  "Education": [
     { key: "librarian", value: "Librarian" },
     { key: "middle_school_teacher", value: "Middle School Teacher" },
     { key: "preschool_teacher", value: "Preschool Teacher" },
@@ -93,7 +93,7 @@ export const jobRole = {
     { key: "psychiatrist", value: "Psychiatrist" },
     { key: "psychologist", value: "Psychologist" },
   ],
-  "Business Management and Administration": [
+  "Business Management": [
     { key: "management_analyst", value: "Management Analyst" },
     { key: "marketing_manager", value: "Marketing Manager" },
     {

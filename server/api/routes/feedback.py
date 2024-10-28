@@ -20,10 +20,10 @@ async def create_feedback(feedback_data: CreateFeedback, supabase: Client= Depen
     if hasattr(response, 'error') and response.error:
         raise HTTPException(status_code=500, detail="Failed to create feedback")
 
-    return CreateFeedbackResponse(job_information_id=response.data[0]['feedback_id'])
+    return CreateFeedbackResponse(feedback_id=response.data[0]['feedback_id'])
 
 @router.get("/get/{feedback_id}", response_model=CreateFeedback)
-async def get_job_information(feedback_id: str,supabase: Client= Depends(get_supabase)):
+async def get_feedback(feedback_id: str,supabase: Client= Depends(get_supabase)):
     response = supabase.table('feedback').select('*').eq('feedback_id', feedback_id).execute()
 
     if not response.data:

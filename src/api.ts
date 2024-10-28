@@ -3,6 +3,7 @@ import { InterviewData } from "./types/InterviewData";
 import { QuestionData } from "./types/QuestionData";
 import { JobInformationData } from "./types/JobInformationData";
 import { AnswerData } from "./types/AnswerData";
+import { FeedbackData } from "./types/FeedbackData";
 
 const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL,
@@ -120,6 +121,49 @@ export const createAnswer = async (answerData: AnswerData) => {
   } catch (error) {
     throw new Error(
       error.response?.data?.detail || "Failed to create questions"
+    );
+  }
+};
+
+export const createFeedback = async (feedbackData: FeedbackData) => {
+  try {
+    const response = await api.post(`/api/feedback/create`, feedbackData);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to create feedback"
+    );
+  }
+};
+
+export const getFeedback = async (feedback_id: string | string[]) => {
+  try {
+    const response = await api.get(`/api/feedback/get/${feedback_id}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to retrieve feedback"
+    );
+  }
+};
+
+export const generateFeedback = async (question: string, answer: string, type: string) => {
+  try {
+    const formData = new FormData();
+    formData.append("question", question);
+    formData.append("answer", answer);
+    formData.append("type", type);
+
+    const response = await api.post("/api/generate-feedback/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data.feedback;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to generate feedback"
     );
   }
 };

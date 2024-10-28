@@ -3,6 +3,7 @@ from tempfile import NamedTemporaryFile
 from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from api.webhooks.clerk import clerk_webhook_handler
+from services.feedback_generator import generate_feedback
 from services.transcribe_video import extract_audio, transcribe_audio
 from services.question_generator import generate_interview_questions
 from services.pdf_reader import read_pdf
@@ -34,6 +35,7 @@ app.include_router(job_information_router, prefix="/api/job_information", tags=[
 app.include_router(interview_router, prefix="/api/interview", tags=["interview"])
 app.include_router(question_router, prefix="/api/question", tags=["question"])
 app.include_router(answer_router, prefix="/api/answer", tags=["answer"])
+app.include_router(answer_router, prefix="/api/feedback", tags=["feedback"])
 
 
 @app.post("/api/webhooks/", status_code=status.HTTP_204_NO_CONTENT)
@@ -100,3 +102,18 @@ async def transcribe_video(file: UploadFile = File(...)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    
+@app.post("/api/generate-feedback/")
+async def generate_feedback_api(
+    question: str = Form(...),
+    answer: str = Form(...),
+    type: str = Form(...),
+):
+    """Generate feedback based on a question and answer."""
+    try:
+        feedback = generate_feedback(question, answer, type)
+        return {"feedback": feedback}
+
+    except Exception as e:
+        logging.error(f"Error generating feedback: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate feedback")

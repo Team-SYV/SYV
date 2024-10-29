@@ -1,8 +1,8 @@
 import axios from "axios";
-import { InterviewData } from "./types/InterviewData";
-import { QuestionData } from "./types/QuestionData";
-import { JobInformationData } from "./types/JobInformationData";
 import { AnswerData } from "./types/AnswerData";
+import { InterviewData } from "./types/InterviewData";
+import { JobInformationData } from "./types/JobInformationData";
+import { QuestionData } from "./types/QuestionData";
 import { FeedbackData } from "./types/FeedbackData";
 
 const api = axios.create({

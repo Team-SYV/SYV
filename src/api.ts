@@ -2,8 +2,6 @@ import axios from "axios";
 import { AnswerData } from "./types/AnswerData";
 import { InterviewData } from "./types/InterviewData";
 import { JobInformationData } from "./types/JobInformationData";
-import { QuestionData } from "./types/QuestionData";
-import { FeedbackData } from "./types/FeedbackData";
 
 const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL,

@@ -16,10 +16,12 @@ import {
 } from "react-native";
 import NextModal from "@/components/Modal/NextModal";
 import { createAnswer, getQuestions, transcribeVideo } from "@/api";
+import Spinner from "react-native-loading-spinner-overlay";
 
 const Record: React.FC = () => {
   const router = useRouter();
   const { interviewId } = useLocalSearchParams();
+
   const cameraRef = useRef(null);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordingTime, setRecordingTime] = useState(60);
@@ -27,6 +29,7 @@ const Record: React.FC = () => {
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [allQuestionsRecorded, setAllQuestionsRecorded] = useState(false);
+
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
 
@@ -43,6 +46,7 @@ const Record: React.FC = () => {
     boolean | null
   >(null);
 
+  // Requests camera and microphone permissions when the component loads.
   useEffect(() => {
     (async () => {
       const cameraPermission = await Camera.requestCameraPermissionsAsync();
@@ -54,6 +58,7 @@ const Record: React.FC = () => {
     })();
   }, []);
 
+  // Retrieves interview questions from an API
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
@@ -67,6 +72,7 @@ const Record: React.FC = () => {
     fetchQuestions();
   }, [interviewId]);
 
+  // A countdown timer that decreases every second if recoding is active.
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isRecording && recordingTime > 0) {
@@ -140,8 +146,8 @@ const Record: React.FC = () => {
           );
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);
-          await handleTranscription(recordedVideo.uri);
           setIsModalVisible(true);
+          handleTranscription(recordedVideo.uri);
         }
       } catch (error) {
         console.error("Error recording video:", error);
@@ -161,10 +167,10 @@ const Record: React.FC = () => {
     }
   };
 
+  // Handle transcriptions
   const handleTranscription = (videoUri: string): Promise<void> => {
     return new Promise(async (resolve, reject) => {
       try {
-        setIsLoading(true);
         const videoFile = {
           uri: videoUri,
           type: "video/mp4",
@@ -173,23 +179,26 @@ const Record: React.FC = () => {
 
         const transcription = await transcribeVideo(videoFile);
         setTranscriptions((prev) => [...prev, transcription]);
-        resolve(); // Resolve when transcription is complete
+        resolve();
       } catch (error) {
         console.error("Error transcribing video:", error.message);
-        reject(error); // Reject on error
-      } finally {
-        setIsLoading(false);
+        reject(error);
       }
     });
   };
 
   // Going to next question
   const handleNext = async () => {
-    if (currentQuestionIndex < questions.length - 1) {
+    if (currentQuestionIndex < 4) {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
       setIsModalVisible(false);
+
+      if (recordedVideos.length > 0) {
+        const lastVideoUri = recordedVideos[recordedVideos.length - 1];
+        handleTranscription(lastVideoUri);
+      }
     } else {
-      // Await the last transcription to ensure it's added
+      setIsLoading(true);
       if (recordedVideos.length > 0) {
         await handleTranscription(recordedVideos[recordedVideos.length - 1]);
       }
@@ -201,7 +210,6 @@ const Record: React.FC = () => {
 
       try {
         for (const answer of answersToSend) {
-          // Only send answers with valid question_id and answer
           if (answer.question_id && answer.answer) {
             await createAnswer(answer);
           }
@@ -209,7 +217,10 @@ const Record: React.FC = () => {
         console.log("All answers successfully saved.");
       } catch (error) {
         console.error("Error saving answers:", error.message);
+      } finally {
+        setIsLoading(false);
       }
+
       setAllQuestionsRecorded(true);
       setIsModalVisible(false);
       console.log("Recorded-videos:", recordedVideos);
@@ -238,6 +249,8 @@ const Record: React.FC = () => {
 
   return (
     <View className="flex-1 justify-center">
+      <Spinner visible={isLoading} color="#00AACE" />
+
       <Stack.Screen
         options={{
           headerShown: allQuestionsRecorded,
@@ -287,7 +300,9 @@ const Record: React.FC = () => {
             >
               {isRecording
                 ? formatTime(recordingTime)
-                : ` ${questions[currentQuestionIndex] || ""}`}
+                : `${currentQuestionIndex + 1}. ${
+                    questions[currentQuestionIndex] || ""
+                  }`}
             </Text>
 
             <TouchableOpacity

@@ -106,13 +106,29 @@ async def transcribe_video(file: UploadFile = File(...)):
 @app.post("/api/generate-feedback/")
 async def generate_feedback_api(
     question: str = Form(...),
-    answer: str = Form(...),
-    type: str = Form(...),
+    answer: str = Form(...)
+):
+    try:
+        feedback = generate_feedback(question, answer)
+        return {"feedback": feedback}
+
+    except Exception as e:
+        logging.error(f"Error generating feedback: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate feedback")
+    
+@app.post("/api/generate-feedback/")
+async def generate_feedback_api(
+    question: str = Form(...),
+    answer: str = Form(...)
 ):
     """Generate feedback based on a question and answer."""
     try:
-        feedback = generate_feedback(question, answer, type)
-        return {"feedback": feedback}
+        feedback = generate_feedback(question, answer)
+        return {
+            "grammar": feedback.get("grammar", ""),
+            "relevance": feedback.get("relevance", ""),
+            "filler": feedback.get("filler", "")
+        }
 
     except Exception as e:
         logging.error(f"Error generating feedback: {e}")

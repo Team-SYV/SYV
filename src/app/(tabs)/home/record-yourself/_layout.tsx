@@ -56,6 +56,18 @@ const RecordYourselfLayout = () => {
           headerBackVisible: false,
         }}
       />
+
+      <Stack.Screen
+        name="feedback"
+        options={{
+          headerTitle: () => (
+            <Text className="text-center text-[15px] font-semibold text-[#2a2a2a]">
+              Feedback
+            </Text>
+          ),
+          headerBackVisible: false,
+        }}
+      />
     </Stack>
   );
 };

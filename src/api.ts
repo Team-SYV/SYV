@@ -14,7 +14,7 @@ export const createJobInformation = async (
 ) => {
   try {
     const response = await api.post(
-      "/api/job_information/create/",
+      "/api/job_information/create",
       jobInformationData
     );
     return response.data;

@@ -1,8 +1,9 @@
 import axios from "axios";
-import { AnswerData } from "./types/AnswerData";
-import { InterviewData } from "./types/InterviewData";
-import { JobInformationData } from "./types/JobInformationData";
-import { QuestionData } from "./types/QuestionData";
+import { FeedbackData } from "./types/feedbackData";
+import { AnswerData } from "./types/answerData";
+import { InterviewData } from "./types/interviewData";
+import { JobInformationData } from "./types/jobInformationData";
+import { QuestionData } from "./types/questionData";
 
 const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL,
@@ -105,7 +106,7 @@ export const transcribeVideo = async (videoFile: File) => {
       },
     });
 
-    return response.data.transcription; 
+    return response.data.transcription;
   } catch (error) {
     throw new Error(
       error.response?.data?.detail || "Failed to transcribe video"
@@ -120,6 +121,49 @@ export const createAnswer = async (answerData: AnswerData) => {
   } catch (error) {
     throw new Error(
       error.response?.data?.detail || "Failed to create questions"
+    );
+  }
+};
+
+export const createFeedback = async (feedbackData: FeedbackData) => {
+  try {
+    const response = await api.post(`/api/feedback/create`, feedbackData);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to create feedback"
+    );
+  }
+};
+
+export const getFeedback = async (feedback_id: string | string[]) => {
+  try {
+    const response = await api.get(`/api/feedback/get/${feedback_id}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to retrieve feedback"
+    );
+  }
+};
+
+export const generateFeedback = async (question: string, answer: string) => {
+  try {
+    const formData = new FormData();
+    formData.append("question", question);
+    formData.append("answer", answer);
+
+    const response = await api.post("/api/generate-feedback/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    const { grammar, relevance, filler } = response.data;
+    return { grammar, relevance, filler };
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to generate feedback"
     );
   }
 };

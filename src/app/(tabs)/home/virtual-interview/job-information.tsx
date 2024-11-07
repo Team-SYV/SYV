@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import CustomButton from "@/components/Button/CustomButton";
 import { Ionicons } from "@expo/vector-icons";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import Spinner from "react-native-loading-spinner-overlay";
 import {
@@ -24,6 +24,14 @@ import {
 import Stepper from "@/components/Stepper/Stepper";
 import Toast from "react-native-toast-message";
 import StepContent from "@/components/StepContent/StepContent";
+import { useUser } from "@clerk/clerk-expo";
+import {
+  createInterview,
+  createJobInformation,
+  createQuestions,
+  generateQuestions,
+} from "@/api";
+import { cleanQuestion } from "@/utils/cleanQuestion";
 
 const JobInformation = () => {
   const [formData, setFormData] = useState<JobInfo>({
@@ -36,13 +44,13 @@ const JobInformation = () => {
   });
 
   const router = useRouter();
-  const { interviewId } = useLocalSearchParams();
+  const { user } = useUser();
   const [activeStep, setActiveStep] = useState<number>(0);
   const [errors, setErrors] = useState<{ [key: number]: string }>({});
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
-  const [jobInformationId, setJobInformationId] = useState<string | null>(null);
+  const [interviewId, setInterviewId] = useState<string | null>(null);
 
   // Handles the android back button
   useEffect(() => {
@@ -152,14 +160,105 @@ const JobInformation = () => {
 
   // Creates job information
   const handleSubmit = async () => {
-    console.log("Form data:", formData);
-    router.push("/(tabs)/home/virtual-interview/file-upload");
+    try {
+      setLoading(true);
+
+      const jobData = {
+        user_id: user.id,
+        industry: formData.selectedIndustry,
+        job_role: formData.selectedJobRole,
+        interview_type: formData.selectedInterviewType,
+        experience_level: formData.selectedExperienceLevel,
+        company_name: formData.companyName || "None",
+        job_description: formData.jobDescription || "None",
+      };
+      const jobInformationResponse = await createJobInformation(jobData);
+      const jobInformationId = jobInformationResponse.job_information_id;
+
+      const interviewData = {
+        user_id: user.id,
+        job_information_id: jobInformationId,
+        type: "VIRTUAL",
+      };
+      const interviewResponse = await createInterview(interviewData);
+      const interviewId = interviewResponse.interview_id;
+      setInterviewId(interviewId);
+    } catch (error) {
+      console.error("Error creating job description:", error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // When file upload is skipped
   const handleSkip = async () => {
-    console.log("Form data:", formData);
-    router.push("/(tabs)/home/virtual-interview");
+    try {
+      setLoading(true);
+
+      const jobData = {
+        user_id: user.id,
+        industry: formData.selectedIndustry,
+        job_role: formData.selectedJobRole,
+        interview_type: formData.selectedInterviewType,
+        experience_level: formData.selectedExperienceLevel,
+        company_name: formData.companyName || "None",
+        job_description: formData.jobDescription || "None",
+      };
+
+      const jobInformationResponse = await createJobInformation(jobData);
+      const jobInformationId = jobInformationResponse.job_information_id;
+
+      const interviewData = {
+        user_id: user.id,
+        job_information_id: jobInformationId,
+        type: "VIRTUAL",
+      };
+      const interviewResponse = await createInterview(interviewData);
+      const interviewId = interviewResponse.interview_id;
+      setInterviewId(interviewId);
+
+      const generateQuestionData = new FormData();
+      generateQuestionData.append("type", "RECORD");
+      generateQuestionData.append("industry", formData.selectedIndustry);
+      generateQuestionData.append("job_role", formData.selectedJobRole);
+      generateQuestionData.append(
+        "interview_type",
+        formData.selectedInterviewType
+      );
+      generateQuestionData.append(
+        "experience_level",
+        formData.selectedExperienceLevel
+      );
+      generateQuestionData.append(
+        "company_name",
+        formData.companyName || "None"
+      );
+      generateQuestionData.append(
+        "job_description",
+        formData.jobDescription || "None"
+      );
+
+      const questions = await generateQuestions(generateQuestionData);
+
+      for (const question of questions) {
+        if (typeof question === "string") {
+          const cleanedQuestion = cleanQuestion(question);
+
+          const questionData = {
+            interview_id: interviewId,
+            question: cleanedQuestion,
+          };
+          await createQuestions(questionData);
+        } else {
+          console.error("Invalid question format:", question);
+        }
+      }
+      router.push(`/(tabs)/home/virtual-interview?interviewId=${interviewId}`);
+    } catch (error) {
+      console.error("Error skipping file upload", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -204,7 +303,7 @@ const JobInformation = () => {
                       handleSubmit={handleSubmit}
                       handleSubmitRoute={`/virtual-interview/file-upload?jobId=`}
                       handleSkip={handleSkip}
-                      jobInformationId={jobInformationId}
+                      interviewId={interviewId}
                     />
                   </>
                 )}

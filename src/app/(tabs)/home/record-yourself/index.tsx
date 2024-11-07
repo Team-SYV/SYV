@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Camera, CameraView } from "expo-camera";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { Video, ResizeMode } from "expo-av";
 import ConfirmationModal from "@/components/Modal/ConfirmationModal";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import {
@@ -10,15 +9,13 @@ import {
   View,
   TouchableOpacity,
   Image,
-  FlatList,
   Alert,
   BackHandler,
 } from "react-native";
 import NextModal from "@/components/Modal/NextModal";
 import { createAnswer, getQuestions, transcribeVideo } from "@/api";
-import Spinner from "react-native-loading-spinner-overlay";
 
-const Record: React.FC = () => {
+const RecordYourself: React.FC = () => {
   const router = useRouter();
   const { interviewId } = useLocalSearchParams();
 
@@ -214,7 +211,6 @@ const Record: React.FC = () => {
             await createAnswer(answer);
           }
         }
-        console.log("All answers successfully saved.");
       } catch (error) {
         console.error("Error saving answers:", error.message);
       } finally {
@@ -223,7 +219,13 @@ const Record: React.FC = () => {
 
       setAllQuestionsRecorded(true);
       setIsModalVisible(false);
-      console.log("Recorded-videos:", recordedVideos);
+
+      router.push({
+        pathname: "/home/record-yourself/feedback",
+        params: {
+          videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
+        },
+      });
     }
   };
 
@@ -234,23 +236,8 @@ const Record: React.FC = () => {
     return `${minutes}:${remainingSeconds < 10 ? "0" : ""}${remainingSeconds}`;
   };
 
-  // Sample function to show the recorded videos
-  const renderVideoItem = ({ item }: { item: string }) => (
-    <View className="pb-6">
-      <Video
-        source={{ uri: item }}
-        style={styles.video}
-        useNativeControls
-        isLooping={false}
-        resizeMode={ResizeMode.CONTAIN}
-      />
-    </View>
-  );
-
   return (
     <View className="flex-1 justify-center">
-      <Spinner visible={isLoading} color="#00AACE" />
-
       <Stack.Screen
         options={{
           headerShown: allQuestionsRecorded,
@@ -265,68 +252,58 @@ const Record: React.FC = () => {
             ),
         }}
       />
-      {allQuestionsRecorded ? (
-        <FlatList
-          data={recordedVideos}
-          keyExtractor={(item) => item}
-          renderItem={renderVideoItem}
-          className="p-4"
-        />
-      ) : (
-        <CameraView
-          mode="video"
-          style={styles.camera}
-          facing="front"
-          ref={cameraRef}
-        >
-          <View className="absolute top-14 right-4 items-center mx-2">
-            <TouchableOpacity onPress={() => setIsConfirmationVisible(true)}>
-              <AntDesign
-                name="closecircle"
-                size={33}
-                color="#A92703"
-                className="bg-white rounded-full"
-              />
-            </TouchableOpacity>
-          </View>
+      <CameraView
+        mode="video"
+        style={styles.camera}
+        facing="front"
+        ref={cameraRef}
+      >
+        <View className="absolute top-14 right-4 items-center mx-2">
+          <TouchableOpacity onPress={() => setIsConfirmationVisible(true)}>
+            <AntDesign
+              name="closecircle"
+              size={33}
+              color="#A92703"
+              className="bg-white rounded-full"
+            />
+          </TouchableOpacity>
+        </View>
 
-          <View className="absolute bottom-10 left-0 right-0 items-center mx-2">
-            <Text
-              className={`text-center mb-4 px-4 py-4 rounded-xl ${
+        <View className="absolute bottom-10 left-0 right-0 items-center mx-2">
+          <Text
+            className={`text-center mb-4 px-4 py-4 rounded-xl ${
+              isRecording
+                ? "text-red-600 font-medium text-2xl"
+                : "bg-black/80 text-white text-base font-light"
+            }`}
+          >
+            {isRecording
+              ? formatTime(recordingTime)
+              : `${currentQuestionIndex + 1}. ${
+                  questions[currentQuestionIndex] || ""
+                }`}
+          </Text>
+
+          <TouchableOpacity onPress={isRecording ? stopRecording : recordVideo}>
+            <Image
+              source={
                 isRecording
-                  ? "text-red-600 font-medium text-2xl"
-                  : "bg-black/80 text-white text-base font-light"
-              }`}
-            >
-              {isRecording
-                ? formatTime(recordingTime)
-                : `${currentQuestionIndex + 1}. ${
-                    questions[currentQuestionIndex] || ""
-                  }`}
-            </Text>
-
-            <TouchableOpacity
-              onPress={isRecording ? stopRecording : recordVideo}
-            >
-              <Image
-                source={
-                  isRecording
-                    ? require("@/assets/icons/stop.png")
-                    : require("@/assets/icons/record.png")
-                }
-                className="w-24 h-24"
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          </View>
-        </CameraView>
-      )}
+                  ? require("@/assets/icons/stop.png")
+                  : require("@/assets/icons/record.png")
+              }
+              className="w-24 h-24"
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </View>
+      </CameraView>
 
       <NextModal
         isVisible={isModalVisible}
         onNext={handleNext}
         onClose={() => setIsModalVisible(false)}
         isLastQuestion={currentQuestionIndex === questions.length - 1}
+        isLoading={isLoading}
       />
 
       <ConfirmationModal
@@ -348,14 +325,10 @@ const Record: React.FC = () => {
   );
 };
 
-export default Record;
+export default RecordYourself;
 
 const styles = StyleSheet.create({
   camera: {
     flex: 1,
-  },
-  video: {
-    width: "100%",
-    height: 680,
   },
 });

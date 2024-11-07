@@ -8,13 +8,11 @@ import CustomFormField from "../FormField/CustomFormField";
 import Toast from "react-native-toast-message";
 import BottomHalfModal from "../Modal/BottomHalfModal";
 import {
-  validateEmail,
-  validatePassword,
-} from "@/utils/validators/validateLogin";
-import {
   validateFirstName,
   validateLastName,
   validateConfirmPassword,
+  validateEmail,
+  validatePassword,
 } from "@/utils/validators/validateRegister";
 
 const RegisterForm = () => {

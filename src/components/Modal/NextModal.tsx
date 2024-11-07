@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, View, Text } from "react-native";
+import { Modal, View, Text, ActivityIndicator } from "react-native";
 import CustomButton from "../Button/CustomButton";
 
 interface NextModalProps {
@@ -7,6 +7,7 @@ interface NextModalProps {
   onNext: () => void;
   onClose: () => void;
   isLastQuestion: boolean;
+  isLoading: boolean;
 }
 
 const NextModal: React.FC<NextModalProps> = ({
@@ -14,6 +15,7 @@ const NextModal: React.FC<NextModalProps> = ({
   onNext,
   onClose,
   isLastQuestion,
+  isLoading,
 }) => {
   return (
     <Modal
@@ -29,12 +31,16 @@ const NextModal: React.FC<NextModalProps> = ({
               ? "Get your interview results"
               : "Ready for the next question?"}
           </Text>
-          <CustomButton
-            title={isLastQuestion ? "Get Results" : "Next"}
-            onPress={onNext}
-            containerStyles={`bg-[#00AACE] h-[45px] rounded-3xl px-[82px]`}
-            textStyles="text-white text-base font-semibold"
-          />
+          {isLoading ? (
+            <ActivityIndicator size="large" color="#00AACE" />
+          ) : (
+            <CustomButton
+              title={isLastQuestion ? "Get Results" : "Next"}
+              onPress={onNext}
+              containerStyles="bg-[#00AACE] h-[45px] rounded-3xl px-[82px]"
+              textStyles="text-white text-base font-semibold"
+            />
+          )}
         </View>
       </View>
     </Modal>

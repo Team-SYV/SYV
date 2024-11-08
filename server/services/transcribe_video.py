@@ -25,12 +25,3 @@ def extract_audio(video_path: str) -> NamedTemporaryFile:
 
     return temp_audio
 
-def transcribe_audio(audio_path: str) -> str:
-    """Transcribe audio using OpenAI Whisper."""
-    with open(audio_path, "rb") as audio_file:
-        transcription = client.audio.transcriptions.create(
-            model="whisper-1",
-            file=audio_file,
-            language="en",
-        )
-    return transcription.text

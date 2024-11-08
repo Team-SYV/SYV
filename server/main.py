@@ -3,8 +3,9 @@ from tempfile import NamedTemporaryFile
 from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from api.webhooks.clerk import clerk_webhook_handler
+from services.transcribe_audio import transcribe_audio
 from services.feedback_generator import generate_feedback
-from services.transcribe_video import extract_audio, transcribe_audio
+from services.transcribe_video import extract_audio
 from services.question_generator import generate_interview_questions
 from services.pdf_reader import read_pdf
 from utils.supabase import get_supabase_client
@@ -98,36 +99,28 @@ async def transcribe_video(file: UploadFile = File(...)):
 
             transcription = transcribe_audio(temp_audio.name)
 
-            return {"transcription": transcription}
+            return transcription
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     
-@app.post("/api/generate-feedback/")
-async def generate_feedback_api(
-    question: str = Form(...),
-    answer: str = Form(...)
-):
-    try:
-        feedback = generate_feedback(question, answer)
-        return {"feedback": feedback}
-
-    except Exception as e:
-        logging.error(f"Error generating feedback: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate feedback")
     
 @app.post("/api/generate-feedback/")
 async def generate_feedback_api(
     question: str = Form(...),
-    answer: str = Form(...)
+    answer: str = Form(...),
+    wpm: str = Form(...)
 ):
     """Generate feedback based on a question and answer."""
     try:
-        feedback = generate_feedback(question, answer)
+        feedback = generate_feedback(question, answer, wpm)
         return {
+            "question": feedback.get("question", ""),
             "grammar": feedback.get("grammar", ""),
             "relevance": feedback.get("relevance", ""),
-            "filler": feedback.get("filler", "")
+            "filler": feedback.get("filler", ""),
+            "pace_of_speech": feedback.get("pace_of_speech", ""),
+            "tips": feedback.get("tips","")
         }
 
     except Exception as e:

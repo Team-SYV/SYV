@@ -13,6 +13,7 @@ from api.routes.job_information import router as job_information_router
 from api.routes.interview import router as interview_router
 from api.routes.question import router as question_router
 from api.routes.answer import router as answer_router
+from api.routes.eye_contact import router as eye_contact_router
 
 import os
 import logging
@@ -37,6 +38,8 @@ app.include_router(interview_router, prefix="/api/interview", tags=["interview"]
 app.include_router(question_router, prefix="/api/question", tags=["question"])
 app.include_router(answer_router, prefix="/api/answer", tags=["answer"])
 app.include_router(answer_router, prefix="/api/feedback", tags=["feedback"])
+app.include_router(eye_contact_router, prefix="/api", tags=["eye contact"])
+
 
 
 @app.post("/api/webhooks/", status_code=status.HTTP_204_NO_CONTENT)
@@ -126,3 +129,4 @@ async def generate_feedback_api(
     except Exception as e:
         logging.error(f"Error generating feedback: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate feedback")
+    

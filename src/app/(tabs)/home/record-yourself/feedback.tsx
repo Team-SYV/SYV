@@ -15,7 +15,7 @@ import {
   ScrollView,
 } from "react-native";
 import { mockFeedbackData } from "@/constants/feedbackData";
-import Ratings from "@/components/Rating/ratings";
+import Ratings from "@/components/Rating/Ratings";
 
 const { width, height } = Dimensions.get("window");
 
@@ -125,7 +125,7 @@ const Feedback: React.FC = () => {
             <Text className="font-medium text-[12px] mb-2">
               Tips & Ideal Answer
             </Text>
-            <Text className="mb- text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+            <Text className="mb-6 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
               {feedback.tips}
             </Text>
           </View>

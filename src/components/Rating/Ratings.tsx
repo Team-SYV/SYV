@@ -106,7 +106,7 @@ const Ratings = () => {
 
       <TouchableOpacity
         onPress={handleGoBack}
-        className="absolute bottom-2 left-5 right-5 bg-gray-50 border border-gray-300 p-3 rounded-xl mt-8"
+        className="absolute bottom-5 left-5 right-5 bg-gray-50 border border-gray-300 p-3 rounded-xl mt-8"
         disabled={loading}
       >
         <Text className="text-center text-[17px] font-medium"> Done </Text>

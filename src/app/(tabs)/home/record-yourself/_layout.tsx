@@ -68,14 +68,6 @@ const RecordYourselfLayout = () => {
           headerBackVisible: false,
         }}
       />
-
-      <Stack.Screen
-        name="ratings"
-        options={{
-          headerTitle: () => "",
-          headerBackVisible: false,
-        }}
-      />
     </Stack>
   );
 };

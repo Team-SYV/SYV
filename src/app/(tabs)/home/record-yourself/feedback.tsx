@@ -15,19 +15,20 @@ import {
   ScrollView,
 } from "react-native";
 import { mockFeedbackData } from "@/constants/feedbackData";
+import Ratings from "@/components/Rating/Ratings";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 const Feedback: React.FC = () => {
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0); // Track the current index
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList<string>>(null);
   const { videoURIs } = useLocalSearchParams();
   const parsedVideos: string[] =
     typeof videoURIs === "string" ? (JSON.parse(videoURIs) as string[]) : [];
+  const videosWithRatings = [...parsedVideos, "ratings"];
 
   // Android back button
   useEffect(() => {
@@ -56,14 +57,22 @@ const Feedback: React.FC = () => {
     item: string;
     index: number;
   }) => {
+    if (item === "ratings") {
+      return (
+        <View style={styles.itemContainer}>
+          <Ratings />
+        </View>
+      );
+    }
+
     const feedback = mockFeedbackData[index];
 
     return (
       <View style={styles.itemContainer}>
-        <View className="flex-row items-center px-4 mt-3">
+        <View className="flex-row items-center px-4 mt-4">
           <View style={styles.questionContainer}>
             <Text className="font-semibold text-[13px]">
-              Question {index + 1}{" "}
+              Question {index + 1}
             </Text>
             <Text className="text-sm text-[13px]">{feedback.question}</Text>
           </View>
@@ -84,7 +93,7 @@ const Feedback: React.FC = () => {
 
         <ScrollView className="mt-5">
           <View className="px-4">
-            <Text className="font-medium text-[12px] mb-2 ">
+            <Text className="font-medium text-[12px] mb-2">
               Answer Relevance
             </Text>
             <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
@@ -116,32 +125,9 @@ const Feedback: React.FC = () => {
             <Text className="font-medium text-[12px] mb-2">
               Tips & Ideal Answer
             </Text>
-            <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+            <Text className="mb-6 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
               {feedback.tips}
             </Text>
-          </View>
-
-          <View className="mt-2 px-5">
-            <TouchableOpacity
-              onPress={() => {
-                if (currentIndex === parsedVideos.length - 1) {
-                  router.push("/home/record-yourself/ratings");
-                } else {
-                  setCurrentIndex(currentIndex + 1);
-                  flatListRef.current?.scrollToIndex({
-                    index: currentIndex + 1,
-                    animated: true,
-                  });
-                }
-              }}
-              className="bg-[#00AACE] py-3 rounded-xl"
-            >
-              <Text className="text-white text-[15px] font-medium text-center">
-                {currentIndex === parsedVideos.length - 1
-                  ? "Proceed to Ratings"
-                  : "Next"}
-              </Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
@@ -165,10 +151,10 @@ const Feedback: React.FC = () => {
       />
 
       {isFullScreen ? (
-        <View className="absolute top-0 bottom-0 right-0 left-0 justify-center items-center bg-black z-10">
+        <View style={styles.fullScreenVideoContainer}>
           <TouchableOpacity
             onPress={() => setIsFullScreen(false)}
-            className="absolute right-4 top-[60px] z-10"
+            className="absolute right-4 top-14 z-10"
           >
             <AntDesign name="closecircle" size={33} color="#A92703" />
           </TouchableOpacity>
@@ -177,7 +163,7 @@ const Feedback: React.FC = () => {
             source={{ uri: selectedVideo }}
             style={styles.fullScreenVideo}
             useNativeControls
-            resizeMode={ResizeMode.CONTAIN}
+            resizeMode={ResizeMode.COVER}
             shouldPlay
             isLooping={false}
           />
@@ -185,7 +171,7 @@ const Feedback: React.FC = () => {
       ) : (
         <Animated.FlatList
           ref={flatListRef}
-          data={parsedVideos}
+          data={videosWithRatings}
           keyExtractor={(item) => item}
           renderItem={renderFeedbackItem}
           horizontal
@@ -200,7 +186,7 @@ const Feedback: React.FC = () => {
 
       {!isFullScreen && (
         <View className="absolute top-[5px] flex-row justify-center w-full">
-          {parsedVideos.map((_, index) => {
+          {videosWithRatings.map((_, index) => {
             const inputRange = [
               (index - 1) * width,
               index * width,
@@ -257,9 +243,6 @@ const styles = StyleSheet.create({
   itemContainer: {
     width,
     marginTop: 14,
-    paddingBottom: 15,
-    borderBottomWidth: 2,
-    borderBottomColor: "#E3E3E3",
   },
   questionContainer: {
     width: "70%",
@@ -268,8 +251,18 @@ const styles = StyleSheet.create({
     width: "30%",
     paddingLeft: 10,
   },
+  fullScreenVideoContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   fullScreenVideo: {
-    width: "100%",
-    height: "100%",
+    width,
+    height,
   },
 });

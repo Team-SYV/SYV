@@ -110,6 +110,13 @@ const TabLayout = () => {
             <MaterialIcons name="history" size={size} color={color} />
           ),
           tabBarLabel: "History",
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: "#009CBD",
+            height: 75,
+          },
+          headerLeft: () => <HeaderLeft />,
+          headerTitle: () => null,
         }}
         redirect={!isSignedIn}
       />

@@ -3,7 +3,7 @@ import { AnswerData } from "./types/answerData";
 import { InterviewData } from "./types/interviewData";
 import { JobInformationData } from "./types/jobInformationData";
 import { QuestionData } from "./types/questionData";
-import { FeedbackData } from "./types/feedbackData";
+import { RatingsData } from "./types/ratingsData";
 
 const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL,
@@ -145,6 +145,28 @@ export const generateFeedback = async (feedbackData) => {
   } catch (error) {
     throw new Error(
       error.response?.data?.detail || "Failed to generate feedback"
+    );
+  }
+};
+
+export const createRatings = async (ratingsData: RatingsData) => {
+  try {
+    const response = await api.post("/api/ratings/create", ratingsData);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to create ratings"
+    );
+  }
+};
+
+export const getRatings = async (interview_id: string | string[]) => {
+  try {
+    const response = await api.get(`/api/ratings/get/${interview_id}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to retrieve ratings"
     );
   }
 };

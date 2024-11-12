@@ -2,8 +2,6 @@ import cv2
 import dlib
 import numpy as np
 import cv2
-from fastapi import File, UploadFile
-from fastapi.responses import JSONResponse
 
 detector = dlib.get_frontal_face_detector()
 datFile = "services/shape_predictor_68_face_landmarks.dat"

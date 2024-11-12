@@ -28,6 +28,8 @@ def generate_feedback(question, answer, wpm, eye_contact):
 
         The eye contact percentage was {eye_contact}
 
+        Additionally, rate each of them out of 5.
+
         Please format your response in the following JSON structure:
         {{
             "grammar": "<your feedback on grammar>",
@@ -36,6 +38,11 @@ def generate_feedback(question, answer, wpm, eye_contact):
             "pace_of_speech": "<your feedback on the pace>",
             "eye_contact": "<your feedback on eye contact percentage>"
             "tips": "<your given tips>"
+            "grammar_rating": "<your rating on grammar, should be a number>" 
+            "relevance_rating": "<your rating on answer relevance, should be a number>",
+            "filler_rating": "<your rating on filler words, should be a number>",
+            "pace_of_speech_rating": "<your rating on the pace, should be a number>",
+            "eye_contact_rating": "<your rating on eye contact percentage, should be a number>"
         }}
     """
 
@@ -70,6 +77,11 @@ def generate_feedback(question, answer, wpm, eye_contact):
             "pace_of_speech": "",
             "eye_contact": "",
             "tips": "",
+            "grammar_rating": "",
+            "relevance_rating": "",
+            "filler_rating": "",
+            "pace_of_speech_rating": "",
+            "eye_contact_rating": "",
         }
 
     return feedback_dict

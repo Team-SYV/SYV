@@ -13,7 +13,12 @@ import {
   BackHandler,
 } from "react-native";
 import NextModal from "@/components/Modal/NextModal";
-import { createAnswer, getQuestions, transcribeVideo } from "@/api";
+import {
+  createAnswer,
+  generateFeedback,
+  getQuestions,
+  transcribeVideo,
+} from "@/api";
 
 const RecordYourself: React.FC = () => {
   const router = useRouter();
@@ -30,9 +35,7 @@ const RecordYourself: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
 
-  const [transcriptions, setTranscriptions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
   const [questions, setQuestions] = useState<string[]>([]);
   const [questionIds, setQuestionIds] = useState<string[]>([]);
 
@@ -59,11 +62,14 @@ const RecordYourself: React.FC = () => {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
+        setIsLoading(true);
         const fetchedQuestions = await getQuestions(interviewId);
         setQuestions(fetchedQuestions.questions);
         setQuestionIds(fetchedQuestions.question_id);
       } catch (error) {
         console.error("Error", error.message);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchQuestions();
@@ -136,7 +142,7 @@ const RecordYourself: React.FC = () => {
         const endTime = Date.now();
         const videoDuration = (endTime - startTime) / 1000;
 
-        if (videoDuration < 10) {
+        if (videoDuration < 2) {
           Alert.alert(
             "Recording Too Short",
             "Please record for at least 10 seconds."
@@ -144,7 +150,6 @@ const RecordYourself: React.FC = () => {
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);
           setIsModalVisible(true);
-          handleTranscription(recordedVideo.uri);
         }
       } catch (error) {
         console.error("Error recording video:", error);
@@ -164,68 +169,77 @@ const RecordYourself: React.FC = () => {
     }
   };
 
-  // Handle transcriptions
-  const handleTranscription = (videoUri: string): Promise<void> => {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const videoFile = {
-          uri: videoUri,
-          type: "video/mp4",
-          name: videoUri.split("/").pop(),
-        } as unknown as File;
+  // api handler
+  const handleAPI = async (videoUri: string, index: number): Promise<void> => {
+    try {
+      // Start by setting loading state to true
+      console.log(`Transcribing video ${index + 1}...`);
 
-        const transcription = await transcribeVideo(videoFile);
-        setTranscriptions((prev) => [...prev, transcription]);
-        resolve();
-      } catch (error) {
-        console.error("Error transcribing video:", error.message);
-        reject(error);
+      const videoFile = {
+        uri: videoUri,
+        type: "video/mp4",
+        name: videoUri.split("/").pop(),
+      } as unknown as File;
+
+      // Wait for transcription to finish
+      const transcription = await transcribeVideo(videoFile);
+      // Only proceed if transcription is successful
+      if (transcription && transcription.transcription) {
+        // Create answer in the database
+        const answerResponse = await createAnswer({
+          question_id: questionIds[index],
+          answer: transcription.transcription,
+        });
+        if (answerResponse && answerResponse.answer_id) {
+          // Generate feedback for each answer
+          await generateFeedback({
+            answer_id: answerResponse.answer_id,
+            interview_id: interviewId,
+            answer: transcription.transcription,
+            question: questions[index],
+            wpm: transcription.wpm.toString(),
+            eye_contact: transcription.eye_contact.toString(),
+          });
+        }
+      } else {
+        // Handle case where transcription is not successful
+        console.error("Transcription failed or no transcript found.");
       }
-    });
+    } catch (error) {
+      console.error("Error during API call:", error.error);
+    }
   };
 
   // Going to next question
   const handleNext = async () => {
-    if (currentQuestionIndex < 4) {
+    handleAPI(recordedVideos[currentQuestionIndex], currentQuestionIndex).catch(
+      (error) => console.error("Error in background API call:", error)
+    );
+
+    if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
       setIsModalVisible(false);
-
-      if (recordedVideos.length > 0) {
-        const lastVideoUri = recordedVideos[recordedVideos.length - 1];
-        handleTranscription(lastVideoUri);
-      }
     } else {
-      setIsLoading(true);
-      if (recordedVideos.length > 0) {
-        await handleTranscription(recordedVideos[recordedVideos.length - 1]);
-      }
-
-      const answersToSend = transcriptions.map((transcription, index) => ({
-        question_id: questionIds[index] || null,
-        answer: transcription || "",
-      }));
-
       try {
-        for (const answer of answersToSend) {
-          if (answer.question_id && answer.answer) {
-            await createAnswer(answer);
-          }
-        }
+        setIsLoading(true);
+        await handleAPI(
+          recordedVideos[currentQuestionIndex],
+          currentQuestionIndex
+        );
       } catch (error) {
-        console.error("Error saving answers:", error.message);
+        console.error("Error processing videos:", error);
       } finally {
         setIsLoading(false);
+        setAllQuestionsRecorded(true);
+        setIsModalVisible(false);
+        router.push({
+          pathname: `/home/record-yourself/feedback`,
+          params: {
+            videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
+            interviewId: interviewId,
+          },
+        });
       }
-
-      setAllQuestionsRecorded(true);
-      setIsModalVisible(false);
-
-      router.push({
-        pathname: "/home/record-yourself/feedback",
-        params: {
-          videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
-        },
-      });
     }
   };
 
@@ -270,20 +284,25 @@ const RecordYourself: React.FC = () => {
         </View>
 
         <View className="absolute bottom-10 left-0 right-0 items-center mx-2">
-          <Text
-            className={`text-center mb-4 px-4 py-4 rounded-xl ${
-              isRecording
-                ? "text-red-600 font-medium text-2xl"
-                : "bg-black/80 text-white text-base font-light"
-            }`}
-          >
-            {isRecording
-              ? formatTime(recordingTime)
-              : `${currentQuestionIndex + 1}. ${
-                  questions[currentQuestionIndex] || ""
-                }`}
-          </Text>
-
+          {isLoading ? (
+            <Text className="text-center mb-4 text-lg text-gray-500">
+              Loading question...
+            </Text>
+          ) : (
+            <Text
+              className={`text-center mb-4 px-4 py-4 rounded-xl ${
+                isRecording
+                  ? "text-red-600 font-medium text-2xl"
+                  : "bg-black/80 text-white text-base font-light"
+              }`}
+            >
+              {isRecording
+                ? formatTime(recordingTime)
+                : `${currentQuestionIndex + 1}. ${
+                    questions[currentQuestionIndex] || ""
+                  }`}
+            </Text>
+          )}
           <TouchableOpacity onPress={isRecording ? stopRecording : recordVideo}>
             <Image
               source={

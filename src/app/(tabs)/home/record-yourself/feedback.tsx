@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { mockFeedbackData } from "@/constants/feedbackData";
 import Ratings from "@/components/Rating/Ratings";
+import { getFeedback, getQuestions } from "@/api";
 
 const { width, height } = Dimensions.get("window");
 
@@ -25,7 +26,11 @@ const Feedback: React.FC = () => {
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList<string>>(null);
-  const { videoURIs } = useLocalSearchParams();
+  const { videoURIs, interviewId } = useLocalSearchParams();
+
+  const [questions, setQuestions] = useState([]);
+  const [feedbackItem, setFeedbackItem] = useState([]);
+
   const parsedVideos: string[] =
     typeof videoURIs === "string" ? (JSON.parse(videoURIs) as string[]) : [];
   const videosWithRatings = [...parsedVideos, "ratings"];
@@ -49,6 +54,22 @@ const Feedback: React.FC = () => {
     return () => backHandler.remove();
   }, [isFullScreen]);
 
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const fetchedQuestions = await getQuestions(interviewId);
+        setQuestions(fetchedQuestions.questions);
+        const fetchedFeedback = await getFeedback(interviewId);
+        setFeedbackItem(fetchedFeedback);
+      } catch (error) {
+        console.error("Error fetching data", error.message);
+      }
+    };
+    if (interviewId) {
+      fetch();
+    }
+  }, [interviewId]);
+
   // Render each video and its corresponding question and feedback
   const renderFeedbackItem = ({
     item,
@@ -65,7 +86,9 @@ const Feedback: React.FC = () => {
       );
     }
 
-    const feedback = mockFeedbackData[index];
+    // Safely check for feedback and question
+    const feedback = feedbackItem[index] || {}; // Use an empty object as a fallback
+    const question = questions[index] || "No question available";
 
     return (
       <View style={styles.itemContainer}>
@@ -74,7 +97,7 @@ const Feedback: React.FC = () => {
             <Text className="font-semibold text-[13px]">
               Question {index + 1}
             </Text>
-            <Text className="text-sm text-[13px]">{feedback.question}</Text>
+            <Text className="text-sm text-[13px]">{question}</Text>
           </View>
           <View style={styles.videoContainer}>
             <TouchableOpacity
@@ -97,43 +120,40 @@ const Feedback: React.FC = () => {
               Answer Relevance
             </Text>
             <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.answerRelevance}
+              {feedback.answer_relevance || "No feedback available"}
             </Text>
 
             <Text className="font-medium text-[12px] mb-2">Grammar</Text>
             <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.grammar}
+              {feedback.grammar || "No feedback available"}
             </Text>
 
             <Text className="font-medium text-[12px] mb-2">Eye Contact </Text>
             <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.eyeContact}
+              {feedback.eye_contact || "No feedback available"}
             </Text>
 
-            <Text className="font-medium text-[12px] mb-2">
-              Pace of Speech{" "}
-            </Text>
+            <Text className="font-medium text-[12px] mb-2">Pace of Speech</Text>
             <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.paceOfSpeech}
+              {feedback.pace_of_speech || "No feedback available"}
             </Text>
 
-            <Text className="font-medium text-[12px] mb-2">Filler Words </Text>
+            <Text className="font-medium text-[12px] mb-2">Filler Words</Text>
             <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.fillerWords}
+              {feedback.filler_words || "No feedback available"}
             </Text>
 
             <Text className="font-medium text-[12px] mb-2">
               Tips & Ideal Answer
             </Text>
             <Text className="mb-6 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.tips}
+              {feedback.tips || "No feedback available"}
             </Text>
           </View>
         </ScrollView>
       </View>
     );
   };
-
   return (
     <View className="flex-1 bg-white">
       <Stack.Screen

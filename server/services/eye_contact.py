@@ -1,6 +1,9 @@
 import cv2
 import dlib
 import numpy as np
+import cv2
+from fastapi import File, UploadFile
+from fastapi.responses import JSONResponse
 
 detector = dlib.get_frontal_face_detector()
 datFile = "services/shape_predictor_68_face_landmarks.dat"
@@ -52,3 +55,25 @@ def eye_contact(frame):
             return True  # Eye contact detected (aligned with face center)
 
     return False
+
+
+def process_video(video_path: str):
+    # Open the video and process frames
+    cap = cv2.VideoCapture(video_path)
+    eye_contact_count = 0
+    frame_count = 0
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        
+        frame_count += 1
+        if eye_contact(frame):
+            eye_contact_count += 1
+
+    cap.release()
+
+    # Calculate eye contact percentage
+    eye_contact_ratio = (eye_contact_count / frame_count) * 100 if frame_count > 0 else 0
+    return {"eye_contact_percentage": eye_contact_ratio}  

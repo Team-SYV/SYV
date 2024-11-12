@@ -9,7 +9,7 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-def generate_feedback(question, answer, wpm):
+def generate_feedback(question, answer, wpm, eye_contact):
     prompt = f"""
         You are a hiring manager conducting an interview.
         Please provide feedback on the answer given to the question, focusing on:
@@ -17,7 +17,8 @@ def generate_feedback(question, answer, wpm):
         2. Answer Relevance: Assess how directly and thoroughly the answer addresses the question.
         3. Filler Words: Note any excessive use of filler words or phrases.
         4. Pace of Speech: based on words per minute.
-        5. Tips: give tips to the interviewee to improve their interview skills, in paragraph mode.
+        5. Eye Contact: based on the eye contact percentage.
+        6. Tips: give tips to the interviewee to improve their interview skills, in paragraph mode.
 
         The question was: "{question}"
 
@@ -25,12 +26,15 @@ def generate_feedback(question, answer, wpm):
 
         The pace was "{wpm} words per minute
 
+        The eye contact percentage was {eye_contact}
+
         Please format your response in the following JSON structure:
         {{
             "grammar": "<your feedback on grammar>",
             "relevance": "<your feedback on answer relevance>",
             "filler": "<your feedback on filler words>",
             "pace_of_speech": "<your feedback on the pace>",
+            "eye_contact": "<your feedback on eye contact percentage>"
             "tips": "<your given tips>"
         }}
     """
@@ -64,6 +68,7 @@ def generate_feedback(question, answer, wpm):
             "relevance": "",
             "filler": "",
             "pace_of_speech": "",
+            "eye_contact": "",
             "tips": "",
         }
 

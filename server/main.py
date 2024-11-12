@@ -1,8 +1,12 @@
 import shutil
 from tempfile import NamedTemporaryFile
-from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile, status
+from typing import Optional
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
+from supabase import Client
 from api.webhooks.clerk import clerk_webhook_handler
+from models.feedback import GenerateFeedbackInput
+from services.eye_contact import process_video
 from services.transcribe_audio import transcribe_audio
 from services.feedback_generator import generate_feedback
 from services.transcribe_video import extract_audio
@@ -13,7 +17,8 @@ from api.routes.job_information import router as job_information_router
 from api.routes.interview import router as interview_router
 from api.routes.question import router as question_router
 from api.routes.answer import router as answer_router
-from api.routes.eye_contact import router as eye_contact_router
+from api.routes.feedback import router as feedback_router
+
 
 import os
 import logging
@@ -33,12 +38,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def get_supabase() -> Client:
+    return get_supabase_client()
+
 app.include_router(job_information_router, prefix="/api/job_information", tags=["job_information"])
 app.include_router(interview_router, prefix="/api/interview", tags=["interview"])
 app.include_router(question_router, prefix="/api/question", tags=["question"])
 app.include_router(answer_router, prefix="/api/answer", tags=["answer"])
-app.include_router(answer_router, prefix="/api/feedback", tags=["feedback"])
-app.include_router(eye_contact_router, prefix="/api", tags=["eye contact"])
+app.include_router(feedback_router, prefix="/api/feedback", tags=["feedback"])
+
 
 
 
@@ -98,35 +106,46 @@ async def transcribe_video(file: UploadFile = File(...)):
             shutil.copyfileobj(file.file, temp_video)
             temp_video.seek(0)
 
-            temp_audio = extract_audio(temp_video.name)
+            temp_audio =  extract_audio(temp_video.name)
 
-            transcription = transcribe_audio(temp_audio.name)
+            transcription =  transcribe_audio(temp_audio.name)
+            eye_contact =  process_video(temp_video.name)
 
-            return transcription
+            transcript = transcription['transcript']
+            wpm = transcription['words_per_minute']
+            eye_contact_percentage = eye_contact['eye_contact_percentage']
+
+
+            return {"transcription":transcript,"wpm": wpm, "eye_contact": eye_contact_percentage}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     
-    
 @app.post("/api/generate-feedback/")
-async def generate_feedback_api(
-    question: str = Form(...),
-    answer: str = Form(...),
-    wpm: str = Form(...)
-):
+async def generate_feedback_api(feedback_input: GenerateFeedbackInput, supabase: Client= Depends(get_supabase)):
     """Generate feedback based on a question and answer."""
     try:
-        feedback = generate_feedback(question, answer, wpm)
-        return {
-            "question": feedback.get("question", ""),
-            "grammar": feedback.get("grammar", ""),
-            "relevance": feedback.get("relevance", ""),
-            "filler": feedback.get("filler", ""),
-            "pace_of_speech": feedback.get("pace_of_speech", ""),
-            "tips": feedback.get("tips","")
-        }
+        question = feedback_input.question
+        answer = feedback_input.answer
+        wpm = feedback_input.wpm
+        eye_contact = feedback_input.eye_contact
 
+        feedback = generate_feedback(question, answer, wpm, eye_contact)
+
+        feedback_data = {
+            "grammar": feedback.get("grammar", ""),
+            "answer_relevance": feedback.get("relevance", ""),
+            "filler_words": feedback.get("filler", ""),
+            "pace_of_speech": feedback.get("pace_of_speech", ""),
+            "eye_contact": feedback.get("eye_contact", ""),
+            "tips": feedback.get("tips",""),
+            "answer_id": feedback_input.answer_id,
+            "interview_id": feedback_input.interview_id
+        }
+        response = supabase.table('feedback').insert(feedback_data).execute()
+        if hasattr(response, 'error') and response.error:
+            raise HTTPException(status_code=500, detail="Failed to create feedback")
+        return {"feedback_id": response.data[0]['feedback_id']}
     except Exception as e:
         logging.error(f"Error generating feedback: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate feedback")
-    

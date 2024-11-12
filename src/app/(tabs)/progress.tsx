@@ -134,7 +134,7 @@ const Progress = () => {
           rulesColor="#D6D6D6"
         />
       ) : (
-        <Text className="text-center text-gray-500 my-[160px]">
+        <Text className="text-center text-gray-500 my-[170px]">
           No data available for this week
         </Text>
       )}

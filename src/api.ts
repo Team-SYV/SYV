@@ -4,6 +4,7 @@ import { InterviewData } from "./types/interviewData";
 import { JobInformationData } from "./types/jobInformationData";
 import { QuestionData } from "./types/questionData";
 import { RatingsData } from "./types/ratingsData";
+import { FeedbackData } from "./types/feedbackData";
 
 const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL,
@@ -134,7 +135,7 @@ export const getFeedback = async (interview_id: string | string[]) => {
   }
 };
 
-export const generateFeedback = async (feedbackData) => {
+export const generateFeedback = async (feedbackData: FeedbackData) => {
   try {
     const response = await api.post("/api/generate-feedback/", feedbackData, {
       headers: {

@@ -170,3 +170,14 @@ export const getRatings = async (interview_id: string | string[]) => {
     );
   }
 };
+
+export const getInterviewCount = async (userId: string) => {
+  try {
+    const response = await api.get(`/api/interview/count/${userId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to retrieve interview count"
+    );
+  }
+};

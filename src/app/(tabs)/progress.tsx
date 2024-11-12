@@ -6,7 +6,7 @@ import { LineChart } from "react-native-gifted-charts";
 
 const Progress = () => {
   const [currentWeekStart, setCurrentWeekStart] = useState(dayjs("2024-08-21"));
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("answerRelevance");
 
   const ratingsData = {
     "2024-08-21": {

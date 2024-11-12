@@ -15,6 +15,7 @@ import {
 import NextModal from "@/components/Modal/NextModal";
 import {
   createAnswer,
+  createRatings,
   generateFeedback,
   getQuestions,
   transcribeVideo,
@@ -38,6 +39,8 @@ const RecordYourself: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [questions, setQuestions] = useState<string[]>([]);
   const [questionIds, setQuestionIds] = useState<string[]>([]);
+
+  const [feedbackRatings, setFeedbackRatings] = useState<any[]>([]);
 
   const [hasCameraPermission, setHasCameraPermission] = useState<
     boolean | null
@@ -142,7 +145,7 @@ const RecordYourself: React.FC = () => {
         const endTime = Date.now();
         const videoDuration = (endTime - startTime) / 1000;
 
-        if (videoDuration < 2) {
+        if (videoDuration < 10) {
           Alert.alert(
             "Recording Too Short",
             "Please record for at least 10 seconds."
@@ -173,8 +176,6 @@ const RecordYourself: React.FC = () => {
   const handleAPI = async (videoUri: string, index: number): Promise<void> => {
     try {
       // Start by setting loading state to true
-      console.log(`Transcribing video ${index + 1}...`);
-
       const videoFile = {
         uri: videoUri,
         type: "video/mp4",
@@ -192,7 +193,7 @@ const RecordYourself: React.FC = () => {
         });
         if (answerResponse && answerResponse.answer_id) {
           // Generate feedback for each answer
-          await generateFeedback({
+          const feedbackResponse = await generateFeedback({
             answer_id: answerResponse.answer_id,
             interview_id: interviewId,
             answer: transcription.transcription,
@@ -200,6 +201,12 @@ const RecordYourself: React.FC = () => {
             wpm: transcription.wpm.toString(),
             eye_contact: transcription.eye_contact.toString(),
           });
+          if (feedbackResponse && feedbackResponse.ratings_data) {
+            setFeedbackRatings((prevRatings) => [
+              ...prevRatings,
+              feedbackResponse.ratings_data,
+            ]);
+          }
         }
       } else {
         // Handle case where transcription is not successful
@@ -208,6 +215,40 @@ const RecordYourself: React.FC = () => {
     } catch (error) {
       console.error("Error during API call:", error.error);
     }
+  };
+
+  const calculateAverageRatings = () => {
+    const totals = feedbackRatings.reduce(
+      (acc, rating) => {
+        acc.grammar_rating += parseInt(rating.grammar_rating) || 0;
+        acc.answer_relevance_rating +=
+          parseInt(rating.answer_relevance_rating) || 0;
+        acc.filler_words_rating += parseInt(rating.filler_words_rating) || 0;
+        acc.pace_of_speech_rating +=
+          parseInt(rating.pace_of_speech_rating) || 0;
+        acc.eye_contact_rating += parseInt(rating.eye_contact_rating) || 0;
+        return acc;
+      },
+      {
+        grammar_rating: 0,
+        answer_relevance_rating: 0,
+        filler_words_rating: 0,
+        pace_of_speech_rating: 0,
+        eye_contact_rating: 0,
+      }
+    );
+
+    const averages = {
+      grammar_rating: totals.grammar_rating / feedbackRatings.length,
+      answer_relevance_rating:
+        totals.answer_relevance_rating / feedbackRatings.length,
+      filler_words_rating: totals.filler_words_rating / feedbackRatings.length,
+      pace_of_speech_rating:
+        totals.pace_of_speech_rating / feedbackRatings.length,
+      eye_contact_rating: totals.eye_contact_rating / feedbackRatings.length,
+    };
+
+    return averages;
   };
 
   // Going to next question
@@ -222,10 +263,21 @@ const RecordYourself: React.FC = () => {
     } else {
       try {
         setIsLoading(true);
+
         await handleAPI(
           recordedVideos[currentQuestionIndex],
           currentQuestionIndex
         );
+        const averageRatings = calculateAverageRatings();
+        createRatings({
+          interview_id: interviewId,
+          answer_relevance: averageRatings.answer_relevance_rating,
+          eye_contact: averageRatings.eye_contact_rating,
+          grammar: averageRatings.grammar_rating,
+          pace_of_speech: averageRatings.pace_of_speech_rating,
+          filler_words: averageRatings.filler_words_rating,
+        });
+
       } catch (error) {
         console.error("Error processing videos:", error);
       } finally {

@@ -14,9 +14,9 @@ import {
   FlatList,
   ScrollView,
 } from "react-native";
-import { mockFeedbackData } from "@/constants/feedbackData";
 import Ratings from "@/components/Rating/Ratings";
-import { getFeedback, getQuestions } from "@/api";
+import { getFeedback, getQuestions, getRatings } from "@/api";
+import { RatingsData } from "@/types/ratingsData";
 
 const { width, height } = Dimensions.get("window");
 
@@ -30,6 +30,7 @@ const Feedback: React.FC = () => {
 
   const [questions, setQuestions] = useState([]);
   const [feedbackItem, setFeedbackItem] = useState([]);
+  const [ratings, setRatings] = useState<RatingsData>();
 
   const parsedVideos: string[] =
     typeof videoURIs === "string" ? (JSON.parse(videoURIs) as string[]) : [];
@@ -61,6 +62,8 @@ const Feedback: React.FC = () => {
         setQuestions(fetchedQuestions.questions);
         const fetchedFeedback = await getFeedback(interviewId);
         setFeedbackItem(fetchedFeedback);
+        const fetchedRatings = await getRatings(interviewId);
+        setRatings(fetchedRatings);
       } catch (error) {
         console.error("Error fetching data", error.message);
       }
@@ -81,13 +84,22 @@ const Feedback: React.FC = () => {
     if (item === "ratings") {
       return (
         <View style={styles.itemContainer}>
-          <Ratings />
+          {ratings ? (
+            <Ratings
+              relevance={ratings[0].answer_relevance}
+              grammar={ratings[0].grammar}
+              eyeContact={ratings[0].eye_contact}
+              pace={ratings[0].pace_of_speech}
+              fillerWords={ratings[0].filler_words}
+            />
+          ) : (
+            <Text>Loading ratings...</Text>
+          )}
         </View>
       );
     }
 
-    // Safely check for feedback and question
-    const feedback = feedbackItem[index] || {}; // Use an empty object as a fallback
+    const feedback = feedbackItem[index] || {};
     const question = questions[index] || "No question available";
 
     return (

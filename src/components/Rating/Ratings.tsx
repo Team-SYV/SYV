@@ -4,13 +4,21 @@ import { Text, View, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import Spinner from "react-native-loading-spinner-overlay";
 
-const Ratings = () => {
+interface RatingsProps {
+  relevance: number;
+  grammar: number;
+  eyeContact: number;
+  pace: number;
+  fillerWords: number;
+}
+
+const Ratings: React.FC<RatingsProps> = ({ relevance, grammar, eyeContact, pace, fillerWords }) => {
   const progressData = {
-    relevance: 4,
-    grammar: 3,
-    eyeContact: 3,
-    pace: 4,
-    fillerWords: 2,
+    relevance: relevance,
+    grammar: grammar,
+    eyeContact: eyeContact,
+    pace: pace,
+    fillerWords: fillerWords,
   };
 
   const [loading, setLoading] = useState(false);

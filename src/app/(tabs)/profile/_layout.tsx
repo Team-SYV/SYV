@@ -37,6 +37,16 @@ const ProfileLayout = () => {
           headerBackVisible: false,
         }}
       />
+
+      <Stack.Screen
+        name="subscription"
+        options={{
+          headerTitle: () => (
+           ""
+          ),
+          headerBackVisible: false,
+        }}
+      />
     </Stack>
   );
 };

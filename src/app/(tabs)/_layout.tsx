@@ -5,7 +5,7 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import { getFocusedRouteNameFromRoute, Route } from "@react-navigation/native";
 import { Text, View, Image } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
-import Feather from '@expo/vector-icons/Feather';
+import Feather from "@expo/vector-icons/Feather";
 
 const TabLayout = () => {
   const { isSignedIn } = useAuth();
@@ -13,7 +13,7 @@ const TabLayout = () => {
   // Helper function to hide tab bar and header on specific routes
   const shouldProfileTabBarBeVisible = (route: Route<string>) => {
     const routeName = getFocusedRouteNameFromRoute(route) ?? "profile";
-    return !(routeName === "edit-profile");
+    return !(routeName === "edit-profile" || routeName === "subscription");
   };
 
   const shouldHomeTabBarBeVisible = (route: Route<string>) => {

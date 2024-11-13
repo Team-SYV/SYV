@@ -13,7 +13,7 @@ const TabLayout = () => {
   // Helper function to hide tab bar and header on specific routes
   const shouldProfileTabBarBeVisible = (route: Route<string>) => {
     const routeName = getFocusedRouteNameFromRoute(route) ?? "profile";
-    return !(routeName === "edit-profile");
+    return !(routeName === "edit-profile" || routeName === "subscription");
   };
 
   const shouldHomeTabBarBeVisible = (route: Route<string>) => {

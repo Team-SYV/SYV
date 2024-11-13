@@ -9,20 +9,6 @@ router = APIRouter()
 def get_supabase() -> Client:
     return get_supabase_client()
 
-# @router.post("/create",  response_model=CreateFeedbackResponse)
-# async def create_feedback(feedback_data: CreateFeedback, supabase: Client= Depends(get_supabase)):
-#     required_fields = ['answer_relevance', 'eye_contact', 'grammar', 'pace_of_speech', 'filler_words', 'tips']
-#     for field in required_fields:
-#         if not feedback_data.model_dump().get(field):
-#             raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
-
-#     response = supabase.table('feedback').insert(feedback_data.model_dump()).execute()
-
-#     if hasattr(response, 'error') and response.error:
-#         raise HTTPException(status_code=500, detail="Failed to create feedback")
-
-#     return CreateFeedbackResponse(feedback_id=response.data[0]['feedback_id'])
-
 @router.get("/get/{interview_id}", response_model=List[GetFeedbackResponse])
 async def get_feedback(interview_id: str, supabase: Client = Depends(get_supabase)):
     response = supabase.table('feedback').select('*').eq('interview_id', interview_id).execute()

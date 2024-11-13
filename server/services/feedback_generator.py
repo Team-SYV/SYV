@@ -47,7 +47,7 @@ def generate_feedback(question, answer, wpm, eye_contact):
     """
 
     completion = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are an expert interview answer reviewer."},
             {"role": "user", "content": prompt}
@@ -77,11 +77,101 @@ def generate_feedback(question, answer, wpm, eye_contact):
             "pace_of_speech": "",
             "eye_contact": "",
             "tips": "",
-            "grammar_rating": "",
-            "relevance_rating": "",
-            "filler_rating": "",
-            "pace_of_speech_rating": "",
-            "eye_contact_rating": "",
+            "grammar_rating": 0,
+            "relevance_rating": 0,
+            "filler_rating": 0,
+            "pace_of_speech_rating": 0,
+            "eye_contact_rating": 0,
+        }
+
+    return feedback_dict
+
+def generate_virtual_feedback(questions, answers, wpm, eye_contact):
+    # Check if the inputs have consistent lengths
+    if not (len(questions) == len(answers) == len(wpm) == len(eye_contact)):
+        raise ValueError("The number of questions, answers, WPM, and eye contact data points must match.")
+    
+    # Generate individual feedback for each question-answer pair
+    individual_feedback = []
+    for i, (question, answer) in enumerate(zip(questions, answers)):
+        individual_feedback.append({
+            "question": question,
+            "answer": answer,
+            "wpm": wpm[i],
+            "eye_contact": eye_contact[i]
+        })
+
+    # Construct the prompt with cumulative data for OpenAI completion
+    prompt = f"""
+        You are a hiring manager conducting an interview.
+        Based on the interviewee's answers to the following questions, provide cumulative feedback on their overall performance, focusing on:
+        1. Grammar: Comment on the grammatical accuracy across answers.
+        2. Answer Relevance: Assess how directly and thoroughly answers address each question.
+        3. Filler Words: Note any excessive use of filler words across responses.
+        4. Pace of Speech: based on the words per minute across all answers.
+        5. Eye Contact: based on the eye contact percentage across all answers.
+        6. Tips: provide improvement tips to the interviewee, in paragraph format.
+
+        Here are the questions and answers:
+    """
+
+    for item in individual_feedback:
+        prompt += f"""
+            - Question: "{item['question']}"
+            - Answer: "{item['answer']}"
+            - Words per minute: {item['wpm']}
+            - Eye contact percentage: {item['eye_contact']}
+        """
+
+    prompt += """
+        Additionally, rate each category out of 5.
+
+        Format your response in the following JSON structure:
+        {
+            "grammar": "<cumulative feedback on grammar>",
+            "relevance": "<cumulative feedback on answer relevance>",
+            "filler": "<cumulative feedback on filler words>",
+            "pace_of_speech": "<cumulative feedback on the overall pace>",
+            "eye_contact": "<cumulative feedback on eye contact percentage>",
+            "tips": "<improvement tips>",
+            "grammar_rating": "<cumulative rating for grammar>",
+            "relevance_rating": "<cumulative rating for answer relevance>",
+            "filler_rating": "<cumulative rating for filler words>",
+            "pace_of_speech_rating": "<cumulative rating for pace>",
+            "eye_contact_rating": "<cumulative rating for eye contact>"
+        }
+    """
+
+    completion = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are an expert interview reviewer."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=1000
+    )
+
+    feedback = completion.choices[0].message.content
+
+    feedback_cleaned = feedback.strip("` \n")
+
+    # Parse the response and handle errors if necessary
+    try:
+        feedback_dict = json.loads(feedback_cleaned)
+    except json.JSONDecodeError as e:
+        logging.error(f"Failed to parse feedback as JSON: {e}")
+        feedback_dict = {
+            "grammar": "",
+            "relevance": "",
+            "filler": "",
+            "pace_of_speech": "",
+            "eye_contact": "",
+            "tips": "",
+            "grammar_rating": 0,
+            "relevance_rating": 0,
+            "filler_rating": 0,
+            "pace_of_speech_rating":0,
+            "eye_contact_rating": 0,
         }
 
     return feedback_dict

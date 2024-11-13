@@ -4,10 +4,10 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Respon
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import Client
 from api.webhooks.clerk import clerk_webhook_handler
-from models.feedback import GenerateFeedbackInput
+from models.feedback import GenerateFeedbackInput, GenerateVirtualFeedbackInput
 from services.eye_contact import process_video
 from services.transcribe_audio import transcribe_audio
-from services.feedback_generator import generate_feedback
+from services.feedback_generator import generate_feedback, generate_virtual_feedback
 from services.transcribe_video import extract_audio
 from services.question_generator import generate_interview_questions
 from services.pdf_reader import read_pdf
@@ -142,11 +142,11 @@ async def generate_feedback_api(feedback_input: GenerateFeedbackInput, supabase:
         }
 
         ratings_data = {
-            "grammar_rating": feedback.get("grammar_rating", ""),
-            "answer_relevance_rating": feedback.get("relevance_rating", ""),
-            "filler_words_rating": feedback.get("filler_rating", ""),
-            "pace_of_speech_rating": feedback.get("pace_of_speech_rating", ""),
-            "eye_contact_rating": feedback.get("eye_contact_rating", ""),
+            "grammar_rating": feedback.get("grammar_rating", 0),
+            "answer_relevance_rating": feedback.get("relevance_rating", 0),
+            "filler_words_rating": feedback.get("filler_rating", 0),
+            "pace_of_speech_rating": feedback.get("pace_of_speech_rating", 0),
+            "eye_contact_rating": feedback.get("eye_contact_rating", 0),
 
         }
         response = supabase.table('feedback').insert(feedback_data).execute()
@@ -156,3 +156,38 @@ async def generate_feedback_api(feedback_input: GenerateFeedbackInput, supabase:
     except Exception as e:
         logging.error(f"Error generating feedback: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate feedback")
+    
+@app.post("/api/generate-virtual-feedback/")
+async def generate_virtual_feedback_api(input: GenerateVirtualFeedbackInput,supabase: Client = Depends(get_supabase)
+):
+    """Generate virtual feedback based on multiple questions and answers."""
+    try:
+        feedback = generate_virtual_feedback(input.questions, input.answers, input.wpm, input.eye_contact)
+
+        feedback_data = {
+            "grammar": feedback.get("grammar", ""),
+            "answer_relevance": feedback.get("relevance", ""),
+            "filler_words": feedback.get("filler", ""),
+            "pace_of_speech": feedback.get("pace_of_speech", ""),
+            "eye_contact": feedback.get("eye_contact", ""),
+            "tips": feedback.get("tips", ""),
+            "interview_id": input.interview_id
+        }
+
+        ratings_data = {
+            "grammar_rating": feedback.get("grammar_rating", 0),
+            "answer_relevance_rating": feedback.get("relevance_rating", 0),
+            "filler_words_rating": feedback.get("filler_rating", 0),
+            "pace_of_speech_rating": feedback.get("pace_of_speech_rating", 0),
+            "eye_contact_rating": feedback.get("eye_contact_rating", 0),
+        }
+
+        response = supabase.table('feedback').insert(feedback_data).execute()
+        if hasattr(response, 'error') and response.error:
+            raise HTTPException(status_code=500, detail="Failed to create feedback")
+
+        return {"feedback_id": response.data[0]['feedback_id'], "ratings_data": ratings_data}
+
+    except Exception as e:
+        logging.error(f"Error generating virtual feedback: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate virtual feedback")

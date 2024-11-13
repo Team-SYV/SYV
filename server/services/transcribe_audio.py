@@ -16,7 +16,13 @@ def transcribe_audio(audio_file_path):
             response_format="verbose_json"
         )
     
-    full_text = transcription['text']
-    total_duration = transcription['segments'][-1]['end'] if transcription['segments'] else 0
+    try:
+            full_text = transcription['text']
+            total_duration = transcription['segments'][-1]['end'] if transcription['segments'] else 0
+    except TypeError:
+        full_text = transcription.text
+        total_duration = transcription.segments[-1].end if transcription.segments else 0
+        word_count = len(full_text.split())
+        wpm = (word_count / total_duration) * 60 if total_duration > 0 else 0
 
-    return {'transcript':full_text, 'time':total_duration}
+    return {'transcript': full_text, 'words_per_minute': wpm}

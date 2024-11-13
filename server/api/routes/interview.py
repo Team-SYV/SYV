@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from supabase import Client
-from models.interview import CreateInterview, CreateInterviewResponse
+from models.interview import CreateInterview, CreateInterviewResponse, GetInterviewCountOutput
 from utils.supabase import get_supabase_client
 
 router = APIRouter()
@@ -37,3 +37,13 @@ async def get_interview(interview_id: str,supabase: Client= Depends(get_supabase
     job_information_id=response.data[0]['job_information_id'],
     type=response.data[0]['type']     
     )
+
+@router.get("/count/{user_id}", response_model=GetInterviewCountOutput)
+async def get_interview_count(user_id: str, supabase: Client = Depends(get_supabase)):
+    response = supabase.table('interview').select('interview_id', count='exact').eq('user_id', user_id).execute()
+
+    if hasattr(response, 'error') and response.error:
+        raise HTTPException(status_code=500, detail="Failed to retrieve interview count")
+
+    count = response.count if response.count is not None else 0
+    return GetInterviewCountOutput(count=count)

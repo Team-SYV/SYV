@@ -26,21 +26,21 @@ const Subscription = () => {
         <View className="w-[60%]">
           <View className="flex-row items-center mt-4">
             <AntDesign name="checkcircleo" size={20} color="#23626d" />
-            <Text className="ml-5 text-[#23626d] font-medium text-[16px]">
+            <Text className="ml-5 text-[#23626d] font-medium text-[15px]">
               Unlimited Mock Interviews
             </Text>
           </View>
 
           <View className="flex-row items-center mt-4">
             <AntDesign name="checkcircleo" size={20} color="#23626d" />
-            <Text className="ml-5 text-[#23626d] font-medium text-[16px]">
+            <Text className="ml-5 text-[#23626d] font-medium text-[15px]">
               Real Time AI Feedback
             </Text>
           </View>
 
           <View className="flex-row items-center mt-4">
             <AntDesign name="checkcircleo" size={20} color="#23626d" />
-            <Text className="ml-5 text-[#23626d] font-medium text-[16px]">
+            <Text className="ml-5 text-[#23626d] font-medium text-[15px]">
               Track Your Progress
             </Text>
           </View>

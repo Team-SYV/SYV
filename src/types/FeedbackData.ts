@@ -1,8 +1,11 @@
 export interface FeedbackData {
-  answer_id: string;
-  interview_id: string | string[];
-  answer: string;
-  question: string;
-  wpm: string;
-  eye_contact: string;
-}
+    answer_id: string;
+    interview_id: string;
+    answer_relevance: string;
+    eye_contact: string;
+    grammar: string;
+    pace_of_speech: string;
+    filler_words: string;
+    tips: string;
+  }
+  

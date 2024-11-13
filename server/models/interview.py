@@ -8,9 +8,3 @@ class CreateInterview(BaseModel):
 
 class CreateInterviewResponse(BaseModel):
     interview_id: str
-
-class GetInterviewCountInput(BaseModel):
-    user_id: str
-
-class GetInterviewCountOutput(BaseModel):
-    count: int

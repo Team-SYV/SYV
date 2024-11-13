@@ -1,15 +1,8 @@
 from pydantic import BaseModel
 from typing import Optional
 
-class GenerateFeedbackInput(BaseModel):
-    answer_id: Optional [str] = None 
-    interview_id: Optional [str] = None
-    answer: str
-    question: str
-    wpm: str
-    eye_contact: str
 
-class GetFeedbackResponse(BaseModel):
+class CreateFeedback(BaseModel):
     answer_id: Optional [str] = None 
     interview_id: Optional [str] = None
     answer_relevance: str
@@ -17,7 +10,7 @@ class GetFeedbackResponse(BaseModel):
     grammar: str
     pace_of_speech: str
     filler_words: str
-    tips:str
+    tips: str
 
 class CreateFeedbackResponse(BaseModel):
     feedback_id: str

@@ -9,40 +9,23 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-def generate_feedback(question, answer, wpm, eye_contact):
+def generate_feedback(question, answer):
     prompt = f"""
         You are a hiring manager conducting an interview.
         Please provide feedback on the answer given to the question, focusing on:
         1. Grammar: Comment on the grammatical accuracy of the response.
         2. Answer Relevance: Assess how directly and thoroughly the answer addresses the question.
         3. Filler Words: Note any excessive use of filler words or phrases.
-        4. Pace of Speech: based on words per minute.
-        5. Eye Contact: based on the eye contact percentage.
-        6. Tips: give tips to the interviewee to improve their interview skills, in paragraph mode.
 
         The question was: "{question}"
 
         The response was: "{answer}"
 
-        The pace was "{wpm} words per minute
-
-        The eye contact percentage was {eye_contact}
-
-        Additionally, rate each of them out of 5.
-
         Please format your response in the following JSON structure:
         {{
             "grammar": "<your feedback on grammar>",
             "relevance": "<your feedback on answer relevance>",
-            "filler": "<your feedback on filler words>",
-            "pace_of_speech": "<your feedback on the pace>",
-            "eye_contact": "<your feedback on eye contact percentage>"
-            "tips": "<your given tips>"
-            "grammar_rating": "<your rating on grammar, should be a number>" 
-            "relevance_rating": "<your rating on answer relevance, should be a number>",
-            "filler_rating": "<your rating on filler words, should be a number>",
-            "pace_of_speech_rating": "<your rating on the pace, should be a number>",
-            "eye_contact_rating": "<your rating on eye contact percentage, should be a number>"
+            "filler": "<your feedback on filler words>"
         }}
     """
 
@@ -67,21 +50,12 @@ def generate_feedback(question, answer, wpm, eye_contact):
 
     try:
         feedback_dict = json.loads(feedback_cleaned)
-        feedback_dict["question"] = question
     except json.JSONDecodeError as e:
         logging.error(f"Failed to parse feedback as JSON: {e}")
         feedback_dict = {
             "grammar": "",
             "relevance": "",
-            "filler": "",
-            "pace_of_speech": "",
-            "eye_contact": "",
-            "tips": "",
-            "grammar_rating": "",
-            "relevance_rating": "",
-            "filler_rating": "",
-            "pace_of_speech_rating": "",
-            "eye_contact_rating": "",
+            "filler": ""
         }
 
     return feedback_dict

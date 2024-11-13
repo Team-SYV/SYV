@@ -3,7 +3,6 @@ import { AnswerData } from "./types/answerData";
 import { InterviewData } from "./types/interviewData";
 import { JobInformationData } from "./types/jobInformationData";
 import { QuestionData } from "./types/questionData";
-import { RatingsData } from "./types/ratingsData";
 import { FeedbackData } from "./types/feedbackData";
 
 const api = axios.create({
@@ -107,9 +106,11 @@ export const transcribeVideo = async (videoFile: File) => {
       },
     });
 
-    return response.data;
+    return response.data.transcription;
   } catch (error) {
-    throw new Error(error, error.response);
+    throw new Error(
+      error.response?.data?.detail || "Failed to transcribe video"
+    );
   }
 };
 
@@ -124,9 +125,20 @@ export const createAnswer = async (answerData: AnswerData) => {
   }
 };
 
-export const getFeedback = async (interview_id: string | string[]) => {
+export const createFeedback = async (feedbackData: FeedbackData) => {
   try {
-    const response = await api.get(`/api/feedback/get/${interview_id}`);
+    const response = await api.post(`/api/feedback/create`, feedbackData);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to create feedback"
+    );
+  }
+};
+
+export const getFeedback = async (feedback_id: string | string[]) => {
+  try {
+    const response = await api.get(`/api/feedback/get/${feedback_id}`);
     return response.data;
   } catch (error) {
     throw new Error(
@@ -135,50 +147,23 @@ export const getFeedback = async (interview_id: string | string[]) => {
   }
 };
 
-export const generateFeedback = async (feedbackData: FeedbackData) => {
+export const generateFeedback = async (question: string, answer: string) => {
   try {
-    const response = await api.post("/api/generate-feedback/", feedbackData, {
+    const formData = new FormData();
+    formData.append("question", question);
+    formData.append("answer", answer);
+
+    const response = await api.post("/api/generate-feedback/", formData, {
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "multipart/form-data",
       },
     });
-    return response.data;
+
+    const { grammar, relevance, filler } = response.data;
+    return { grammar, relevance, filler };
   } catch (error) {
     throw new Error(
       error.response?.data?.detail || "Failed to generate feedback"
-    );
-  }
-};
-
-export const createRatings = async (ratingsData: RatingsData) => {
-  try {
-    const response = await api.post("/api/ratings/create", ratingsData);
-    return response.data;
-  } catch (error) {
-    throw new Error(
-      error.response?.data?.detail || "Failed to create ratings"
-    );
-  }
-};
-
-export const getRatings = async (interview_id: string | string[]) => {
-  try {
-    const response = await api.get(`/api/ratings/get/${interview_id}`);
-    return response.data;
-  } catch (error) {
-    throw new Error(
-      error.response?.data?.detail || "Failed to retrieve ratings"
-    );
-  }
-};
-
-export const getInterviewCount = async (userId: string) => {
-  try {
-    const response = await api.get(`/api/interview/count/${userId}`);
-    return response.data;
-  } catch (error) {
-    throw new Error(
-      error.response?.data?.detail || "Failed to retrieve interview count"
     );
   }
 };

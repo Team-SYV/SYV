@@ -1,13 +1,8 @@
-import os
 import ffmpeg
-from openai import OpenAI
 from dotenv import load_dotenv
 from tempfile import NamedTemporaryFile
 
 load_dotenv()
-
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=OPENAI_API_KEY)
 
 def extract_audio(video_path: str) -> NamedTemporaryFile:
     """Extract audio from a video using ffmpeg-python."""
@@ -25,12 +20,3 @@ def extract_audio(video_path: str) -> NamedTemporaryFile:
 
     return temp_audio
 
-def transcribe_audio(audio_path: str) -> str:
-    """Transcribe audio using OpenAI Whisper."""
-    with open(audio_path, "rb") as audio_file:
-        transcription = client.audio.transcriptions.create(
-            model="whisper-1",
-            file=audio_file,
-            language="en",
-        )
-    return transcription.text

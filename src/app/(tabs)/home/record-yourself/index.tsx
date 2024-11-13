@@ -13,7 +13,13 @@ import {
   BackHandler,
 } from "react-native";
 import NextModal from "@/components/Modal/NextModal";
-import { createAnswer, getQuestions, transcribeVideo } from "@/api";
+import {
+  createAnswer,
+  createRatings,
+  generateFeedback,
+  getQuestions,
+  transcribeVideo,
+} from "@/api";
 
 const RecordYourself: React.FC = () => {
   const router = useRouter();
@@ -30,11 +36,11 @@ const RecordYourself: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
 
-  const [transcriptions, setTranscriptions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
   const [questions, setQuestions] = useState<string[]>([]);
   const [questionIds, setQuestionIds] = useState<string[]>([]);
+
+  const [feedbackRatings, setFeedbackRatings] = useState<any[]>([]);
 
   const [hasCameraPermission, setHasCameraPermission] = useState<
     boolean | null
@@ -59,11 +65,14 @@ const RecordYourself: React.FC = () => {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
+        setIsLoading(true);
         const fetchedQuestions = await getQuestions(interviewId);
         setQuestions(fetchedQuestions.questions);
         setQuestionIds(fetchedQuestions.question_id);
       } catch (error) {
         console.error("Error", error.message);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchQuestions();
@@ -164,29 +173,93 @@ const RecordYourself: React.FC = () => {
     }
   };
 
-  // Handle transcriptions
-  const handleTranscription = (videoUri: string): Promise<void> => {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const videoFile = {
-          uri: videoUri,
-          type: "video/mp4",
-          name: videoUri.split("/").pop(),
-        } as unknown as File;
+  // api handler
+  const handleAPI = async (videoUri: string, index: number): Promise<void> => {
+    try {
+      // Start by setting loading state to true
+      const videoFile = {
+        uri: videoUri,
+        type: "video/mp4",
+        name: videoUri.split("/").pop(),
+      } as unknown as File;
 
-        const transcription = await transcribeVideo(videoFile);
-        setTranscriptions((prev) => [...prev, transcription]);
-        resolve();
-      } catch (error) {
-        console.error("Error transcribing video:", error.message);
-        reject(error);
+      // Wait for transcription to finish
+      const transcription = await transcribeVideo(videoFile);
+      // Only proceed if transcription is successful
+      if (transcription && transcription.transcription) {
+        // Create answer in the database
+        const answerResponse = await createAnswer({
+          question_id: questionIds[index],
+          answer: transcription.transcription,
+        });
+        if (answerResponse && answerResponse.answer_id) {
+          // Generate feedback for each answer
+          const feedbackResponse = await generateFeedback({
+            answer_id: answerResponse.answer_id,
+            interview_id: interviewId,
+            answer: transcription.transcription,
+            question: questions[index],
+            wpm: transcription.wpm.toString(),
+            eye_contact: transcription.eye_contact.toString(),
+          });
+          if (feedbackResponse && feedbackResponse.ratings_data) {
+            setFeedbackRatings((prevRatings) => [
+              ...prevRatings,
+              feedbackResponse.ratings_data,
+            ]);
+          }
+        }
+      } else {
+        // Handle case where transcription is not successful
+        console.error("Transcription failed or no transcript found.");
       }
-    });
+    } catch (error) {
+      console.error("Error during API call:", error.error);
+    }
+  };
+
+  const calculateAverageRatings = () => {
+    const totals = feedbackRatings.reduce(
+      (acc, rating) => {
+        acc.grammar_rating += parseInt(rating.grammar_rating) || 0;
+        acc.answer_relevance_rating +=
+          parseInt(rating.answer_relevance_rating) || 0;
+        acc.filler_words_rating += parseInt(rating.filler_words_rating) || 0;
+        acc.pace_of_speech_rating +=
+          parseInt(rating.pace_of_speech_rating) || 0;
+        acc.eye_contact_rating += parseInt(rating.eye_contact_rating) || 0;
+        return acc;
+      },
+      {
+        grammar_rating: 0,
+        answer_relevance_rating: 0,
+        filler_words_rating: 0,
+        pace_of_speech_rating: 0,
+        eye_contact_rating: 0,
+      }
+    );
+
+    const averages = {
+      grammar_rating: totals.grammar_rating / feedbackRatings.length,
+      answer_relevance_rating:
+        totals.answer_relevance_rating / feedbackRatings.length,
+      filler_words_rating: totals.filler_words_rating / feedbackRatings.length,
+      pace_of_speech_rating:
+        totals.pace_of_speech_rating / feedbackRatings.length,
+      eye_contact_rating: totals.eye_contact_rating / feedbackRatings.length,
+    };
+
+    return averages;
   };
 
   // Going to next question
   const handleNext = async () => {
-    if (currentQuestionIndex < 4) {
+    handleAPI(recordedVideos[currentQuestionIndex], currentQuestionIndex).catch(
+      (error) => console.error("Error in background API call:", error)
+    );
+
+    if (currentQuestionIndex < questions.length - 1) {
+
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
       setIsModalVisible(false);
 
@@ -195,37 +268,37 @@ const RecordYourself: React.FC = () => {
         handleTranscription(lastVideoUri);
       }
     } else {
-      setIsLoading(true);
-      if (recordedVideos.length > 0) {
-        await handleTranscription(recordedVideos[recordedVideos.length - 1]);
-      }
-
-      const answersToSend = transcriptions.map((transcription, index) => ({
-        question_id: questionIds[index] || null,
-        answer: transcription || "",
-      }));
-
       try {
-        for (const answer of answersToSend) {
-          if (answer.question_id && answer.answer) {
-            await createAnswer(answer);
-          }
-        }
+        setIsLoading(true);
+
+        await handleAPI(
+          recordedVideos[currentQuestionIndex],
+          currentQuestionIndex
+        );
+        const averageRatings = calculateAverageRatings();
+        createRatings({
+          interview_id: interviewId,
+          answer_relevance: averageRatings.answer_relevance_rating,
+          eye_contact: averageRatings.eye_contact_rating,
+          grammar: averageRatings.grammar_rating,
+          pace_of_speech: averageRatings.pace_of_speech_rating,
+          filler_words: averageRatings.filler_words_rating,
+        });
+
       } catch (error) {
-        console.error("Error saving answers:", error.message);
+        console.error("Error processing videos:", error);
       } finally {
         setIsLoading(false);
+        setAllQuestionsRecorded(true);
+        setIsModalVisible(false);
+        router.push({
+          pathname: `/home/record-yourself/feedback`,
+          params: {
+            videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
+            interviewId: interviewId,
+          },
+        });
       }
-
-      setAllQuestionsRecorded(true);
-      setIsModalVisible(false);
-
-      router.push({
-        pathname: "/home/record-yourself/feedback",
-        params: {
-          videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
-        },
-      });
     }
   };
 
@@ -270,20 +343,25 @@ const RecordYourself: React.FC = () => {
         </View>
 
         <View className="absolute bottom-10 left-0 right-0 items-center mx-2">
-          <Text
-            className={`text-center mb-4 px-4 py-4 rounded-xl ${
-              isRecording
-                ? "text-red-600 font-medium text-2xl"
-                : "bg-black/80 text-white text-base font-light"
-            }`}
-          >
-            {isRecording
-              ? formatTime(recordingTime)
-              : `${currentQuestionIndex + 1}. ${
-                  questions[currentQuestionIndex] || ""
-                }`}
-          </Text>
-
+          {isLoading ? (
+            <Text className="text-center mb-4 text-lg text-gray-500">
+              Loading question...
+            </Text>
+          ) : (
+            <Text
+              className={`text-center mb-4 px-4 py-4 rounded-xl ${
+                isRecording
+                  ? "text-red-600 font-medium text-2xl"
+                  : "bg-black/80 text-white text-base font-light"
+              }`}
+            >
+              {isRecording
+                ? formatTime(recordingTime)
+                : `${currentQuestionIndex + 1}. ${
+                    questions[currentQuestionIndex] || ""
+                  }`}
+            </Text>
+          )}
           <TouchableOpacity onPress={isRecording ? stopRecording : recordVideo}>
             <Image
               source={

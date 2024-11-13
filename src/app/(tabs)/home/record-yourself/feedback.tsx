@@ -75,7 +75,6 @@ const Feedback: React.FC = () => {
   }, [interviewId]);
 
   // Render each video and its corresponding question and feedback
-  // Render each video and its corresponding question and feedback
   const renderFeedbackItem = ({
     item,
     index,

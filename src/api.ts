@@ -5,6 +5,7 @@ import { JobInformationData } from "./types/jobInformationData";
 import { QuestionData } from "./types/questionData";
 import { RatingsData } from "./types/ratingsData";
 import { FeedbackData } from "./types/feedbackData";
+import { VirtualFeedbackData } from "./types/virtualFeedbackData";
 
 const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL,
@@ -150,14 +151,33 @@ export const generateFeedback = async (feedbackData: FeedbackData) => {
   }
 };
 
+export const generateVirtualFeedback = async (
+  VirtualFeedbackData: VirtualFeedbackData
+) => {
+  try {
+    const response = await api.post(
+      "/api/generate-virtual-feedback/",
+      VirtualFeedbackData,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to generate virtual feedback"
+    );
+  }
+};
+
 export const createRatings = async (ratingsData: RatingsData) => {
   try {
     const response = await api.post("/api/ratings/create", ratingsData);
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.detail || "Failed to create ratings"
-    );
+    throw new Error(error.response?.data?.detail || "Failed to create ratings");
   }
 };
 

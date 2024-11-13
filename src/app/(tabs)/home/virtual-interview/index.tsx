@@ -1,9 +1,10 @@
 import { useUser } from "@clerk/clerk-expo";
 import * as Speech from "expo-speech";
 import React, { useEffect, useRef, useState } from "react";
+import uuid from "react-native-uuid";
 import ConfirmationModal from "@/components/Modal/ConfirmationModal";
 import { Ionicons } from "@expo/vector-icons";
-import { router, Stack } from "expo-router";
+import { router, Stack, useLocalSearchParams } from "expo-router";
 import { Message, Role } from "@/types/chat";
 import { Camera, CameraView } from "expo-camera";
 import {
@@ -14,46 +15,35 @@ import {
   Image,
   BackHandler,
 } from "react-native";
-
-const mockMessages: Message[] = [
-  {
-    id: "1",
-    content:
-      "Hello! Welcome to your virtual interview session. I’m Savy, your assistant.",
-    role: Role.Bot,
-  },
-  {
-    id: "2",
-    content: "Hi Savy, thank you for assisting me.",
-    role: Role.User,
-  },
-  {
-    id: "3",
-    content:
-      "You're very welcome! Let’s start with an easy question: Can you tell me about yourself?",
-    role: Role.Bot,
-  },
-  {
-    id: "4",
-    content:
-      "Sure! I am a software engineer with a passion for developing interactive applications.",
-    role: Role.User,
-  },
-  {
-    id: "5",
-    content: "That's great! What makes you interested in this particular role?",
-    role: Role.Bot,
-  },
-];
+import {
+  createAnswer,
+  createRatings,
+  generateVirtualFeedback,
+  getQuestions,
+  transcribeVideo,
+} from "@/api";
+import NextModal from "@/components/Modal/NextModal";
 
 const VirtualInterview = () => {
   const { user } = useUser();
+  const { interviewId } = useLocalSearchParams();
   const flatListRef = useRef<FlatList>(null);
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const cameraRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
+
+  const [questions, setQuestions] = useState([]);
+  const [questionIds, setQuestionIds] = useState([]);
+  const [answers, setAnswers] = useState([]);
+
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [wpms, setWpms] = useState([]);
+  const [eyeContacts, setEyeContacts] = useState([]);
 
   const [hasCameraPermission, setHasCameraPermission] = useState<
     boolean | null
@@ -73,6 +63,32 @@ const VirtualInterview = () => {
       setHasMicrophonePermission(microphonePermission.status === "granted");
     })();
   }, []);
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const response = await getQuestions(interviewId);
+        const questions = response.questions;
+        const questionIds = response.question_id;
+        setQuestions(questions);
+        setQuestionIds(questionIds);
+
+        if (questions.length > 0) {
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            {
+              id: uuid.v4() as string,
+              role: Role.Bot,
+              content: questions[0],
+            },
+          ]);
+        }
+      } catch (error) {
+        console.error("Error", error.message);
+      }
+    };
+    fetchQuestions();
+  }, [interviewId]);
 
   // Scroll to the bottom whenever messages update
   useEffect(() => {
@@ -121,6 +137,95 @@ const VirtualInterview = () => {
     );
   }
 
+  const handleAPI = async (videoUri: string, index: number): Promise<void> => {
+    const videoFile = {
+      uri: videoUri,
+      type: "video/mp4",
+      name: videoUri.split("/").pop(),
+    } as unknown as File;
+  
+    const transcription = await transcribeVideo(videoFile);
+  
+    if (transcription && transcription.transcription) {
+      const updatedAnswers = [...answers, transcription.transcription];
+      const updatedWpms = [...wpms, transcription.wpm];
+      const updatedEyeContacts = [...eyeContacts, transcription.eye_contact];
+  
+      // Update state with new transcription and metrics
+      setAnswers(updatedAnswers);
+      setWpms(updatedWpms);
+      setEyeContacts(updatedEyeContacts);
+  
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          id: uuid.v4() as string,
+          role: Role.User,
+          content: transcription.transcription,
+        },
+      ]);
+  
+      // Save answer in the backend
+      await createAnswer({
+        question_id: questionIds[index],
+        answer: transcription.transcription,
+      });
+  
+      // Check if it is the last question
+      const isLastQuestion = index === questions.length - 1;
+  
+      if (isLastQuestion) {
+        if (
+          updatedAnswers.length === questions.length &&
+          updatedWpms.length === questions.length &&
+          updatedEyeContacts.length === questions.length
+        ) {
+          const feedbackResponse = await generateVirtualFeedback({
+            interview_id: interviewId,
+            answers: updatedAnswers,
+            questions,
+            wpm: updatedWpms,
+            eye_contact: updatedEyeContacts,
+          });
+  
+          if (feedbackResponse && feedbackResponse.ratings_data) {
+            console.log(feedbackResponse.ratings_data)
+            await createRatings({
+              interview_id: interviewId,
+              answer_relevance: feedbackResponse.ratings_data.answer_relevance_rating,
+              eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
+              grammar: feedbackResponse.ratings_data.grammar_rating,
+              pace_of_speech: feedbackResponse.ratings_data.pace_of_speech_rating,
+              filler_words: feedbackResponse.ratings_data.filler_words_rating,
+            });
+          }
+  
+          setIsModalVisible(true);  // Trigger the modal to navigate to feedback
+        }
+  
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: uuid.v4() as string,
+            role: Role.Bot,
+            content: "Thank you! This concludes your virtual interview.",
+          },
+        ]);
+      } else {
+        setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+  
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: uuid.v4() as string,
+            role: Role.Bot,
+            content: questions[index + 1],
+          },
+        ]);
+      }
+    }
+  };
+  
   // Start recording
   const startRecording = async () => {
     Speech.stop();
@@ -139,9 +244,10 @@ const VirtualInterview = () => {
           cameraRef.current.stopRecording();
           setIsRecording(false);
           return;
+        } else {
+          handleAPI(recordedVideo.uri, currentQuestionIndex);
+          setIsRecording(false);
         }
-        console.log(recordedVideo.uri);
-        setIsRecording(false);
       } catch (err) {
         console.error("Failed to start recording:", err);
         setIsRecording(false);
@@ -156,6 +262,13 @@ const VirtualInterview = () => {
     }
   };
 
+  const handleNext = async () => {
+    setIsLoading(false);
+    setIsModalVisible(false);
+    router.push({
+      pathname: `/home/virtual-interview/feedback?interviewId=${interviewId}`,
+    });
+  };
   const renderMessage = ({ item }: { item: Message }) => (
     <View
       className={`flex-row my-2 mx-4 ${
@@ -247,7 +360,13 @@ const VirtualInterview = () => {
         facing="front"
         ref={cameraRef}
       />
-
+      <NextModal
+        isVisible={isModalVisible}
+        onNext={handleNext}
+        onClose={() => setIsModalVisible(false)}
+        isLastQuestion={currentQuestionIndex === questions.length - 1}
+        isLoading={isLoading}
+      />
       <ConfirmationModal
         isVisible={isConfirmationVisible}
         title="Discard Interview?"

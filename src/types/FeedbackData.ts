@@ -3,6 +3,6 @@ export interface FeedbackData {
   interview_id: string | string[];
   answer: string;
   question: string;
-  wpm: string;
-  eye_contact: string;
+  wpm: number;
+  eye_contact: number;
 }

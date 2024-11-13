@@ -1,13 +1,23 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
+
 
 class GenerateFeedbackInput(BaseModel):
     answer_id: Optional [str] = None 
     interview_id: Optional [str] = None
     answer: str
     question: str
-    wpm: str
-    eye_contact: str
+    wpm: float
+    eye_contact: float
+
+
+class GenerateVirtualFeedbackInput(BaseModel):
+    interview_id: Optional[str] = None
+    answers: List[str]
+    questions: List[str]
+    wpm: List[float]
+    eye_contact: List[float]
+
 
 class GetFeedbackResponse(BaseModel):
     answer_id: Optional [str] = None 

@@ -153,7 +153,7 @@ const RecordYourself: React.FC = () => {
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);
           setIsModalVisible(true);
-          handleAPI(recordedVideo.uri, currentQuestionIndex);
+          await handleAPI(recordedVideo.uri, currentQuestionIndex);
         }
       } catch (error) {
         console.error("Error recording video:", error);
@@ -210,11 +210,10 @@ const RecordYourself: React.FC = () => {
           }
         }
       } else {
-        // Handle case where transcription is not successful
         console.error("Transcription failed or no transcript found.");
       }
     } catch (error) {
-      console.error("Error during API call:", error.error);
+      console.error("Error during API call:", error.error || error);
     }
   };
 
@@ -254,37 +253,25 @@ const RecordYourself: React.FC = () => {
 
   // Going to next question
   const handleNext = async () => {
-    handleAPI(recordedVideos[currentQuestionIndex], currentQuestionIndex).catch(
-      (error) => console.error("Error in background API call:", error)
-    );
 
     if (currentQuestionIndex < questions.length - 1) {
-
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
       setIsModalVisible(false);
-
-      if (recordedVideos.length > 0) {
-        const lastVideoUri = recordedVideos[recordedVideos.length - 1];
-        handleAPI(lastVideoUri, currentQuestionIndex);
-      }
     } else {
       try {
         setIsLoading(true);
 
-        await handleAPI(
-          recordedVideos[currentQuestionIndex],
-          currentQuestionIndex
-        );
-        const averageRatings = calculateAverageRatings();
-        createRatings({
-          interview_id: interviewId,
-          answer_relevance: averageRatings.answer_relevance_rating,
-          eye_contact: averageRatings.eye_contact_rating,
-          grammar: averageRatings.grammar_rating,
-          pace_of_speech: averageRatings.pace_of_speech_rating,
-          filler_words: averageRatings.filler_words_rating,
-        });
-
+        if (feedbackRatings) {
+          const averageRatings = calculateAverageRatings();
+          createRatings({
+            interview_id: interviewId,
+            answer_relevance: averageRatings.answer_relevance_rating,
+            eye_contact: averageRatings.eye_contact_rating,
+            grammar: averageRatings.grammar_rating,
+            pace_of_speech: averageRatings.pace_of_speech_rating,
+            filler_words: averageRatings.filler_words_rating,
+          });
+        }
       } catch (error) {
         console.error("Error processing videos:", error);
       } finally {

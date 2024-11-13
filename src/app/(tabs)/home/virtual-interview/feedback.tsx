@@ -6,22 +6,50 @@ import {
   ScrollView,
   BackHandler,
 } from "react-native";
-import { Stack, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import ConfirmationModal from "@/components/Modal/ConfirmationModal";
-import { virtualFeedbackData } from "@/constants/virtualFeedbackData";
 import Spinner from "react-native-loading-spinner-overlay";
+import { getFeedback } from "@/api";
 
 const Feedback: React.FC = () => {
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [feedbackItem, setFeedbackItem] = useState({
+    answerRelevance: "",
+    grammar: "",
+    eyeContact: "",
+    paceOfSpeech: "",
+    fillerWords: "",
+  });
   const router = useRouter();
+  const { interviewId } = useLocalSearchParams();
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const fetchedFeedback = await getFeedback(interviewId);
+        setFeedbackItem({
+          answerRelevance: fetchedFeedback[0].answer_relevance,
+          grammar: fetchedFeedback[0].grammar,
+          eyeContact: fetchedFeedback[0].eye_contact,
+          paceOfSpeech: fetchedFeedback[0].pace_of_speech,
+          fillerWords: fetchedFeedback[0].filler_words,
+        });
+      } catch (error) {
+        console.error("Error fetching data", error.message);
+      }
+    };
+    if (interviewId) {
+      fetch();
+    }
+  }, [interviewId]);
 
   const handleProceedToRatings = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      router.push("/home/virtual-interview/ratings");
+      router.push(`/home/virtual-interview/ratings?interviewId=${interviewId}`);
     }, 1000);
   };
 
@@ -61,21 +89,21 @@ const Feedback: React.FC = () => {
             Answer Relevance
           </Text>
           <Text className="mb-4 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-            {virtualFeedbackData.answerRelevance}
+            {feedbackItem.answerRelevance}
           </Text>
         </View>
 
         <View>
           <Text className="font-medium text-[12px] mb-2 ml-1">Grammar</Text>
           <Text className="mb-4 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-            {virtualFeedbackData.grammar}
+            {feedbackItem.grammar}
           </Text>
         </View>
 
         <View>
           <Text className="font-medium text-[12px] mb-2 ml-1">Eye Contact</Text>
           <Text className="mb-4 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-            {virtualFeedbackData.eyeContact}
+            {feedbackItem.eyeContact}
           </Text>
         </View>
 
@@ -84,7 +112,7 @@ const Feedback: React.FC = () => {
             Pace of Speech
           </Text>
           <Text className="mb-4 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-            {virtualFeedbackData.paceOfSpeech}
+            {feedbackItem.paceOfSpeech}
           </Text>
         </View>
 
@@ -93,7 +121,7 @@ const Feedback: React.FC = () => {
             Filler Words
           </Text>
           <Text className="mb-6 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-            {virtualFeedbackData.fillerWords}
+            {feedbackItem.fillerWords}
           </Text>
         </View>
 

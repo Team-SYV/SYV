@@ -18,6 +18,7 @@ import Ratings from "@/components/Rating/Ratings";
 import { getFeedback, getQuestions, getRatings } from "@/api";
 import { RatingsData } from "@/types/ratingsData";
 
+
 const { width, height } = Dimensions.get("window");
 
 const Feedback: React.FC = () => {
@@ -26,6 +27,7 @@ const Feedback: React.FC = () => {
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList<string>>(null);
+
   const { videoURIs, interviewId } = useLocalSearchParams();
 
   const [questions, setQuestions] = useState([]);
@@ -95,12 +97,14 @@ const Feedback: React.FC = () => {
           ) : (
             <Text>Loading ratings...</Text>
           )}
+          <Ratings />
         </View>
       );
     }
 
     const feedback = feedbackItem[index] || {};
     const question = questions[index] || "No question available";
+
 
     return (
       <View style={styles.itemContainer}>
@@ -109,7 +113,9 @@ const Feedback: React.FC = () => {
             <Text className="font-semibold text-[13px]">
               Question {index + 1}
             </Text>
+
             <Text className="text-sm text-[13px]">{question}</Text>
+
           </View>
           <View style={styles.videoContainer}>
             <TouchableOpacity
@@ -132,16 +138,20 @@ const Feedback: React.FC = () => {
               Answer Relevance
             </Text>
             <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+
               {feedback.answer_relevance || "No feedback available"}
-            </Text>
+
 
             <Text className="font-medium text-[12px] mb-2">Grammar</Text>
             <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+
               {feedback.grammar || "No feedback available"}
+
             </Text>
 
             <Text className="font-medium text-[12px] mb-2">Eye Contact </Text>
             <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+
               {feedback.eye_contact || "No feedback available"}
             </Text>
 
@@ -153,14 +163,16 @@ const Feedback: React.FC = () => {
             <Text className="font-medium text-[12px] mb-2">Filler Words</Text>
             <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
               {feedback.filler_words || "No feedback available"}
+
             </Text>
 
             <Text className="font-medium text-[12px] mb-2">
               Tips & Ideal Answer
             </Text>
             <Text className="mb-6 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+
               {feedback.tips || "No feedback available"}
-            </Text>
+</Text>
           </View>
         </ScrollView>
       </View>

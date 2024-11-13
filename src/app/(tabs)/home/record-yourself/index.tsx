@@ -153,6 +153,7 @@ const RecordYourself: React.FC = () => {
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);
           setIsModalVisible(true);
+          handleTranscription(recordedVideo.uri);
         }
       } catch (error) {
         console.error("Error recording video:", error);
@@ -258,8 +259,14 @@ const RecordYourself: React.FC = () => {
     );
 
     if (currentQuestionIndex < questions.length - 1) {
+
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
       setIsModalVisible(false);
+
+      if (recordedVideos.length > 0) {
+        const lastVideoUri = recordedVideos[recordedVideos.length - 1];
+        handleTranscription(lastVideoUri);
+      }
     } else {
       try {
         setIsLoading(true);

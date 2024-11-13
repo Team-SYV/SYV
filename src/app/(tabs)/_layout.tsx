@@ -5,7 +5,7 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import { getFocusedRouteNameFromRoute, Route } from "@react-navigation/native";
 import { Text, View, Image } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
-import Feather from '@expo/vector-icons/Feather';
+import Feather from "@expo/vector-icons/Feather";
 
 const TabLayout = () => {
   const { isSignedIn } = useAuth();
@@ -110,6 +110,13 @@ const TabLayout = () => {
             <MaterialIcons name="history" size={size} color={color} />
           ),
           tabBarLabel: "History",
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: "#009CBD",
+            height: 75,
+          },
+          headerLeft: () => <HeaderLeft />,
+          headerTitle: () => null,
         }}
         redirect={!isSignedIn}
       />
@@ -121,6 +128,13 @@ const TabLayout = () => {
             <AntDesign name="barschart" size={size} color={color} />
           ),
           tabBarLabel: "Progress",
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: "#009CBD",
+            height: 75,
+          },
+          headerLeft: () => <HeaderLeft />,
+          headerTitle: () => null,
         }}
         redirect={!isSignedIn}
       />

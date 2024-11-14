@@ -1,5 +1,5 @@
 cmake==3.26.4
-dlib==19.24.6
+dlib==19.22.0
 fastapi==0.115.4
 ffmpeg-python==0.2.0
 openai==1.54.3

@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel
 
 class CreateInterview(BaseModel):
@@ -9,8 +10,9 @@ class CreateInterview(BaseModel):
 class CreateInterviewResponse(BaseModel):
     interview_id: str
 
-class GetInterviewCountInput(BaseModel):
-    user_id: str
 
-class GetInterviewCountOutput(BaseModel):
-    count: int
+class GetInterviewHistory(BaseModel):
+    interview_id: str
+    job_role: str
+    type: str
+    created_at: datetime

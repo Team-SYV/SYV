@@ -83,7 +83,7 @@ const Subscription = () => {
           className="mt-8 mb-4 py-5 bg-[#00AACE] rounded-2xl items-center"
           onPress={() => {}}
         >
-          <Text className="text-white text-base font-medium">Subscribe</Text>
+          <Text className="text-white text-[15px] font-semibold">Subscribe Now</Text>
         </Pressable>
       </View>
     </LinearGradient>

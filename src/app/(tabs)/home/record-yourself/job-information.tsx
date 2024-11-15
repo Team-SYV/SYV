@@ -28,7 +28,7 @@ import {
   createInterview,
   createJobInformation,
   createQuestions,
-  generateQuestions
+  generateQuestions,
 } from "@/api";
 import { useUser } from "@clerk/clerk-expo";
 import { cleanQuestion } from "@/utils/cleanQuestion";
@@ -174,7 +174,7 @@ const JobInformation = () => {
       };
 
       const jobInformationResponse = await createJobInformation(jobData);
-      const jobInformationId = jobInformationResponse.job_information_id
+      const jobInformationId = jobInformationResponse.job_information_id;
 
       const interviewData = {
         user_id: user.id,
@@ -182,9 +182,8 @@ const JobInformation = () => {
         type: "RECORD",
       };
       const interviewResponse = await createInterview(interviewData);
-      const interviewId = interviewResponse.interview_id
-      setInterviewId(interviewId)
-
+      const interviewId = interviewResponse.interview_id;
+      setInterviewId(interviewId);
     } catch (error) {
       console.error("Error creating job description:", error.message);
     } finally {
@@ -207,27 +206,40 @@ const JobInformation = () => {
         job_description: formData.jobDescription || "None",
       };
 
+      //  Creates job information
       const jobInformationResponse = await createJobInformation(jobData);
-      const jobInformationId = jobInformationResponse.job_information_id
-
+      const jobInformationId = jobInformationResponse.job_information_id;
       const interviewData = {
         user_id: user.id,
         job_information_id: jobInformationId,
         type: "RECORD",
       };
       const interviewResponse = await createInterview(interviewData);
-      const interviewId = interviewResponse.interview_id
-      setInterviewId(interviewId)
+      const interviewId = interviewResponse.interview_id;
+      setInterviewId(interviewId);
 
       const generateQuestionData = new FormData();
       generateQuestionData.append("type", "RECORD");
       generateQuestionData.append("industry", formData.selectedIndustry);
       generateQuestionData.append("job_role", formData.selectedJobRole);
-      generateQuestionData.append("interview_type", formData.selectedInterviewType);
-      generateQuestionData.append("experience_level", formData.selectedExperienceLevel);
-      generateQuestionData.append("company_name", formData.companyName || "None");
-      generateQuestionData.append("job_description",formData.jobDescription || "None");
+      generateQuestionData.append(
+        "interview_type",
+        formData.selectedInterviewType
+      );
+      generateQuestionData.append(
+        "experience_level",
+        formData.selectedExperienceLevel
+      );
+      generateQuestionData.append(
+        "company_name",
+        formData.companyName || "None"
+      );
+      generateQuestionData.append(
+        "job_description",
+        formData.jobDescription || "None"
+      );
 
+      // Generate questions
       const questions = await generateQuestions(generateQuestionData);
 
       for (const question of questions) {
@@ -237,7 +249,7 @@ const JobInformation = () => {
           const questionData = {
             interview_id: interviewId,
             question: cleanedQuestion,
-          }
+          };
           await createQuestions(questionData);
         } else {
           console.error("Invalid question format:", question);

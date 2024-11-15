@@ -205,6 +205,7 @@ const JobInformation = () => {
         job_description: formData.jobDescription || "None",
       };
 
+       //  Creates job information
       const jobInformationResponse = await createJobInformation(jobData);
       const jobInformationId = jobInformationResponse.job_information_id;
 
@@ -238,6 +239,7 @@ const JobInformation = () => {
         formData.jobDescription || "None"
       );
 
+       // Generate questions
       const questions = await generateQuestions(generateQuestionData);
 
       for (const question of questions) {

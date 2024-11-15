@@ -102,8 +102,6 @@ const FileUpload = () => {
       formData.append("job_description", job_description);
       formData.append("type", "VIRTUAL");
 
-      console.log("form Data:", formData);
-
       // Generate questions
       const questions = await generateQuestions(formData);
 
@@ -193,7 +191,7 @@ const FileUpload = () => {
         </Text>
       </View>
 
-      <View className="px-4 mb-8">
+      <View className="px-4 mb-5">
         <CustomButton
           title="Start Interview"
           onPress={handleStartInterview}

@@ -46,6 +46,18 @@ const VILayout = () => {
       />
 
       <Stack.Screen
+        name="reminder"
+        options={{
+          headerTitle: () => (
+            <Text className="text-center text-[15px] font-semibold text-[#2a2a2a]">
+              Reminder
+            </Text>
+          ),
+          headerBackVisible: false,
+        }}
+      />
+
+      <Stack.Screen
         name="file-upload"
         options={{
           headerTitle: () => (

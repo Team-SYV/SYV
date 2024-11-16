@@ -71,6 +71,7 @@ const History = () => {
         <TouchableOpacity
           className="flex-1 items-center pb-2"
           onPress={() => setSelectedTab("recording")}
+          activeOpacity={1}
         >
           <Text
             className={`text-sm ${

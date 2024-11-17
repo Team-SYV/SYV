@@ -12,25 +12,33 @@ interface RatingsProps {
   fillerWords: number;
 }
 
-const Ratings: React.FC<RatingsProps> = ({ relevance, grammar, eyeContact, pace, fillerWords }) => {
+const Ratings: React.FC<RatingsProps> = ({
+  relevance,
+  grammar,
+  eyeContact,
+  pace,
+  fillerWords,
+}) => {
   const progressData = {
-    relevance: relevance,
-    grammar: grammar,
-    eyeContact: eyeContact,
-    pace: pace,
-    fillerWords: fillerWords,
+    relevance: Math.round(relevance),
+    grammar: Math.round(grammar),
+    eyeContact: Math.round(eyeContact),
+    pace: Math.round(pace),
+    fillerWords: Math.round(fillerWords),
   };
 
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const ratings = Object.values(progressData);
   const totalRating = ratings.reduce((sum, rating) => sum + rating, 0);
-  const overallRating = totalRating / ratings.length;
+
+  // Overall rating
+  const overallRating = Math.round(totalRating / ratings.length);
 
   const numberOfStars = 5;
-  const filledStars = Math.round(overallRating);
+  const filledStars = overallRating;
 
-  const renderProgressBar = (progress) => (
+  const renderProgressBar = (progress: number) => (
     <View className="w-full h-4 bg-gray-200 rounded-full">
       <View
         style={{ width: `${(progress / 5) * 100}%` }}
@@ -55,7 +63,7 @@ const Ratings: React.FC<RatingsProps> = ({ relevance, grammar, eyeContact, pace,
       </Text>
 
       <Text className="text-[70px] text-center font-medium">
-        {overallRating.toFixed(0)}/5
+        {overallRating}/5
       </Text>
 
       <View className="flex-row items-center justify-center">

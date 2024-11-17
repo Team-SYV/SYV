@@ -31,6 +31,7 @@ const Feedback: React.FC = () => {
   const [feedbackItem, setFeedbackItem] = useState([]);
   const [ratings, setRatings] = useState<RatingsData>();
 
+  const [loading, setLoading] = useState(true);
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
 
   const { videoURIs, interviewId } = useLocalSearchParams();
@@ -61,6 +62,7 @@ const Feedback: React.FC = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
+        setLoading(true);
         const fetchedQuestions = await getQuestions(interviewId);
         setQuestions(fetchedQuestions.questions);
         const fetchedFeedback = await getFeedback(interviewId);
@@ -69,8 +71,11 @@ const Feedback: React.FC = () => {
         setRatings(fetchedRatings);
       } catch (error) {
         console.error("Error fetching data", error.message);
+      } finally {
+        setLoading(false);
       }
     };
+
     if (interviewId) {
       fetch();
     }
@@ -134,39 +139,43 @@ const Feedback: React.FC = () => {
 
         <ScrollView className="mt-5">
           <View className="px-4">
-            <Text className="font-medium text-[12px] mb-2">
-              Answer Relevance
-            </Text>
-            <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.answer_relevance || "No feedback available"}
-            </Text>
+            <>
+              <Text className="font-medium text-[12px] mb-2">
+                Answer Relevance
+              </Text>
+              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+                {feedback.answer_relevance || "No feedback available"}
+              </Text>
 
-            <Text className="font-medium text-[12px] mb-2">Grammar</Text>
-            <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.grammar || "No feedback available"}
-            </Text>
+              <Text className="font-medium text-[12px] mb-2">Grammar</Text>
+              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+                {feedback.grammar || "No feedback available"}
+              </Text>
 
-            <Text className="font-medium text-[12px] mb-2">Eye Contact</Text>
-            <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.eye_contact || "No feedback available"}
-            </Text>
+              <Text className="font-medium text-[12px] mb-2">Eye Contact</Text>
+              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+                {feedback.eye_contact || "No feedback available"}
+              </Text>
 
-            <Text className="font-medium text-[12px] mb-2">Pace of Speech</Text>
-            <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.pace_of_speech || "No feedback available"}
-            </Text>
+              <Text className="font-medium text-[12px] mb-2">
+                Pace of Speech
+              </Text>
+              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+                {feedback.pace_of_speech || "No feedback available"}
+              </Text>
 
-            <Text className="font-medium text-[12px] mb-2">Filler Words</Text>
-            <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.filler_words || "No feedback available"}
-            </Text>
+              <Text className="font-medium text-[12px] mb-2">Filler Words</Text>
+              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+                {feedback.filler_words || "No feedback available"}
+              </Text>
 
-            <Text className="font-medium text-[12px] mb-2">
-              Tips & Ideal Answer
-            </Text>
-            <Text className="mb-6 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.tips || "No feedback available"}
-            </Text>
+              <Text className="font-medium text-[12px] mb-2">
+                Tips & Ideal Answer
+              </Text>
+              <Text className="mb-6 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+                {feedback.tips || "No feedback available"}
+              </Text>
+            </>
           </View>
         </ScrollView>
       </View>
@@ -188,7 +197,11 @@ const Feedback: React.FC = () => {
         }}
       />
 
-      {isFullScreen ? (
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#00AACE" />
+        </View>
+      ) : isFullScreen ? (
         <View style={styles.fullScreenVideoContainer}>
           <TouchableOpacity
             onPress={() => setIsFullScreen(false)}
@@ -222,7 +235,7 @@ const Feedback: React.FC = () => {
         />
       )}
 
-      {!isFullScreen && (
+      {!isFullScreen && !loading && (
         <View className="absolute top-[5px] flex-row justify-center w-full">
           {videosWithRatings.map((_, index) => {
             const inputRange = [

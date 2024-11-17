@@ -120,7 +120,12 @@ const RecordYourself: React.FC = () => {
 
   // Check if permission has been granted
   if (hasCameraPermission === null || hasMicrophonePermission === null) {
-    return null;
+    return (
+      <Text className="text-center">
+        {" "}
+        Camera and microphone have not been granted.
+      </Text>
+    );
   } else if (!hasCameraPermission) {
     return (
       <Text className="text-center">Permission for camera not granted.</Text>
@@ -167,10 +172,12 @@ const RecordYourself: React.FC = () => {
 
   // Stop recording
   const stopRecording = () => {
-    if (cameraRef.current) {
-      cameraRef.current.stopRecording();
-      setIsRecording(false);
-    }
+    setTimeout(() => {
+      if (cameraRef.current) {
+        cameraRef.current.stopRecording();
+        setIsRecording(false);
+      }
+    }, 500);
   };
 
   // api handler
@@ -253,7 +260,6 @@ const RecordYourself: React.FC = () => {
 
   // Going to next question
   const handleNext = async () => {
-
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
       setIsModalVisible(false);
@@ -330,25 +336,20 @@ const RecordYourself: React.FC = () => {
         </View>
 
         <View className="absolute bottom-10 left-0 right-0 items-center mx-2">
-          {isLoading ? (
-            <Text className="text-center mb-4 text-lg text-gray-500">
-              Loading question...
-            </Text>
-          ) : (
-            <Text
-              className={`text-center mb-4 px-4 py-4 rounded-xl ${
-                isRecording
-                  ? "text-red-600 font-medium text-2xl"
-                  : "bg-black/80 text-white text-base font-light"
-              }`}
-            >
-              {isRecording
-                ? formatTime(recordingTime)
-                : `${currentQuestionIndex + 1}. ${
-                    questions[currentQuestionIndex] || ""
-                  }`}
-            </Text>
-          )}
+          <Text
+            className={`text-center mb-4 px-4 py-4 rounded-xl ${
+              isRecording
+                ? "text-red-600 font-medium text-2xl"
+                : "bg-black/80 text-white text-base font-light"
+            }`}
+          >
+            {isRecording
+              ? formatTime(recordingTime)
+              : `${currentQuestionIndex + 1}. ${
+                  questions[currentQuestionIndex] || ""
+                }`}
+          </Text>
+
           <TouchableOpacity onPress={isRecording ? stopRecording : recordVideo}>
             <Image
               source={

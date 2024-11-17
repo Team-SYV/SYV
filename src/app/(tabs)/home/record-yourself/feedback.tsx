@@ -13,6 +13,7 @@ import {
   Animated,
   FlatList,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import Ratings from "@/components/Rating/Ratings";
 import { getFeedback, getQuestions, getRatings } from "@/api";
@@ -21,18 +22,18 @@ import { RatingsData } from "@/types/ratingsData";
 const { width, height } = Dimensions.get("window");
 
 const Feedback: React.FC = () => {
-  const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList<string>>(null);
 
-  const { videoURIs, interviewId } = useLocalSearchParams();
-
   const [questions, setQuestions] = useState([]);
   const [feedbackItem, setFeedbackItem] = useState([]);
   const [ratings, setRatings] = useState<RatingsData>();
 
+  const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
+
+  const { videoURIs, interviewId } = useLocalSearchParams();
   const parsedVideos: string[] =
     typeof videoURIs === "string" ? (JSON.parse(videoURIs) as string[]) : [];
   const videosWithRatings = [...parsedVideos, "ratings"];
@@ -56,6 +57,7 @@ const Feedback: React.FC = () => {
     return () => backHandler.remove();
   }, [isFullScreen]);
 
+  // Fetch questions, feedback and ratings
   useEffect(() => {
     const fetch = async () => {
       try {
@@ -94,7 +96,9 @@ const Feedback: React.FC = () => {
               fillerWords={ratings[0].filler_words}
             />
           ) : (
-            <Text>Loading ratings...</Text>
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator size="large" color="#00AACE" />
+            </View>
           )}
         </View>
       );
@@ -254,10 +258,10 @@ const Feedback: React.FC = () => {
 
       <ConfirmationModal
         isVisible={isConfirmationVisible}
-        title="Discard Recording?"
+        title="Leave Feedback?"
         message={
           <Text>
-            Exiting now will discard your progress.{"\n"}
+            Exiting will take you back to the home page.{"\n"}
             Are you sure you want to leave?
           </Text>
         }

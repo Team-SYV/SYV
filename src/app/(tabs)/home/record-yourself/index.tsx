@@ -265,9 +265,11 @@ const RecordYourself: React.FC = () => {
       try {
         setIsLoading(true);
 
-        if (feedbackRatings) {
+        if (feedbackRatings && feedbackRatings.length > 0) {
           const averageRatings = calculateAverageRatings();
-          createRatings({
+
+          // Wait for ratings creation to finish before navigating
+          await createRatings({
             interview_id: interviewId,
             answer_relevance: averageRatings.answer_relevance_rating,
             eye_contact: averageRatings.eye_contact_rating,
@@ -276,12 +278,10 @@ const RecordYourself: React.FC = () => {
             filler_words: averageRatings.filler_words_rating,
           });
         }
-      } catch (error) {
-        console.error("Error processing videos:", error);
-      } finally {
-        setIsLoading(false);
+
         setAllQuestionsRecorded(true);
         setIsModalVisible(false);
+
         router.push({
           pathname: `/home/record-yourself/feedback`,
           params: {
@@ -289,6 +289,10 @@ const RecordYourself: React.FC = () => {
             interviewId: interviewId,
           },
         });
+      } catch (error) {
+        console.error("Error processing videos:", error);
+      } finally {
+        setIsLoading(false);
       }
     }
   };

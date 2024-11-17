@@ -265,11 +265,11 @@ const RecordYourself: React.FC = () => {
       try {
         setIsLoading(true);
 
-        if (feedbackRatings && feedbackRatings.length > 0) {
+        if (feedbackRatings) {
           const averageRatings = calculateAverageRatings();
 
           // Wait for ratings creation to finish before navigating
-          await createRatings({
+          createRatings({
             interview_id: interviewId,
             answer_relevance: averageRatings.answer_relevance_rating,
             eye_contact: averageRatings.eye_contact_rating,

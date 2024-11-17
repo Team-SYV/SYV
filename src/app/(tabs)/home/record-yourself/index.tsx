@@ -152,10 +152,7 @@ const RecordYourself: React.FC = () => {
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);
           setIsModalVisible(true);
-          await handleVideoAnswerFeedback(
-            recordedVideo.uri,
-            currentQuestionIndex
-          );
+          handleVideoAnswerFeedback(recordedVideo.uri, currentQuestionIndex);
         }
       } catch (error) {
         console.error("Error recording video:", error);
@@ -261,7 +258,7 @@ const RecordYourself: React.FC = () => {
 
   // Going to next question
   const handleNext = async () => {
-    if (currentQuestionIndex < questions.length - 1) {
+    if (currentQuestionIndex < 4) {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
       setIsModalVisible(false);
     } else {

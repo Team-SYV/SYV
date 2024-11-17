@@ -120,12 +120,7 @@ const RecordYourself: React.FC = () => {
 
   // Check if permission has been granted
   if (hasCameraPermission === null || hasMicrophonePermission === null) {
-    return (
-      <Text className="text-center">
-        {" "}
-        Camera and microphone have not been granted.
-      </Text>
-    );
+    return null;
   } else if (!hasCameraPermission) {
     return (
       <Text className="text-center">Permission for camera not granted.</Text>
@@ -137,7 +132,6 @@ const RecordYourself: React.FC = () => {
       </Text>
     );
   }
-
   // Record a video
   const recordVideo = async () => {
     if (cameraRef.current) {
@@ -158,7 +152,10 @@ const RecordYourself: React.FC = () => {
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);
           setIsModalVisible(true);
-          await handleAPI(recordedVideo.uri, currentQuestionIndex);
+          await handleVideoAnswerFeedback(
+            recordedVideo.uri,
+            currentQuestionIndex
+          );
         }
       } catch (error) {
         console.error("Error recording video:", error);
@@ -180,25 +177,27 @@ const RecordYourself: React.FC = () => {
     }, 500);
   };
 
-  // api handler
-  const handleAPI = async (videoUri: string, index: number): Promise<void> => {
+  // Handle the process of transcribing video, saving answers, and generating feedback
+  const handleVideoAnswerFeedback = async (
+    videoUri: string,
+    index: number
+  ): Promise<void> => {
     try {
-      // Start by setting loading state to true
       const videoFile = {
         uri: videoUri,
         type: "video/mp4",
         name: videoUri.split("/").pop(),
       } as unknown as File;
 
-      // Wait for transcription to finish
       const transcription = await transcribeVideo(videoFile);
-      // Only proceed if transcription is successful
+
       if (transcription && transcription.transcription) {
         // Create answer in the database
         const answerResponse = await createAnswer({
           question_id: questionIds[index],
           answer: transcription.transcription,
         });
+
         if (answerResponse && answerResponse.answer_id) {
           // Generate feedback for each answer
           const feedbackResponse = await generateFeedback({
@@ -209,6 +208,7 @@ const RecordYourself: React.FC = () => {
             wpm: transcription.wpm.toString(),
             eye_contact: transcription.eye_contact.toString(),
           });
+
           if (feedbackResponse && feedbackResponse.ratings_data) {
             setFeedbackRatings((prevRatings) => [
               ...prevRatings,
@@ -217,13 +217,14 @@ const RecordYourself: React.FC = () => {
           }
         }
       } else {
-        console.error("Transcription failed or no transcript found.");
+        console.error("Transcription failed.");
       }
     } catch (error) {
       console.error("Error during API call:", error.error || error);
     }
   };
 
+  // Calculates the average ratings for each feedback
   const calculateAverageRatings = () => {
     const totals = feedbackRatings.reduce(
       (acc, rating) => {

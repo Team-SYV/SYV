@@ -219,7 +219,7 @@ const JobInformation = () => {
       setInterviewId(interviewId);
 
       const generateQuestionData = new FormData();
-      generateQuestionData.append("type", "RECORD");
+      generateQuestionData.append("type", "VIRTUAL");
       generateQuestionData.append("industry", formData.selectedIndustry);
       generateQuestionData.append("job_role", formData.selectedJobRole);
       generateQuestionData.append(

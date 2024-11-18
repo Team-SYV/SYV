@@ -214,3 +214,28 @@ export const getRatingsByUserId = async (userId: string, week_start: string) => 
     );
   }
 };
+
+export const generateAnswerFeedback = async (formData) => {
+  try {
+    const response = await api.post(
+      "/api/generate-answer-feedback/",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    return response.data.feedback; // Assuming feedback is structured correctly
+  } catch (error) {
+    console.error("Error response from server:", error.response);
+
+    // Log the entire error object for better debugging
+    console.error("Full error object:", JSON.stringify(error, null, 2));
+
+    throw new Error(
+      error.response?.data?.detail || "Failed to generate answer feedback"
+    );
+  }
+};

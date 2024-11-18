@@ -202,3 +202,14 @@ export const getInterviewHistory = async (userId: string) => {
     );
   }
 };
+
+export const getRatingsByUserId = async (userId: string) => {
+  try {
+    const response = await api.get(`/api/ratings/progress/${userId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to retrieve ratings by user ID"
+    );
+  }
+};

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -22,6 +22,16 @@ const Card: React.FC<CardProps> = ({
   textClassName = "",
   onPress,
 }) => {
+  const [isClicked, setIsClicked] = useState(false);
+
+  const handlePress = () => {
+    if (!isClicked) {
+      setIsClicked(true);
+      onPress();
+      setTimeout(() => setIsClicked(false), 500);
+    }
+  };
+
   return (
     <View
       className={`border border-[#D0D0D0] bg-[#FBFBFB] rounded-2xl max-h-[140px] ${cardClassName}`}
@@ -34,7 +44,11 @@ const Card: React.FC<CardProps> = ({
             {text}
           </Text>
 
-          <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+          <TouchableOpacity
+            onPress={handlePress}
+            activeOpacity={0.8}
+            disabled={isClicked}
+          >
             <View className={`bg-[#00AACE] rounded-lg px-4 py-3`}>
               <Text className="text-white text-[9px] font-semibold">
                 START INTERVIEW

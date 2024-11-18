@@ -132,7 +132,6 @@ const RecordYourself: React.FC = () => {
       </Text>
     );
   }
-
   // Record a video
   const recordVideo = async () => {
     if (cameraRef.current) {
@@ -153,7 +152,7 @@ const RecordYourself: React.FC = () => {
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);
           setIsModalVisible(true);
-          await handleAPI(recordedVideo.uri, currentQuestionIndex);
+          handleVideoAnswerFeedback(recordedVideo.uri, currentQuestionIndex);
         }
       } catch (error) {
         console.error("Error recording video:", error);
@@ -167,31 +166,35 @@ const RecordYourself: React.FC = () => {
 
   // Stop recording
   const stopRecording = () => {
-    if (cameraRef.current) {
-      cameraRef.current.stopRecording();
-      setIsRecording(false);
-    }
+    setTimeout(() => {
+      if (cameraRef.current) {
+        cameraRef.current.stopRecording();
+        setIsRecording(false);
+      }
+    }, 500);
   };
 
-  // api handler
-  const handleAPI = async (videoUri: string, index: number): Promise<void> => {
+  // Handle the process of transcribing video, saving answers, and generating feedback
+  const handleVideoAnswerFeedback = async (
+    videoUri: string,
+    index: number
+  ): Promise<void> => {
     try {
-      // Start by setting loading state to true
       const videoFile = {
         uri: videoUri,
         type: "video/mp4",
         name: videoUri.split("/").pop(),
       } as unknown as File;
 
-      // Wait for transcription to finish
       const transcription = await transcribeVideo(videoFile);
-      // Only proceed if transcription is successful
+
       if (transcription && transcription.transcription) {
         // Create answer in the database
         const answerResponse = await createAnswer({
           question_id: questionIds[index],
           answer: transcription.transcription,
         });
+
         if (answerResponse && answerResponse.answer_id) {
           // Generate feedback for each answer
           const feedbackResponse = await generateFeedback({
@@ -202,6 +205,7 @@ const RecordYourself: React.FC = () => {
             wpm: transcription.wpm.toString(),
             eye_contact: transcription.eye_contact.toString(),
           });
+
           if (feedbackResponse && feedbackResponse.ratings_data) {
             setFeedbackRatings((prevRatings) => [
               ...prevRatings,
@@ -210,13 +214,14 @@ const RecordYourself: React.FC = () => {
           }
         }
       } else {
-        console.error("Transcription failed or no transcript found.");
+        console.error("Transcription failed.");
       }
     } catch (error) {
       console.error("Error during API call:", error.error || error);
     }
   };
 
+  // Calculates the average ratings for each feedback
   const calculateAverageRatings = () => {
     const totals = feedbackRatings.reduce(
       (acc, rating) => {
@@ -253,8 +258,7 @@ const RecordYourself: React.FC = () => {
 
   // Going to next question
   const handleNext = async () => {
-
-    if (currentQuestionIndex < questions.length - 1) {
+    if (currentQuestionIndex < 4) {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
       setIsModalVisible(false);
     } else {
@@ -263,6 +267,8 @@ const RecordYourself: React.FC = () => {
 
         if (feedbackRatings) {
           const averageRatings = calculateAverageRatings();
+
+          // Wait for ratings creation to finish before navigating
           createRatings({
             interview_id: interviewId,
             answer_relevance: averageRatings.answer_relevance_rating,
@@ -272,12 +278,10 @@ const RecordYourself: React.FC = () => {
             filler_words: averageRatings.filler_words_rating,
           });
         }
-      } catch (error) {
-        console.error("Error processing videos:", error);
-      } finally {
-        setIsLoading(false);
+
         setAllQuestionsRecorded(true);
         setIsModalVisible(false);
+
         router.push({
           pathname: `/home/record-yourself/feedback`,
           params: {
@@ -285,6 +289,10 @@ const RecordYourself: React.FC = () => {
             interviewId: interviewId,
           },
         });
+      } catch (error) {
+        console.error("Error processing videos:", error);
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -330,25 +338,20 @@ const RecordYourself: React.FC = () => {
         </View>
 
         <View className="absolute bottom-10 left-0 right-0 items-center mx-2">
-          {isLoading ? (
-            <Text className="text-center mb-4 text-lg text-gray-500">
-              Loading question...
-            </Text>
-          ) : (
-            <Text
-              className={`text-center mb-4 px-4 py-4 rounded-xl ${
-                isRecording
-                  ? "text-red-600 font-medium text-2xl"
-                  : "bg-black/80 text-white text-base font-light"
-              }`}
-            >
-              {isRecording
-                ? formatTime(recordingTime)
-                : `${currentQuestionIndex + 1}. ${
-                    questions[currentQuestionIndex] || ""
-                  }`}
-            </Text>
-          )}
+          <Text
+            className={`text-center mb-4 px-4 py-4 rounded-xl ${
+              isRecording
+                ? "text-red-600 font-medium text-2xl"
+                : "bg-black/80 text-white text-base font-light"
+            }`}
+          >
+            {isRecording
+              ? formatTime(recordingTime)
+              : `${currentQuestionIndex + 1}. ${
+                  questions[currentQuestionIndex] || ""
+                }`}
+          </Text>
+
           <TouchableOpacity onPress={isRecording ? stopRecording : recordVideo}>
             <Image
               source={

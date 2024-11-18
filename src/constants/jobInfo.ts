@@ -12,14 +12,13 @@ export const industry = [
   { key: "SI", value: "Software Industry" },
   { key: "ET", value: "Education" },
   { key: "RS", value: "Retail Services" },
-  { key: "TR", value: "Tourism" },
-  { key: "EN", value: "Engineering" },
+  { key: "HT", value: "Hospitality / Tourism" },
   { key: "HS", value: "Health Science" },
-  { key: "BM", value: "Business Management" },
 ].sort((a, b) => a.value.localeCompare(b.value));
 
 export const jobRole = {
   "Software Industry": [
+    { key: "ai", value: "AI Engineer" },
     { key: "backend_developer", value: "Backend Developer" },
     { key: "business_analyst", value: "Business Analyst" },
     { key: "cloud_engineer", value: "Cloud Engineer" },
@@ -29,12 +28,15 @@ export const jobRole = {
     { key: "devops_engineer", value: "DevOps Engineer" },
     { key: "frontend_developer", value: "Frontend Developer" },
     { key: "fullstack_developer", value: "Full Stack Developer" },
+    { key: "machine_learning_engineer", value: "Machine Learning Engineer" },
     { key: "mobile_app_developer", value: "Mobile App Developer" },
     { key: "network_admin", value: "Network Administrator" },
     { key: "product_manager", value: "Product Manager" },
     { key: "qa_engineer", value: "QA Tester/Engineer" },
+    { key: "software_engineer", value: "Software Engineer" },
     { key: "software_architect", value: "Software Architect" },
     { key: "ui_ux_designer", value: "UI/UX Designer" },
+    { key: "web_developer", value: "Web Developer" },
   ],
   "Retail Services": [
     { key: "assistant_store_manager", value: "Assistant Store Manager" },
@@ -54,31 +56,24 @@ export const jobRole = {
     { key: "warehouse_clerk", value: "Warehouse Clerk" },
   ],
   "Education": [
+    { key: "instructor", value: "Instructor" },
     { key: "librarian", value: "Librarian" },
     { key: "middle_school_teacher", value: "Middle School Teacher" },
     { key: "preschool_teacher", value: "Preschool Teacher" },
     { key: "professor", value: "Professor" },
-    { key: "school_psychologist", value: "School Psychologist" },
-    { key: "teacher_assistant", value: "Teacher Assistant" },
+    { key: "teaching_assistant", value: "Teaching Assistant" },
   ],
-  "Tourism": [
-    { key: "hospitality_manager", value: "Hospitality Manager" },
+  "Hospitality / Tourism": [
+    { key: "bartender", value: "Bartender" },
+    { key: "event_planner", value: "Event Planner" },
+    { key: "font_desk_associate", value: "Font Desk Associate" },
+    { key: "guest_service_associate", value: "Guest Service Associate"},
+    { key: "housekeeper", value: "Housekeeper" },
     { key: "hotel_manager", value: "Hotel Manager" },
     { key: "receptionist", value: "Receptionist" },
     { key: "tour_guide", value: "Tour Guide" },
-    { key: "tourism_manager", value: "Tourism Manager" },
     { key: "travel_consultant", value: "Travel Consultant" },
-  ],
-  "Engineering": [
-    { key: "aerospace_engineer", value: "Aerospace Engineer" },
-    { key: "biomedical_engineer", value: "Biomedical Engineer" },
-    { key: "chemical_engineer", value: "Chemical Engineer" },
-    { key: "civil_engineer", value: "Civil Engineer" },
-    { key: "computer_systems_engineer", value: "Computer Systems Engineer" },
-    { key: "electrical_engineer", value: "Electrical Engineer" },
-    { key: "industrial_engineer", value: "Industrial Engineer" },
-    { key: "mechanical_engineer", value: "Mechanical Engineer" },
-    { key: "telecommunication_engineer", value: "Telecommunication Engineer" },
+    { key: "waitress", value: "Waitress" },
   ],
   "Health Science": [
     { key: "doctor", value: "Doctor" },
@@ -92,20 +87,6 @@ export const jobRole = {
     { key: "physician_assistant", value: "Physician Assistant" },
     { key: "psychiatrist", value: "Psychiatrist" },
     { key: "psychologist", value: "Psychologist" },
-  ],
-  "Business Management": [
-    { key: "management_analyst", value: "Management Analyst" },
-    { key: "marketing_manager", value: "Marketing Manager" },
-    {
-      key: "operations_research_analyst",
-      value: "Operations Research Analyst",
-    },
-    {
-      key: "public_relations_specialist",
-      value: "Public Relations Specialist",
-    },
-    { key: "sales_manager", value: "Sales Manager" },
-    { key: "treasurer_and_controller", value: "Treasurer and Controller" },
   ],
 };
 

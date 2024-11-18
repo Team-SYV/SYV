@@ -67,7 +67,6 @@ const FileUpload = () => {
       );
       return;
     }
-
     setLoading(true);
 
     try {
@@ -84,8 +83,8 @@ const FileUpload = () => {
         company_name,
         job_description,
       } = jobInfo;
-      const fileUri = selectedFile.uri;
 
+      const fileUri = selectedFile.uri;
       const formData = new FormData();
 
       formData.append("file", {
@@ -102,8 +101,6 @@ const FileUpload = () => {
       formData.append("company_name", company_name);
       formData.append("job_description", job_description);
       formData.append("type", "RECORD");
-
-      console.log("form Data:", formData);
 
       // Generate questions
       const questions = await generateQuestions(formData);
@@ -194,7 +191,7 @@ const FileUpload = () => {
         </Text>
       </View>
 
-      <View className="px-4 mb-8">
+      <View className="px-4 mb-5">
         <CustomButton
           title="Start Interview"
           onPress={handleStartInterview}

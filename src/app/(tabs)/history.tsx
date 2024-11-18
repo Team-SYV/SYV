@@ -21,7 +21,14 @@ const History = () => {
       try {
         setLoading(true);
         const fetchedHistory = await getInterviewHistory(user.id);
-        setInterviewData(fetchedHistory);
+
+        // Sort the data by created_at in descending order
+        const sortedHistory = fetchedHistory.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+        setInterviewData(sortedHistory);
       } catch (error) {
         console.error("Error fetching data", error.message);
       } finally {
@@ -33,7 +40,6 @@ const History = () => {
       fetch();
     }
   }, [user]);
-
   // Helper function to format the date
   const formatDateTime = (dateTime) => {
     const date = new Date(dateTime);

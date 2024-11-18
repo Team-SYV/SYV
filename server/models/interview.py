@@ -14,5 +14,6 @@ class CreateInterviewResponse(BaseModel):
 class GetInterviewHistory(BaseModel):
     interview_id: str
     job_role: str
+    company_name: str
     type: str
     created_at: datetime

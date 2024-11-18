@@ -50,22 +50,26 @@ async def get_interview_history(user_id: str, supabase: Client = Depends(get_sup
 
     interview_history = response.data if response.data is not None else []
 
-    job_roles = {}
+    job_info_details = {}
     job_information_ids = list(set(interview['job_information_id'] for interview in interview_history))
 
     if job_information_ids:
-        job_info_response = supabase.table('job_information').select('job_information_id', 'job_role').in_('job_information_id', job_information_ids).execute()
+        job_info_response = supabase.table('job_information').select('job_information_id', 'job_role', 'company_name').in_('job_information_id', job_information_ids).execute()
 
         if hasattr(job_info_response, 'error') and job_info_response.error:
-            raise HTTPException(status_code=500, detail="Failed to retrieve job roles")
+            raise HTTPException(status_code=500, detail="Failed to retrieve job info")
 
         for job_info in job_info_response.data:
-            job_roles[job_info['job_information_id']] = job_info['job_role']
+            job_info_details[job_info['job_information_id']] = {
+                "job_role": job_info['job_role'],
+                "company_name": job_info['company_name']
+            }
 
     return [
         GetInterviewHistory(
             interview_id=interview['interview_id'],
-            job_role=job_roles.get(interview['job_information_id'], "Unknown Role"),
+            job_role=job_info_details.get(interview['job_information_id'], {}).get("job_role", "Unknown Role"),
+            company_name=job_info_details.get(interview['job_information_id'], {}).get("company_name", "Unknown Company"),
             type=interview['type'],
             created_at=interview['created_at']
         )

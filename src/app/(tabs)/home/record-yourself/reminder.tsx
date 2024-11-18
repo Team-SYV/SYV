@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Dimensions } from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Spinner from "react-native-loading-spinner-overlay";
-import { useRouter } from "expo-router"; // Import useRouter
+import { useLocalSearchParams, useRouter } from "expo-router";
 
 const Reminder = () => {
   const [permission, requestPermission] = useCameraPermissions();
   const [loading, setLoading] = useState(false);
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
+  const { interviewId } = useLocalSearchParams();
 
   const screenHeight = Dimensions.get("window").height;
   const cameraHeight = screenHeight / 2;
@@ -30,7 +31,7 @@ const Reminder = () => {
 
     setTimeout(() => {
       setLoading(false);
-      router.push("/home/record-yourself"); 
+      router.push(`/(tabs)/home/record-yourself?interviewId=${interviewId}`);
     }, 2000);
   };
 

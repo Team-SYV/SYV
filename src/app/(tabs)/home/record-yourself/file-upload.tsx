@@ -118,7 +118,7 @@ const FileUpload = () => {
           console.error("Invalid question format:", question);
         }
       }
-      router.push(`/(tabs)/home/record-yourself?interviewId=${interviewId}`);
+      router.push(`/(tabs)/home/record-yoursel/reminder?interviewId=${interviewId}`);
     } catch (error) {
       Alert.alert("Upload Failed", error.message);
     } finally {

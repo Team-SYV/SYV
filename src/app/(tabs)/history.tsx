@@ -111,9 +111,17 @@ const History = () => {
             keyExtractor={(item) => item.interview_id}
             renderItem={({ item }) => (
               <View className="my-2">
-                <Text className="text-[13px] text-[#00AACE]">
-                  {item.job_role}
-                </Text>
+                <View className="flex-row items-center">
+                  <Text className="text-[13px] text-[#00AACE] mr-1">
+                    {item.job_role}
+                  </Text>
+
+                  {item.company_name !== "None" && (
+                    <Text className="text-[11px] text-[#00AACE]">
+                      ( {item.company_name} )
+                    </Text>
+                  )}
+                </View>
                 <Text className="text-[10px] text-gray-600 mb-1">
                   {formatDateTime(item.created_at)}
                 </Text>

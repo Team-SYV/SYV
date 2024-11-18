@@ -4,22 +4,21 @@ import dayjs from "dayjs";
 import { Feather } from "@expo/vector-icons";
 import { LineChart } from "react-native-gifted-charts";
 import { useUser } from "@clerk/clerk-expo";
-import { getInterviewHistory, getRatingsByUserId } from "@/api";
-
+import { getRatingsByUserId } from "@/api";
 
 const Progress = () => {
   const { user } = useUser();
-  const [currentWeekStart, setCurrentWeekStart] = useState(dayjs());
+  const [currentWeekStart, setCurrentWeekStart] = useState(dayjs().startOf('week')); 
   const [selectedCategory, setSelectedCategory] = useState("answerRelevance");
   const [ratingsData, setRatingsData] = useState({});
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        const fetchedProgress = await getRatingsByUserId(user.id)     
+        const fetchedProgress = await getRatingsByUserId(user.id);
 
         setRatingsData(fetchedProgress);
-        console.log(fetchedProgress)
+        console.log(fetchedProgress);
       } catch (error) {
         console.error("Error fetching data", error.message);
       }

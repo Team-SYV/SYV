@@ -203,9 +203,10 @@ export const getInterviewHistory = async (userId: string) => {
   }
 };
 
-export const getRatingsByUserId = async (userId: string) => {
+export const getRatingsByUserId = async (userId: string, week_start: string) => {
   try {
-    const response = await api.get(`/api/ratings/progress/${userId}`);
+    // Include the week_start parameter in the URL
+    const response = await api.get(`/api/ratings/progress/${userId}?week_start=${week_start}`);
     return response.data;
   } catch (error) {
     throw new Error(

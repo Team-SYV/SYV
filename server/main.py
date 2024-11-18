@@ -9,7 +9,7 @@ from services.eye_contact import process_video
 from services.transcribe_audio import transcribe_audio
 from services.feedback_generator import generate_feedback, generate_virtual_feedback
 from services.transcribe_video import extract_audio
-from services.question_generator import generate_interview_questions
+from services.question_generator import generate_answer_feedback, generate_interview_questions
 from services.pdf_reader import read_pdf
 from utils.supabase import get_supabase_client
 from api.routes.job_information import router as job_information_router
@@ -191,3 +191,15 @@ async def generate_virtual_feedback_api(input: GenerateVirtualFeedbackInput,supa
     except Exception as e:
         logging.error(f"Error generating virtual feedback: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate virtual feedback")
+    
+@app.post("/api/generate-answer-feedback/")
+async def generate_answer_feedback_endpoint(
+    previous_question: str = Form(...), 
+    previous_answer: str = Form(...)
+):
+    try:
+        feedback = generate_answer_feedback(previous_question, previous_answer)
+        return {"feedback": feedback}
+    except Exception as e:
+        logging.error(f"Error generating answer feedback: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate answer feedback")

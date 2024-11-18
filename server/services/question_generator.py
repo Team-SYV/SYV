@@ -78,3 +78,26 @@ def generate_answer_feedback(previous_question, previous_answer):
     response_text = completion.choices[0].message.content.strip()
 
     return response_text
+
+def generate_answer_feedback(previous_question, previous_answer):
+    prompt = f"""
+    Previous question: {previous_question}
+    Previous answer: {previous_answer}
+    
+    Please provide one short sentence starting with "You" that either gives positive praise or indicates if the answer is unclear.
+    Speak as if you are talking to me directly.
+    """
+
+    completion = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": "You are an experienced hiring manager giving concise praise."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=50
+    )
+
+    response_text = completion.choices[0].message.content.strip()
+
+    return response_text
+

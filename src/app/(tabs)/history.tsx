@@ -1,8 +1,13 @@
-import { View, Text, TouchableOpacity, FlatList } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  ActivityIndicator,
+} from "react-native";
 import React, { useEffect, useState } from "react";
 import { getInterviewHistory } from "@/api";
 import { useUser } from "@clerk/clerk-expo";
-import Spinner from "react-native-loading-spinner-overlay";
 
 const History = () => {
   const { user } = useUser();
@@ -50,9 +55,9 @@ const History = () => {
 
   return (
     <View className="flex-1 bg-white pt-8 px-6">
-      <Spinner visible={loading} color="#00AACE" />
-
-      {!loading && (
+      {loading ? (
+        <ActivityIndicator size="large" color="#00AACE" className="flex-1" />
+      ) : (
         <>
           <Text className="text-[32px] font-bold text-center">
             {interviewData.length}

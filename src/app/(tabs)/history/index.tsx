@@ -5,9 +5,10 @@ import {
   FlatList,
   ActivityIndicator,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { getInterviewHistory } from "@/api";
 import { useUser } from "@clerk/clerk-expo";
+import { useFocusEffect } from "@react-navigation/native";
 
 const History = () => {
   const { user } = useUser();
@@ -16,30 +17,32 @@ const History = () => {
   const [loading, setLoading] = useState(true);
 
   // Fetch interview history data on component mount
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        setLoading(true);
-        const fetchedHistory = await getInterviewHistory(user.id);
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetch = async () => {
+        try {
+          setLoading(true);
+          const fetchedHistory = await getInterviewHistory(user.id);
+          const sortedHistory = fetchedHistory.sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime()
+          );
 
-        // Sort the data by created_at in descending order
-        const sortedHistory = fetchedHistory.sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
+          setInterviewData(sortedHistory);
+        } catch (error) {
+          console.error("Error fetching data", error.message);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-        setInterviewData(sortedHistory);
-      } catch (error) {
-        console.error("Error fetching data", error.message);
-      } finally {
-        setLoading(false);
+      if (user) {
+        fetch();
       }
-    };
+    }, [user])
+  );
 
-    if (user) {
-      fetch();
-    }
-  }, [user]);
   // Helper function to format the date
   const formatDateTime = (dateTime) => {
     const date = new Date(dateTime);

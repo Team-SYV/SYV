@@ -118,7 +118,7 @@ const FileUpload = () => {
           console.error("Invalid question format:", question);
         }
       }
-      router.push(`/(tabs)/home/virtual-interview?interviewId=${interviewId}`);
+      router.push(`/(tabs)/home/virtual-interview/reminder?interviewId=${interviewId}`);
     } catch (error) {
       Alert.alert("Upload Failed", error.message);
     } finally {

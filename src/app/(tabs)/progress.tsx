@@ -1,30 +1,34 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import dayjs from "dayjs";
 import { Feather } from "@expo/vector-icons";
 import { LineChart } from "react-native-gifted-charts";
+import { useUser } from "@clerk/clerk-expo";
+import { getInterviewHistory, getRatingsByUserId } from "@/api";
+
 
 const Progress = () => {
-  const [currentWeekStart, setCurrentWeekStart] = useState(dayjs("2024-08-21"));
+  const { user } = useUser();
+  const [currentWeekStart, setCurrentWeekStart] = useState(dayjs());
   const [selectedCategory, setSelectedCategory] = useState("answerRelevance");
+  const [ratingsData, setRatingsData] = useState({});
 
-  const ratingsData = {
-    "2024-08-21": {
-      answerRelevance: [3, 4, 0, 5, 3, 4, 2],
-      grammar: [4, 3, 4, 3, 2, 3, 4],
-      eyeContact: [5, 4, 5, 5, 3, 4, 5],
-      paceOfSpeech: [4, 3, 4, 3, 4, 4, 5],
-      fillerWords: [1, 2, 3, 2, 1, 2, 3],
-    },
-    "2024-08-28": {
-      answerRelevance: [2, 3, 4, 4, 5, 3, 2],
-      grammar: [3, 3, 4, 3, 3, 4, 3],
-      eyeContact: [4, 5, 4, 5, 3, 4, 4],
-      paceOfSpeech: [3, 3, 3, 4, 3, 4, 3],
-      fillerWords: [2, 3, 3, 4, 2, 3, 3],
-    },
-  };
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const fetchedProgress = await getRatingsByUserId(user.id)     
 
+        setRatingsData(fetchedProgress);
+        console.log(fetchedProgress)
+      } catch (error) {
+        console.error("Error fetching data", error.message);
+      }
+    };
+
+    if (user) {
+      fetch();
+    }
+  }, [user]);
   const weekStart = currentWeekStart.format("MMMM D");
   const weekEnd = currentWeekStart.add(6, "day").format("MMMM D, YYYY");
 

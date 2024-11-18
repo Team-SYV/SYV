@@ -15,6 +15,7 @@ class getRatingsInput(BaseModel):
     interview_id: str
 
 class getRatingsResponse(BaseModel):
+    created_at: str
     answer_relevance: float
     eye_contact: float
     grammar: float

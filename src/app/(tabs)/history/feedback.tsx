@@ -1,26 +1,21 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Video, ResizeMode } from "expo-av";
-import { router, Stack, useLocalSearchParams } from "expo-router";
-import ConfirmationModal from "@/components/Modal/ConfirmationModal";
-import AntDesign from "@expo/vector-icons/AntDesign";
+import { useLocalSearchParams } from "expo-router";
+import { getFeedback, getQuestions } from "@/api";
 import {
   View,
   StyleSheet,
   Text,
   TouchableOpacity,
-  BackHandler,
   Dimensions,
   Animated,
   FlatList,
   ScrollView,
   ActivityIndicator,
 } from "react-native";
-import { getFeedback, getQuestions } from "@/api";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
 const Feedback: React.FC = () => {
-  const [isFullScreen, setIsFullScreen] = useState(false);
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList<string>>(null);
 
@@ -28,28 +23,7 @@ const Feedback: React.FC = () => {
   const [feedbackItem, setFeedbackItem] = useState([]);
 
   const [loading, setLoading] = useState(true);
-  const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
-
   const { interviewId } = useLocalSearchParams();
-
-  // Android back button
-  useEffect(() => {
-    const backAction = () => {
-      if (isFullScreen) {
-        setIsFullScreen(false);
-        return true;
-      }
-      setIsConfirmationVisible(true);
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
-
-    return () => backHandler.remove();
-  }, [isFullScreen]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -71,28 +45,26 @@ const Feedback: React.FC = () => {
     }
   }, [interviewId]);
 
-  // Render each video and its corresponding question and feedback
-  const renderFeedbackItem = ({
-    item,
-    index,
-  }: {
-    item: string;
-    index: number;
-  }) => {
+  // Render each questions and feedback
+  const renderFeedbackItem = ({ index }: { item: string; index: number }) => {
     const feedback = feedbackItem[index] || {};
     const question = questions[index] || "No question available";
 
-    return (
-      <View style={styles.itemContainer}>
-        <View className="flex-row items-center px-4 mt-4">
-          <View style={styles.questionContainer}>
-            <Text className="font-semibold text-[13px]">
-              Question {index + 1}
-            </Text>
+    const dynamicMargin = feedbackItem.length > 1 ? 14 : 0;
 
-            <Text className="text-sm text-[13px]">{question}</Text>
+    return (
+      <View style={[styles.itemContainer, { marginTop: dynamicMargin }]}>
+        {feedbackItem.length > 1 && (
+          <View className="flex-row items-center px-4 mt-4">
+            <View style={styles.questionContainer}>
+              <Text className="font-semibold text-[13px]">
+                Question {index + 1}
+              </Text>
+
+              <Text className="text-sm text-[13px]">{question}</Text>
+            </View>
           </View>
-        </View>
+        )}
 
         <ScrollView className="mt-5">
           <View className="px-4">
@@ -140,38 +112,15 @@ const Feedback: React.FC = () => {
   };
   return (
     <View className="flex-1 bg-white">
-      <Stack.Screen
-        options={{
-          headerShown: !isFullScreen,
-          headerStyle: {
-            backgroundColor: "white",
-          },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => setIsConfirmationVisible(true)}>
-              <AntDesign name="arrowleft" size={24} color="#2a2a2a" />
-            </TouchableOpacity>
-          ),
-        }}
-      />
-
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#00AACE" />
-        </View>
-      ) : isFullScreen ? (
-        <View style={styles.fullScreenVideoContainer}>
-          <TouchableOpacity
-            onPress={() => setIsFullScreen(false)}
-            className="absolute right-4 top-14 z-10"
-          >
-            <AntDesign name="closecircle" size={33} color="#A92703" />
-          </TouchableOpacity>
         </View>
       ) : (
         <Animated.FlatList
           ref={flatListRef}
           data={feedbackItem}
-          keyExtractor={(item, index) => index.toString()}
+          keyExtractor={(_, index) => index.toString()}
           renderItem={renderFeedbackItem}
           horizontal
           pagingEnabled
@@ -183,7 +132,7 @@ const Feedback: React.FC = () => {
         />
       )}
 
-      {!isFullScreen && !loading && (
+      {!loading && (
         <View className="absolute top-[5px] flex-row justify-center w-full">
           {feedbackItem.map((_, index) => {
             const inputRange = [
@@ -231,23 +180,5 @@ const styles = StyleSheet.create({
   },
   questionContainer: {
     width: "100%",
-  },
-  videoContainer: {
-    width: "30%",
-    paddingLeft: 10,
-  },
-  fullScreenVideoContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "black",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  fullScreenVideo: {
-    width,
-    height,
   },
 });

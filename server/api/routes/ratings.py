@@ -56,12 +56,6 @@ async def get_feedback_by_user_id(user_id: str, week_start: str, supabase: Clien
     # Step 1: Fetch all interview_ids for the given user_id
     interview_response = supabase.table('interview').select('interview_id').eq('user_id', user_id).execute()
     
-    if not interview_response.data:
-        raise HTTPException(status_code=404, detail="No interviews found for the given user ID")
-    
-    if hasattr(interview_response, 'error') and interview_response.error:
-        raise HTTPException(status_code=500, detail="Failed to retrieve interviews for the user")
-
     # Extract all interview_ids
     interview_ids = [interview['interview_id'] for interview in interview_response.data]
 

@@ -23,6 +23,7 @@ const Progress = () => {
           weekStartFormatted
         );
         setRatingsData(fetchedProgress);
+        console.log(ratingsData);
       } catch (error) {
         console.error("Error fetching data", error.message);
       }
@@ -40,18 +41,37 @@ const Progress = () => {
 
   const categoryRatings = weeklyRatings[selectedCategory] || [];
 
-  const chartData = categoryRatings.map((value, index) => ({
-    value: value,
-    label: ["Su", "M", "T", "W", "Th", "F", "Sa"][index],
-  }));
-
   // Calculate the lowest, average, and highest ratings for each category
-  const lowest = categoryRatings.length ? Math.min(...categoryRatings) : 0;
-  const sum = categoryRatings.reduce((sum, rating) => sum + rating, 0);
-  const average = categoryRatings.length
-    ? (sum / categoryRatings.length).toFixed(0)
+  const today = dayjs();
+  const todayIndex = today.isSame(currentWeekStart, "week")
+    ? today.diff(currentWeekStart, "day")
+    : -1; // -1 if not in the current week
+
+  // Filter ratings to ignore 0s after today
+  const filteredRatings = categoryRatings.filter((rating, index) => {
+    return index <= todayIndex || rating !== 0; // Include past days and non-zero values
+  });
+
+  // Calculate sum, average, highest, and lowest ratings
+  const sum = filteredRatings.reduce((sum, rating) => sum + rating, 0);
+  const average = filteredRatings.length
+    ? (sum / filteredRatings.length).toFixed(0)
     : 0;
-  const highest = categoryRatings.length ? Math.max(...categoryRatings) : 0;
+  const highest = filteredRatings.length
+    ? Math.max(...filteredRatings).toFixed(0)
+    : 0;
+  const lowest =
+    filteredRatings.length > 0 ? Math.min(...filteredRatings).toFixed(0) : 0;
+
+  const chartData = ["Su", "M", "T", "W", "Th", "F", "Sa"].map(
+    (label, index) => {
+      // Only set data for past or current days, future days should be skipped (empty)
+      return {
+        label: label,
+        value: index <= todayIndex ? categoryRatings[index] || 0 : null, // Undefined for future days
+      };
+    }
+  );
 
   const handleNextWeek = () => {
     setCurrentWeekStart(currentWeekStart.add(7, "day"));
@@ -139,6 +159,7 @@ const Progress = () => {
           isAnimated
           rulesType="solid"
           rulesColor="#D6D6D6"
+          animateOnDataChange={true}
         />
       ) : (
         <Text className="text-center text-gray-500 my-[170px]">

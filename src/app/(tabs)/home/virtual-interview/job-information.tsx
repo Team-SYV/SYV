@@ -255,7 +255,7 @@ const JobInformation = () => {
           console.error("Invalid question format:", question);
         }
       }
-      router.push(`/(tabs)/home/virtual-interview?interviewId=${interviewId}`);
+      router.push(`/(tabs)/home/virtual-interview/reminder?interviewId=${interviewId}`);
     } catch (error) {
       console.error("Error skipping file upload", error);
     } finally {

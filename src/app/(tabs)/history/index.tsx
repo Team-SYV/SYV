@@ -16,6 +16,7 @@ const History = () => {
   const [selectedTab, setSelectedTab] = useState("virtual");
   const [interviewData, setInterviewData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [buttonDisabled, setButtonDisabled] = useState(false);
 
   // Fetch interview history data on component mount
   useFocusEffect(
@@ -135,10 +136,18 @@ const History = () => {
                 <Text className="text-[10px] text-gray-600 mb-1">
                   {formatDateTime(item.created_at)}
                 </Text>
-                <TouchableOpacity className="w-[80%] mt-2 py-2 rounded-lg border border-[#D4D4D4]"
-                onPress={()=>{
-                  router.push(`/history/feedback?interviewId=${item.interview_id}`)
-                }}
+                <TouchableOpacity
+                  className="w-[80%] mt-2 py-2 rounded-lg border border-[#D4D4D4]"
+                  onPress={() => {
+                    if (!buttonDisabled) {
+                      setButtonDisabled(true);
+                      router.push(
+                        `/history/feedback?interviewId=${item.interview_id}`
+                      );
+                      setTimeout(() => setButtonDisabled(false), 1000);
+                    }
+                  }}
+                  disabled={buttonDisabled}
                 >
                   <Text className="text-center text-[12px]">View Feedback</Text>
                 </TouchableOpacity>

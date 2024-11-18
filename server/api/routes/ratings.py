@@ -62,12 +62,6 @@ async def get_feedback_by_user_id(user_id: str, week_start: str, supabase: Clien
     # Step 2: Fetch all ratings for the retrieved interview_ids
     ratings_response = supabase.table('ratings').select('*').in_('interview_id', interview_ids).execute()
     
-    if not ratings_response.data:
-        raise HTTPException(status_code=404, detail="No ratings found for the given user ID")
-
-    if hasattr(ratings_response, 'error') and ratings_response.error:
-        raise HTTPException(status_code=500, detail="Failed to retrieve ratings")
-
     # Step 3: Prepare the date range for the current week (Sunday to Saturday)
     week_start_date = datetime.strptime(week_start, "%Y-%m-%d")
     week_end_date = week_start_date + timedelta(days=6)

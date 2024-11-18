@@ -9,6 +9,7 @@ import React, { useState } from "react";
 import { getInterviewHistory } from "@/api";
 import { useUser } from "@clerk/clerk-expo";
 import { useFocusEffect } from "@react-navigation/native";
+import { router } from "expo-router";
 
 const History = () => {
   const { user } = useUser();
@@ -134,7 +135,11 @@ const History = () => {
                 <Text className="text-[10px] text-gray-600 mb-1">
                   {formatDateTime(item.created_at)}
                 </Text>
-                <TouchableOpacity className="w-[80%] mt-2 py-2 rounded-lg border border-[#D4D4D4]">
+                <TouchableOpacity className="w-[80%] mt-2 py-2 rounded-lg border border-[#D4D4D4]"
+                onPress={()=>{
+                  router.push(`/history/feedback?interviewId=${item.interview_id}`)
+                }}
+                >
                   <Text className="text-center text-[12px]">View Feedback</Text>
                 </TouchableOpacity>
 

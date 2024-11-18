@@ -265,11 +265,18 @@ const RecordYourself: React.FC = () => {
       try {
         setIsLoading(true);
 
-        if (feedbackRatings) {
+        // Wait for all the video transcriptions, feedback, and ratings to complete
+        const transcriptionPromises = recordedVideos.map((videoUri, index) =>
+          handleVideoAnswerFeedback(videoUri, index)
+        );
+
+        await Promise.all(transcriptionPromises);
+
+        if (feedbackRatings.length) {
           const averageRatings = calculateAverageRatings();
 
           // Wait for ratings creation to finish before navigating
-          createRatings({
+          await createRatings({
             interview_id: interviewId,
             answer_relevance: averageRatings.answer_relevance_rating,
             eye_contact: averageRatings.eye_contact_rating,
@@ -282,6 +289,7 @@ const RecordYourself: React.FC = () => {
         setAllQuestionsRecorded(true);
         setIsModalVisible(false);
 
+        // Navigate to the next screen with video URIs and ratings data
         router.push({
           pathname: `/home/record-yourself/feedback`,
           params: {

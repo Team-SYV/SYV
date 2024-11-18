@@ -8,17 +8,21 @@ import { getRatingsByUserId } from "@/api";
 
 const Progress = () => {
   const { user } = useUser();
-  const [currentWeekStart, setCurrentWeekStart] = useState(dayjs().startOf('week')); 
+  const [currentWeekStart, setCurrentWeekStart] = useState(
+    dayjs().startOf("week")
+  );
   const [selectedCategory, setSelectedCategory] = useState("answerRelevance");
   const [ratingsData, setRatingsData] = useState({});
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        const fetchedProgress = await getRatingsByUserId(user.id);
-
+        const weekStartFormatted = currentWeekStart.format("YYYY-MM-DD");
+        const fetchedProgress = await getRatingsByUserId(
+          user.id,
+          weekStartFormatted
+        );
         setRatingsData(fetchedProgress);
-        console.log(fetchedProgress);
       } catch (error) {
         console.error("Error fetching data", error.message);
       }
@@ -27,7 +31,7 @@ const Progress = () => {
     if (user) {
       fetch();
     }
-  }, [user]);
+  }, [user, currentWeekStart]);
   const weekStart = currentWeekStart.format("MMMM D");
   const weekEnd = currentWeekStart.add(6, "day").format("MMMM D, YYYY");
 

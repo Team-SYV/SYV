@@ -11,16 +11,16 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 def generate_feedback(question, answer, wpm, eye_contact):
     prompt = f"""
-        You are a hiring manager conducting an interview.
+        You are an expert in interview feedback.
         Please provide feedback on the answer given to the question, focusing on:
-        1. Grammar: Comment on the grammatical accuracy of the response.
-        2. Answer Relevance: Assess how directly and thoroughly the answer addresses the question.
-        3. Filler Words: Note any excessive use of filler words or phrases.
-        4. Pace of Speech: based on words per minute.
-        5. Eye Contact: based on the eye contact percentage.
-        6. Tips: give tips to the interviewee to improve their interview skills, in paragraph mode.
+        1. Grammar: Evaluate the grammatical accuracy of the response, noting any errors or areas for improvement.
+        2. Answer Relevance: Assess how directly and comprehensively the answer addresses the question, including alignment with the job role or key points.
+        3. Filler Words: Identify any excessive use of filler words (like "um," "uh," "like," etc.), and comment on how they may impact the response’s clarity and confidence.
+        4. Pace of Speech:Evaluate the pace based on the words per minute ({wpm} WPM) and suggest if adjustments are needed for better comprehension or impact.
+        5. Eye Contact:Assess eye contact effectiveness, given the eye contact percentage ({eye_contact}%), and discuss its effect on the overall engagement and confidence.
+        6. Tips: Give tips and ideal answer to the interviewee to improve their interview skills, in paragraph mode. 
 
-        The question was: "{question}"
+         The question was: "{question}"
 
         The response was: "{answer}"
 
@@ -103,15 +103,14 @@ def generate_virtual_feedback(questions, answers, wpm, eye_contact):
 
     # Construct the prompt with cumulative data for OpenAI completion
     prompt = f"""
-        You are a hiring manager conducting an interview.
+        You are an expert in interview feedback.
         Based on the interviewee's answers to the following questions, provide cumulative feedback on their overall performance, focusing on:
-        1. Grammar: Comment on the grammatical accuracy across answers.
-        2. Answer Relevance: Assess how directly and thoroughly answers address each question.
-        3. Filler Words: Note any excessive use of filler words across responses.
-        4. Pace of Speech: based on the words per minute across all answers.
-        5. Eye Contact: based on the eye contact percentage across all answers.
-        6. Tips: provide improvement tips to the interviewee, in paragraph format.
-
+        1. Grammar: Evaluate the grammatical accuracy of the response, noting any errors or areas for improvement.
+        2. Answer Relevance: Assess how directly and comprehensively the answer addresses the question, including alignment with the job role or key points.
+        3. Filler Words: Identify any excessive use of filler words (like "um," "uh," "like," etc.), and comment on how they may impact the response’s clarity and confidence.
+        4. Pace of Speech:Evaluate the pace based on the words per minute ({wpm} WPM) and suggest if adjustments are needed for better comprehension or impact..
+        5. Eye Contact:Assess eye contact effectiveness, given the eye contact percentage ({eye_contact}%), and discuss its effect on the overall engagement and confidence.
+        
         Here are the questions and answers:
     """
 
@@ -125,7 +124,6 @@ def generate_virtual_feedback(questions, answers, wpm, eye_contact):
 
     prompt += """
         Additionally, rate each category out of 5.
-
         Format your response in the following JSON structure:
         {
             "grammar": "<cumulative feedback on grammar>",

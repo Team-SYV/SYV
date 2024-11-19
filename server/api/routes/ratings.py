@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Depends
 from supabase import Client
 from collections import defaultdict
+from datetime import datetime, timedelta
 from typing import Dict
 
 from models.ratings import createRatingsInput, createRatingsResponse, getRatingsResponse
@@ -51,47 +52,56 @@ async def get_feedback(interview_id: str, supabase: Client = Depends(get_supabas
     return ratings_list
 
 @router.get("/progress/{user_id}", response_model=Dict[str, Dict[str, list]])
-async def get_feedback_by_user_id(user_id: str, supabase: Client = Depends(get_supabase)):
+async def get_feedback_by_user_id(user_id: str, week_start: str, supabase: Client = Depends(get_supabase)):
     # Step 1: Fetch all interview_ids for the given user_id
     interview_response = supabase.table('interview').select('interview_id').eq('user_id', user_id).execute()
     
-    if not interview_response.data:
-        raise HTTPException(status_code=404, detail="No interviews found for the given user ID")
-    
-    if hasattr(interview_response, 'error') and interview_response.error:
-        raise HTTPException(status_code=500, detail="Failed to retrieve interviews for the user")
-
     # Extract all interview_ids
     interview_ids = [interview['interview_id'] for interview in interview_response.data]
 
     # Step 2: Fetch all ratings for the retrieved interview_ids
     ratings_response = supabase.table('ratings').select('*').in_('interview_id', interview_ids).execute()
     
-    if not ratings_response.data:
-        raise HTTPException(status_code=404, detail="No ratings found for the given user ID")
+    # Step 3: Prepare the date range for the current week (Sunday to Saturday)
+    week_start_date = datetime.strptime(week_start, "%Y-%m-%d")
+    week_end_date = week_start_date + timedelta(days=6)
 
-    if hasattr(ratings_response, 'error') and ratings_response.error:
-        raise HTTPException(status_code=500, detail="Failed to retrieve ratings")
-
-    # Step 3: Group ratings by date
-    ratings_by_date = defaultdict(lambda: {
-        'answerRelevance': [],
-        'grammar': [],
-        'eyeContact': [],
-        'paceOfSpeech': [],
-        'fillerWords': []
+    # Step 4: Group ratings by day within the current week
+    ratings_by_day = defaultdict(lambda: {
+        'answerRelevance': [0] * 7,
+        'grammar': [0] * 7,
+        'eyeContact': [0] * 7,
+        'paceOfSpeech': [0] * 7,
+        'fillerWords': [0] * 7,
+        'count': [0] * 7  # This will track the count of ratings for each day
     })
 
     for ratings in ratings_response.data:
         # Extract date (assuming created_at is in ISO format and needs only the date part)
-        date = ratings['created_at'].split('T')[0]  # Use only the date part (YYYY-MM-DD)
+        date_str = ratings['created_at'].split('T')[0]  # Use only the date part (YYYY-MM-DD)
+        date = datetime.strptime(date_str, "%Y-%m-%d")
 
-        # Append each rating to the corresponding list by category
-        ratings_by_date[date]['answerRelevance'].append(ratings['answer_relevance'])
-        ratings_by_date[date]['grammar'].append(ratings['grammar'])
-        ratings_by_date[date]['eyeContact'].append(ratings['eye_contact'])
-        ratings_by_date[date]['paceOfSpeech'].append(ratings.get('pace_of_speech', None))  # Use None if not present
-        ratings_by_date[date]['fillerWords'].append(ratings.get('filler_words', None))  # Use None if not present
+        # Only consider ratings within the current week (Sunday to Saturday)
+        if week_start_date <= date <= week_end_date:
+            # Get the index for the day of the week (0 = Sunday, 6 = Saturday)
+            day_index = (date - week_start_date).days
 
-    # Step 4: Return the formatted response
-    return dict(ratings_by_date)
+            # Add ratings to the corresponding day and increment count for averaging
+            ratings_by_day[week_start_date]['answerRelevance'][day_index] += ratings['answer_relevance']
+            ratings_by_day[week_start_date]['grammar'][day_index] += ratings['grammar']
+            ratings_by_day[week_start_date]['eyeContact'][day_index] += ratings['eye_contact']
+            ratings_by_day[week_start_date]['paceOfSpeech'][day_index] += ratings.get('pace_of_speech', 0)  # Default to 0 if not present
+            ratings_by_day[week_start_date]['fillerWords'][day_index] += ratings.get('filler_words', 0)  # Default to 0 if not present
+            ratings_by_day[week_start_date]['count'][day_index] += 1
+
+    # Step 5: Calculate averages for each category by day
+    for week_start_date, ratings in ratings_by_day.items():
+        for category, rating_list in ratings.items():
+            if category != 'count':  # We don't need to average the 'count'
+                for i in range(7):
+                    if ratings_by_day[week_start_date]['count'][i] > 0:  # Avoid division by zero
+                        rating_list[i] = round(rating_list[i] / ratings_by_day[week_start_date]['count'][i], 2)
+
+    # Step 6: Return the formatted response
+    return {week_start_date.strftime("%Y-%m-%d"): ratings_by_day[week_start_date]}
+

@@ -18,6 +18,7 @@ import {
 import {
   createAnswer,
   createRatings,
+  generateAnswerFeedback,
   generateVirtualFeedback,
   getQuestions,
   transcribeVideo,
@@ -143,19 +144,19 @@ const VirtualInterview = () => {
       type: "video/mp4",
       name: videoUri.split("/").pop(),
     } as unknown as File;
-  
+
     const transcription = await transcribeVideo(videoFile);
-  
+
     if (transcription && transcription.transcription) {
       const updatedAnswers = [...answers, transcription.transcription];
       const updatedWpms = [...wpms, transcription.wpm];
       const updatedEyeContacts = [...eyeContacts, transcription.eye_contact];
-  
+
       // Update state with new transcription and metrics
       setAnswers(updatedAnswers);
       setWpms(updatedWpms);
       setEyeContacts(updatedEyeContacts);
-  
+
       setMessages((prevMessages) => [
         ...prevMessages,
         {
@@ -164,16 +165,27 @@ const VirtualInterview = () => {
           content: transcription.transcription,
         },
       ]);
-  
+
+      const form = new FormData();
+      form.append("previous_question", questions[currentQuestionIndex]);
+      form.append("previous_answer", transcription.transcription);
+
+      const feedback = await generateAnswerFeedback(form);
+
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { id: uuid.v4() as string, role: Role.Bot, content: feedback },
+      ]);
+
       // Save answer in the backend
       await createAnswer({
         question_id: questionIds[index],
         answer: transcription.transcription,
       });
-  
+
       // Check if it is the last question
       const isLastQuestion = index === questions.length - 1;
-  
+
       if (isLastQuestion) {
         if (
           updatedAnswers.length === questions.length &&
@@ -187,22 +199,24 @@ const VirtualInterview = () => {
             wpm: updatedWpms,
             eye_contact: updatedEyeContacts,
           });
-  
+
           if (feedbackResponse && feedbackResponse.ratings_data) {
-            console.log(feedbackResponse.ratings_data)
+            console.log(feedbackResponse.ratings_data);
             await createRatings({
               interview_id: interviewId,
-              answer_relevance: feedbackResponse.ratings_data.answer_relevance_rating,
+              answer_relevance:
+                feedbackResponse.ratings_data.answer_relevance_rating,
               eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
               grammar: feedbackResponse.ratings_data.grammar_rating,
-              pace_of_speech: feedbackResponse.ratings_data.pace_of_speech_rating,
+              pace_of_speech:
+                feedbackResponse.ratings_data.pace_of_speech_rating,
               filler_words: feedbackResponse.ratings_data.filler_words_rating,
             });
           }
-  
-          setIsModalVisible(true);  // Trigger the modal to navigate to feedback
+
+          setIsModalVisible(true); // Trigger the modal to navigate to feedback
         }
-  
+
         setMessages((prevMessages) => [
           ...prevMessages,
           {
@@ -213,7 +227,7 @@ const VirtualInterview = () => {
         ]);
       } else {
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
-  
+
         setMessages((prevMessages) => [
           ...prevMessages,
           {
@@ -225,7 +239,7 @@ const VirtualInterview = () => {
       }
     }
   };
-  
+
   // Start recording
   const startRecording = async () => {
     Speech.stop();
@@ -239,7 +253,7 @@ const VirtualInterview = () => {
         const duration = (Date.now() - startTime) / 1000;
 
         // Check if the recording is less than 10 seconds
-        if (duration < 10) {
+        if (duration < 1) {
           alert("Recording must be at least 10 seconds.");
           cameraRef.current.stopRecording();
           setIsRecording(false);

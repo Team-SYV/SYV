@@ -16,6 +16,16 @@ const TabLayout = () => {
     return !(routeName === "edit-profile" || routeName === "subscription");
   };
 
+  const shouldHistoryTabBarBeVisible = (route: Route<string>) => {
+    const routeName = getFocusedRouteNameFromRoute(route) ?? "history";
+    return !(routeName === "feedback");
+  };
+
+  const shouldHistoryHeaderBeShown = (route: Route<string>) => {
+    const routeName = getFocusedRouteNameFromRoute(route) ?? "history";
+    return !(routeName === "feedback");
+  };
+
   const shouldHomeTabBarBeVisible = (route: Route<string>) => {
     const routeName = getFocusedRouteNameFromRoute(route) ?? "home";
     return !(
@@ -105,19 +115,32 @@ const TabLayout = () => {
       />
       <Tabs.Screen
         name="history"
-        options={{
+        options={({ route }) => ({
           tabBarIcon: ({ size, color }) => (
             <MaterialIcons name="history" size={size} color={color} />
           ),
           tabBarLabel: "History",
-          headerShown: true,
+          headerShown: shouldHistoryHeaderBeShown(route),
+          tabBarStyle: shouldHistoryTabBarBeVisible(route)
+            ? {
+                height: 54,
+                position: "absolute",
+                bottom: 10,
+                left: 10,
+                right: 10,
+                borderRadius: 15,
+                borderTopWidth: 0,
+                shadowColor: "#000",
+                elevation: 5,
+              }
+            : { display: "none" },
           headerStyle: {
             backgroundColor: "#009CBD",
             height: 75,
           },
           headerLeft: () => <HeaderLeft />,
           headerTitle: () => null,
-        }}
+        })}
         redirect={!isSignedIn}
       />
 

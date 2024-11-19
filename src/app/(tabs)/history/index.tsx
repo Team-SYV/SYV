@@ -5,41 +5,46 @@ import {
   FlatList,
   ActivityIndicator,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { getInterviewHistory } from "@/api";
 import { useUser } from "@clerk/clerk-expo";
+import { useFocusEffect } from "@react-navigation/native";
+import { router } from "expo-router";
 
 const History = () => {
   const { user } = useUser();
   const [selectedTab, setSelectedTab] = useState("virtual");
   const [interviewData, setInterviewData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [buttonDisabled, setButtonDisabled] = useState(false);
 
   // Fetch interview history data on component mount
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        setLoading(true);
-        const fetchedHistory = await getInterviewHistory(user.id);
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetch = async () => {
+        try {
+          setLoading(true);
+          const fetchedHistory = await getInterviewHistory(user.id);
+          const sortedHistory = fetchedHistory.sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime()
+          );
 
-        // Sort the data by created_at in descending order
-        const sortedHistory = fetchedHistory.sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
+          setInterviewData(sortedHistory);
+        } catch (error) {
+          console.error("Error fetching data", error.message);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-        setInterviewData(sortedHistory);
-      } catch (error) {
-        console.error("Error fetching data", error.message);
-      } finally {
-        setLoading(false);
+      if (user) {
+        fetch();
       }
-    };
+    }, [user])
+  );
 
-    if (user) {
-      fetch();
-    }
-  }, [user]);
   // Helper function to format the date
   const formatDateTime = (dateTime) => {
     const date = new Date(dateTime);
@@ -131,7 +136,19 @@ const History = () => {
                 <Text className="text-[10px] text-gray-600 mb-1">
                   {formatDateTime(item.created_at)}
                 </Text>
-                <TouchableOpacity className="w-[80%] mt-2 py-2 rounded-lg border border-[#D4D4D4]">
+                <TouchableOpacity
+                  className="w-[80%] mt-2 py-2 rounded-lg border border-[#D4D4D4]"
+                  onPress={() => {
+                    if (!buttonDisabled) {
+                      setButtonDisabled(true);
+                      router.push(
+                        `/history/feedback?interviewId=${item.interview_id}`
+                      );
+                      setTimeout(() => setButtonDisabled(false), 1000);
+                    }
+                  }}
+                  disabled={buttonDisabled}
+                >
                   <Text className="text-center text-[12px]">View Feedback</Text>
                 </TouchableOpacity>
 

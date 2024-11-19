@@ -70,7 +70,9 @@ const Progress = () => {
   // Calculate the lowest, average, and highest ratings
   const sum = roundedRatings.reduce((sum, rating) => sum + rating, 0);
 
-  const average = roundedRatings.length ? sum / roundedRatings.length : 0;
+  const average = roundedRatings.length
+    ? (sum / roundedRatings.length).toFixed(2)
+    : "0";
 
   const highest = roundedRatings.length ? Math.max(...roundedRatings) : 0;
 

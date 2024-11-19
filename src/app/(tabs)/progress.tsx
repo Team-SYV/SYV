@@ -1,95 +1,110 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import dayjs from "dayjs";
 import { Feather } from "@expo/vector-icons";
 import { LineChart } from "react-native-gifted-charts";
 import { useUser } from "@clerk/clerk-expo";
+import { useFocusEffect } from "@react-navigation/native";
 import { getRatingsByUserId } from "@/api";
 
 const Progress = () => {
   const { user } = useUser();
+  const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("answerRelevance");
+
   const [currentWeekStart, setCurrentWeekStart] = useState(
     dayjs().startOf("week")
   );
-  const [selectedCategory, setSelectedCategory] = useState("answerRelevance");
+
   const [ratingsData, setRatingsData] = useState({});
-
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const weekStartFormatted = currentWeekStart.format("YYYY-MM-DD");
-        const fetchedProgress = await getRatingsByUserId(
-          user.id,
-          weekStartFormatted
-        );
-        setRatingsData(fetchedProgress);
-        console.log(ratingsData);
-      } catch (error) {
-        console.error("Error fetching data", error.message);
-      }
-    };
-
-    if (user) {
-      fetch();
-    }
-  }, [user, currentWeekStart]);
   const weekStart = currentWeekStart.format("MMMM D");
   const weekEnd = currentWeekStart.add(6, "day").format("MMMM D, YYYY");
-
   const currentWeekKey = currentWeekStart.format("YYYY-MM-DD");
+
   const weeklyRatings = ratingsData[currentWeekKey] || {};
-
   const categoryRatings = weeklyRatings[selectedCategory] || [];
-
-  // Calculate the lowest, average, and highest ratings for each category
   const today = dayjs();
-  const todayIndex = today.isSame(currentWeekStart, "week")
-    ? today.diff(currentWeekStart, "day")
-    : -1; // -1 if not in the current week
 
-  // Filter ratings to ignore 0s after today
-  const filteredRatings = categoryRatings.filter((rating, index) => {
-    return index <= todayIndex || rating !== 0; // Include past days and non-zero values
-  });
-
-  // Calculate sum, average, highest, and lowest ratings
-  const sum = filteredRatings.reduce((sum, rating) => sum + rating, 0);
-  const average = filteredRatings.length
-    ? (sum / filteredRatings.length).toFixed(0)
-    : 0;
-  const highest = filteredRatings.length
-    ? Math.max(...filteredRatings).toFixed(0)
-    : 0;
-  const lowest =
-    filteredRatings.length > 0 ? Math.min(...filteredRatings).toFixed(0) : 0;
-
-  const chartData = ["Su", "M", "T", "W", "Th", "F", "Sa"].map(
-    (label, index) => {
-      // Only set data for past or current days, future days should be skipped (empty)
-      return {
-        label: label,
-        value: index <= todayIndex ? categoryRatings[index] || 0 : null, // Undefined for future days
-      };
+  // Fetches the user’s ratings data for the selected week.
+  const fetchRatings = async () => {
+    setLoading(true);
+    try {
+      const weekStartFormatted = currentWeekStart.format("YYYY-MM-DD");
+      const fetchedProgress = await getRatingsByUserId(
+        user.id,
+        weekStartFormatted
+      );
+      setRatingsData(fetchedProgress);
+    } catch (error) {
+      console.error("Error fetching data", error.message);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchRatings();
+    }
+  }, [user, currentWeekStart]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        fetchRatings();
+      }
+    }, [user, currentWeekStart, selectedCategory])
   );
 
-  const handleNextWeek = () => {
+  const todayIndex = today.isSame(currentWeekStart, "week")
+    ? today.diff(currentWeekStart, "day")
+    : -1;
+
+  const filteredRatings = categoryRatings.filter((rating, index) => {
+    return index <= todayIndex || rating !== 0;
+  });
+
+  // Round the ratings to whole numbers
+  const roundedRatings = filteredRatings.map((rating) => Math.round(rating));
+
+  // Calculate the lowest, average, and highest ratings
+  const sum = roundedRatings.reduce((sum, rating) => sum + rating, 0);
+
+  const average = roundedRatings.length ? sum / roundedRatings.length : 0;
+
+  const highest = roundedRatings.length ? Math.max(...roundedRatings) : 0;
+
+  const lowest = roundedRatings.length > 0 ? Math.min(...roundedRatings) : 0;
+
+  const getChartData = () => {
+    return today.isSame(currentWeekStart, "week")
+      ? ["Su", "M", "T", "W", "Th", "F", "Sa"]
+          .map((label, index) => ({
+            label,
+            value: Math.round(categoryRatings[index]) || 0,
+          }))
+          .slice(0, todayIndex + 1)
+      : ["Su", "M", "T", "W", "Th", "F", "Sa"].map((label, index) => ({
+          label,
+          value: Math.round(categoryRatings[index]) || 0,
+        }));
+  };
+
+  const handleNextWeek = () =>
     setCurrentWeekStart(currentWeekStart.add(7, "day"));
-  };
 
-  const handlePreviousWeek = () => {
+  const handlePreviousWeek = () =>
     setCurrentWeekStart(currentWeekStart.subtract(7, "day"));
-  };
 
+  // Check if category has data
   const hasData =
     categoryRatings.length && !categoryRatings.every((rating) => rating === 0);
 
-  // Helper function to format category names
-  const formatCategoryName = (category) => {
-    return category
+  // Format category names
+  const formatCategoryName = (category) =>
+    category
       .replace(/([A-Z])/g, " $1")
       .replace(/^./, (str) => str.toUpperCase());
-  };
 
   return (
     <View className="flex-1 bg-white pt-12 px-2">
@@ -131,19 +146,24 @@ const Progress = () => {
         <TouchableOpacity onPress={handlePreviousWeek}>
           <Feather name="chevron-left" size={24} />
         </TouchableOpacity>
-
         <Text className="text-lg font-medium mx-4">
           {weekStart} - {weekEnd}
         </Text>
-
         <TouchableOpacity onPress={handleNextWeek}>
           <Feather name="chevron-right" size={24} />
         </TouchableOpacity>
       </View>
 
-      {hasData ? (
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color="#00AACE"
+          style={{ marginTop: 160, marginBottom: 163 }}
+        />
+      ) : hasData ? (
         <LineChart
-          data={chartData}
+          key={selectedCategory}
+          data={getChartData()}
           width={300}
           height={320}
           color="#00AACE"

@@ -1,0 +1,13 @@
+cmake==3.26.4
+dlib-bin==19.24.6
+fastapi==0.115.4
+ffmpeg-python==0.2.0
+openai==1.54.3
+opencv-python-headless==4.10.0.84
+pydantic==2.9.2
+pypdf==5.1.0
+python-dotenv==1.0.1
+python-multipart==0.0.17
+supabase==2.10.0
+svix==1.39.0
+uvicorn==0.32.0

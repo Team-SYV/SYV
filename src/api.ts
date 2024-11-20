@@ -1,9 +1,11 @@
 import axios from "axios";
-import { FeedbackData } from "./types/feedbackData";
 import { AnswerData } from "./types/answerData";
 import { InterviewData } from "./types/interviewData";
 import { JobInformationData } from "./types/jobInformationData";
 import { QuestionData } from "./types/questionData";
+import { RatingsData } from "./types/ratingsData";
+import { FeedbackData } from "./types/feedbackData";
+import { VirtualFeedbackData } from "./types/virtualFeedbackData";
 
 const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL,
@@ -14,7 +16,7 @@ export const createJobInformation = async (
 ) => {
   try {
     const response = await api.post(
-      "/api/job_information/create/",
+      "/api/job_information/create",
       jobInformationData
     );
     return response.data;
@@ -106,11 +108,9 @@ export const transcribeVideo = async (videoFile: File) => {
       },
     });
 
-    return response.data.transcription;
+    return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.detail || "Failed to transcribe video"
-    );
+    throw new Error(error, error.response);
   }
 };
 
@@ -125,20 +125,9 @@ export const createAnswer = async (answerData: AnswerData) => {
   }
 };
 
-export const createFeedback = async (feedbackData: FeedbackData) => {
+export const getFeedback = async (interview_id: string | string[]) => {
   try {
-    const response = await api.post(`/api/feedback/create`, feedbackData);
-    return response.data;
-  } catch (error) {
-    throw new Error(
-      error.response?.data?.detail || "Failed to create feedback"
-    );
-  }
-};
-
-export const getFeedback = async (feedback_id: string | string[]) => {
-  try {
-    const response = await api.get(`/api/feedback/get/${feedback_id}`);
+    const response = await api.get(`/api/feedback/get/${interview_id}`);
     return response.data;
   } catch (error) {
     throw new Error(
@@ -147,23 +136,135 @@ export const getFeedback = async (feedback_id: string | string[]) => {
   }
 };
 
-export const generateFeedback = async (question: string, answer: string) => {
+export const generateFeedback = async (feedbackData: FeedbackData) => {
+  try {
+    const response = await api.post("/api/generate-feedback/", feedbackData, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to generate feedback"
+    );
+  }
+};
+
+export const generateVirtualFeedback = async (
+  VirtualFeedbackData: VirtualFeedbackData
+) => {
+  try {
+    const response = await api.post(
+      "/api/generate-virtual-feedback/",
+      VirtualFeedbackData,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to generate virtual feedback"
+    );
+  }
+};
+
+export const createRatings = async (ratingsData: RatingsData) => {
+  try {
+    const response = await api.post("/api/ratings/create", ratingsData);
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.detail || "Failed to create ratings");
+  }
+};
+
+export const getRatings = async (interview_id: string | string[]) => {
+  try {
+    const response = await api.get(`/api/ratings/get/${interview_id}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to retrieve ratings"
+    );
+  }
+};
+
+export const getInterviewHistory = async (userId: string) => {
+  try {
+    const response = await api.get(`/api/interview/history/${userId}`);
+    return response.data;
+  } catch (error) { 
+    throw new Error(
+      error.response?.data?.detail || "Failed to retrieve interview count"
+    );
+  }
+};
+
+export const getRatingsByUserId = async (userId: string, week_start: string) => {
+  try {
+    // Include the week_start parameter in the URL
+    const response = await api.get(`/api/ratings/progress/${userId}?week_start=${week_start}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to retrieve ratings by user ID"
+    );
+  }
+};
+
+export const generateAnswerFeedback = async (formData) => {
+  try {
+    const response = await api.post(
+      "/api/generate-answer-feedback/",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    return response.data.feedback; // Assuming feedback is structured correctly
+  } catch (error) {
+    console.error("Error response from server:", error.response);
+
+    // Log the entire error object for better debugging
+    console.error("Full error object:", JSON.stringify(error, null, 2));
+
+    throw new Error(
+      error.response?.data?.detail || "Failed to generate answer feedback"
+    );
+  }
+};
+
+export const getFeedbackWithQuestions = async (interviewId: string | string[]) => {
+  try {
+    const response = await api.get(`/api/feedback/get/record/${interviewId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to retrieve feedback with questions"
+    );
+  }
+};
+
+
+export const testeyecontact = async (videoFile: File) => {
   try {
     const formData = new FormData();
-    formData.append("question", question);
-    formData.append("answer", answer);
+    formData.append("file", videoFile);
 
-    const response = await api.post("/api/generate-feedback/", formData, {
+    const response = await api.post("/api/eye-contact/", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
 
-    const { grammar, relevance, filler } = response.data;
-    return { grammar, relevance, filler };
+    return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.detail || "Failed to generate feedback"
-    );
+    throw new Error(error, error.response);
   }
 };

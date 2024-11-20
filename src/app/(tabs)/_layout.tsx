@@ -5,7 +5,7 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import { getFocusedRouteNameFromRoute, Route } from "@react-navigation/native";
 import { Text, View, Image } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
-import Feather from '@expo/vector-icons/Feather';
+import Feather from "@expo/vector-icons/Feather";
 
 const TabLayout = () => {
   const { isSignedIn } = useAuth();
@@ -13,7 +13,17 @@ const TabLayout = () => {
   // Helper function to hide tab bar and header on specific routes
   const shouldProfileTabBarBeVisible = (route: Route<string>) => {
     const routeName = getFocusedRouteNameFromRoute(route) ?? "profile";
-    return !(routeName === "edit-profile");
+    return !(routeName === "edit-profile" || routeName === "subscription");
+  };
+
+  const shouldHistoryTabBarBeVisible = (route: Route<string>) => {
+    const routeName = getFocusedRouteNameFromRoute(route) ?? "history";
+    return !(routeName === "feedback");
+  };
+
+  const shouldHistoryHeaderBeShown = (route: Route<string>) => {
+    const routeName = getFocusedRouteNameFromRoute(route) ?? "history";
+    return !(routeName === "feedback");
   };
 
   const shouldHomeTabBarBeVisible = (route: Route<string>) => {
@@ -105,12 +115,32 @@ const TabLayout = () => {
       />
       <Tabs.Screen
         name="history"
-        options={{
+        options={({ route }) => ({
           tabBarIcon: ({ size, color }) => (
             <MaterialIcons name="history" size={size} color={color} />
           ),
           tabBarLabel: "History",
-        }}
+          headerShown: shouldHistoryHeaderBeShown(route),
+          tabBarStyle: shouldHistoryTabBarBeVisible(route)
+            ? {
+                height: 54,
+                position: "absolute",
+                bottom: 10,
+                left: 10,
+                right: 10,
+                borderRadius: 15,
+                borderTopWidth: 0,
+                shadowColor: "#000",
+                elevation: 5,
+              }
+            : { display: "none" },
+          headerStyle: {
+            backgroundColor: "#009CBD",
+            height: 75,
+          },
+          headerLeft: () => <HeaderLeft />,
+          headerTitle: () => null,
+        })}
         redirect={!isSignedIn}
       />
 
@@ -121,6 +151,13 @@ const TabLayout = () => {
             <AntDesign name="barschart" size={size} color={color} />
           ),
           tabBarLabel: "Progress",
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: "#009CBD",
+            height: 75,
+          },
+          headerLeft: () => <HeaderLeft />,
+          headerTitle: () => null,
         }}
         redirect={!isSignedIn}
       />

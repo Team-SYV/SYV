@@ -13,21 +13,30 @@ import {
   Animated,
   FlatList,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
-import { mockFeedbackData } from "@/constants/feedbackData";
+import Ratings from "@/components/Rating/Ratings";
+import { getFeedbackWithQuestions, getRatings } from "@/api";
+import { RatingsData } from "@/types/ratingsData";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 const Feedback: React.FC = () => {
-  const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0); // Track the current index
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList<string>>(null);
-  const { videoURIs } = useLocalSearchParams();
+
+  const [feedbackItem, setFeedbackItem] = useState([]);
+  const [ratings, setRatings] = useState<RatingsData>();
+
+  const [loading, setLoading] = useState(true);
+  const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
+
+  const { videoURIs, interviewId } = useLocalSearchParams();
   const parsedVideos: string[] =
     typeof videoURIs === "string" ? (JSON.parse(videoURIs) as string[]) : [];
+  const videosWithRatings = [...parsedVideos, "ratings"];
 
   // Android back button
   useEffect(() => {
@@ -48,6 +57,28 @@ const Feedback: React.FC = () => {
     return () => backHandler.remove();
   }, [isFullScreen]);
 
+  // Fetch questions, feedback and ratings
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        setLoading(true);
+
+        const fetchedFeedback = await getFeedbackWithQuestions(interviewId);
+        setFeedbackItem(fetchedFeedback);
+        const fetchedRatings = await getRatings(interviewId);
+        setRatings(fetchedRatings);
+      } catch (error) {
+        console.error("Error fetching data", error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (interviewId) {
+      fetch();
+    }
+  }, [interviewId]);
+
   // Render each video and its corresponding question and feedback
   const renderFeedbackItem = ({
     item,
@@ -56,15 +87,36 @@ const Feedback: React.FC = () => {
     item: string;
     index: number;
   }) => {
-    const feedback = mockFeedbackData[index];
+    if (item === "ratings") {
+      return (
+        <View style={styles.itemContainer}>
+          {ratings ? (
+            <Ratings
+              relevance={ratings[0].answer_relevance}
+              grammar={ratings[0].grammar}
+              eyeContact={ratings[0].eye_contact}
+              pace={ratings[0].pace_of_speech}
+              fillerWords={ratings[0].filler_words}
+            />
+          ) : (
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator size="large" color="#00AACE" />
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    const feedback = feedbackItem[index] || {};
 
     return (
       <View style={styles.itemContainer}>
-        <View className="flex-row items-center px-4 mt-3">
+        <View className="flex-row items-center px-4 mt-4">
           <View style={styles.questionContainer}>
             <Text className="font-semibold text-[13px]">
-              Question {index + 1}{" "}
+              Question {index + 1}
             </Text>
+
             <Text className="text-sm text-[13px]">{feedback.question}</Text>
           </View>
           <View style={styles.videoContainer}>
@@ -84,70 +136,48 @@ const Feedback: React.FC = () => {
 
         <ScrollView className="mt-5">
           <View className="px-4">
-            <Text className="font-medium text-[12px] mb-2 ">
-              Answer Relevance
-            </Text>
-            <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.answerRelevance}
-            </Text>
-
-            <Text className="font-medium text-[12px] mb-2">Grammar</Text>
-            <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.grammar}
-            </Text>
-
-            <Text className="font-medium text-[12px] mb-2">Eye Contact </Text>
-            <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.eyeContact}
-            </Text>
-
-            <Text className="font-medium text-[12px] mb-2">
-              Pace of Speech{" "}
-            </Text>
-            <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.paceOfSpeech}
-            </Text>
-
-            <Text className="font-medium text-[12px] mb-2">Filler Words </Text>
-            <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.fillerWords}
-            </Text>
-
-            <Text className="font-medium text-[12px] mb-2">
-              Tips & Ideal Answer
-            </Text>
-            <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedback.tips}
-            </Text>
-          </View>
-
-          <View className="mt-2 px-5">
-            <TouchableOpacity
-              onPress={() => {
-                if (currentIndex === parsedVideos.length - 1) {
-                  router.push("/home/record-yourself/ratings");
-                } else {
-                  setCurrentIndex(currentIndex + 1);
-                  flatListRef.current?.scrollToIndex({
-                    index: currentIndex + 1,
-                    animated: true,
-                  });
-                }
-              }}
-              className="bg-[#00AACE] py-3 rounded-xl"
-            >
-              <Text className="text-white text-[15px] font-medium text-center">
-                {currentIndex === parsedVideos.length - 1
-                  ? "Proceed to Ratings"
-                  : "Next"}
+            <>
+              <Text className="font-medium text-[12px] mb-2">
+                Answer Relevance
               </Text>
-            </TouchableOpacity>
+              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+                {feedback.answer_relevance || "No feedback available"}
+              </Text>
+
+              <Text className="font-medium text-[12px] mb-2">Grammar</Text>
+              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+                {feedback.grammar || "No feedback available"}
+              </Text>
+
+              <Text className="font-medium text-[12px] mb-2">Eye Contact</Text>
+              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+                {feedback.eye_contact || "No feedback available"}
+              </Text>
+
+              <Text className="font-medium text-[12px] mb-2">
+                Pace of Speech
+              </Text>
+              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+                {feedback.pace_of_speech || "No feedback available"}
+              </Text>
+
+              <Text className="font-medium text-[12px] mb-2">Filler Words</Text>
+              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+                {feedback.filler_words || "No feedback available"}
+              </Text>
+
+              <Text className="font-medium text-[12px] mb-2">
+                Tips & Ideal Answer
+              </Text>
+              <Text className="mb-6 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+                {feedback.tips || "No feedback available"}
+              </Text>
+            </>
           </View>
         </ScrollView>
       </View>
     );
   };
-
   return (
     <View className="flex-1 bg-white">
       <Stack.Screen
@@ -164,11 +194,15 @@ const Feedback: React.FC = () => {
         }}
       />
 
-      {isFullScreen ? (
-        <View className="absolute top-0 bottom-0 right-0 left-0 justify-center items-center bg-black z-10">
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#00AACE" />
+        </View>
+      ) : isFullScreen ? (
+        <View style={styles.fullScreenVideoContainer}>
           <TouchableOpacity
             onPress={() => setIsFullScreen(false)}
-            className="absolute right-4 top-[60px] z-10"
+            className="absolute right-4 top-14 z-10"
           >
             <AntDesign name="closecircle" size={33} color="#A92703" />
           </TouchableOpacity>
@@ -177,7 +211,7 @@ const Feedback: React.FC = () => {
             source={{ uri: selectedVideo }}
             style={styles.fullScreenVideo}
             useNativeControls
-            resizeMode={ResizeMode.CONTAIN}
+            resizeMode={ResizeMode.COVER}
             shouldPlay
             isLooping={false}
           />
@@ -185,7 +219,7 @@ const Feedback: React.FC = () => {
       ) : (
         <Animated.FlatList
           ref={flatListRef}
-          data={parsedVideos}
+          data={videosWithRatings}
           keyExtractor={(item) => item}
           renderItem={renderFeedbackItem}
           horizontal
@@ -198,9 +232,9 @@ const Feedback: React.FC = () => {
         />
       )}
 
-      {!isFullScreen && (
+      {!isFullScreen && !loading && (
         <View className="absolute top-[5px] flex-row justify-center w-full">
-          {parsedVideos.map((_, index) => {
+          {videosWithRatings.map((_, index) => {
             const inputRange = [
               (index - 1) * width,
               index * width,
@@ -234,10 +268,10 @@ const Feedback: React.FC = () => {
 
       <ConfirmationModal
         isVisible={isConfirmationVisible}
-        title="Discard Recording?"
+        title="Leave Feedback?"
         message={
           <Text>
-            Exiting now will discard your progress.{"\n"}
+            Exiting will take you back to the home page.{"\n"}
             Are you sure you want to leave?
           </Text>
         }
@@ -257,9 +291,6 @@ const styles = StyleSheet.create({
   itemContainer: {
     width,
     marginTop: 14,
-    paddingBottom: 15,
-    borderBottomWidth: 2,
-    borderBottomColor: "#E3E3E3",
   },
   questionContainer: {
     width: "70%",
@@ -268,8 +299,18 @@ const styles = StyleSheet.create({
     width: "30%",
     paddingLeft: 10,
   },
+  fullScreenVideoContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   fullScreenVideo: {
-    width: "100%",
-    height: "100%",
+    width,
+    height,
   },
 });

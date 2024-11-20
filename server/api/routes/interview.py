@@ -1,6 +1,7 @@
+from typing import List
 from fastapi import APIRouter, HTTPException, Depends
 from supabase import Client
-from models.interview import CreateInterview, CreateInterviewResponse
+from models.interview import CreateInterview, CreateInterviewResponse, GetInterviewHistory
 from utils.supabase import get_supabase_client
 
 router = APIRouter()
@@ -37,3 +38,40 @@ async def get_interview(interview_id: str,supabase: Client= Depends(get_supabase
     job_information_id=response.data[0]['job_information_id'],
     type=response.data[0]['type']     
     )
+
+@router.get("/history/{user_id}", response_model=List[GetInterviewHistory])
+async def get_interview_history(user_id: str, supabase: Client = Depends(get_supabase)):
+    response = supabase.table('interview').select(
+        'interview_id', 'job_information_id', 'type', 'created_at'
+    ).eq('user_id', user_id).execute()
+
+    if hasattr(response, 'error') and response.error:
+        raise HTTPException(status_code=500, detail="Failed to retrieve interview history")
+
+    interview_history = response.data if response.data is not None else []
+
+    job_info_details = {}
+    job_information_ids = list(set(interview['job_information_id'] for interview in interview_history))
+
+    if job_information_ids:
+        job_info_response = supabase.table('job_information').select('job_information_id', 'job_role', 'company_name').in_('job_information_id', job_information_ids).execute()
+
+        if hasattr(job_info_response, 'error') and job_info_response.error:
+            raise HTTPException(status_code=500, detail="Failed to retrieve job info")
+
+        for job_info in job_info_response.data:
+            job_info_details[job_info['job_information_id']] = {
+                "job_role": job_info['job_role'],
+                "company_name": job_info['company_name']
+            }
+
+    return [
+        GetInterviewHistory(
+            interview_id=interview['interview_id'],
+            job_role=job_info_details.get(interview['job_information_id'], {}).get("job_role", "Unknown Role"),
+            company_name=job_info_details.get(interview['job_information_id'], {}).get("company_name", "Unknown Company"),
+            type=interview['type'],
+            created_at=interview['created_at']
+        )
+        for interview in interview_history
+    ]

@@ -205,6 +205,7 @@ const JobInformation = () => {
         job_description: formData.jobDescription || "None",
       };
 
+      //  Creates job information
       const jobInformationResponse = await createJobInformation(jobData);
       const jobInformationId = jobInformationResponse.job_information_id;
 
@@ -218,7 +219,7 @@ const JobInformation = () => {
       setInterviewId(interviewId);
 
       const generateQuestionData = new FormData();
-      generateQuestionData.append("type", "RECORD");
+      generateQuestionData.append("type", "VIRTUAL");
       generateQuestionData.append("industry", formData.selectedIndustry);
       generateQuestionData.append("job_role", formData.selectedJobRole);
       generateQuestionData.append(
@@ -238,6 +239,7 @@ const JobInformation = () => {
         formData.jobDescription || "None"
       );
 
+      // Generate questions
       const questions = await generateQuestions(generateQuestionData);
 
       for (const question of questions) {
@@ -253,7 +255,9 @@ const JobInformation = () => {
           console.error("Invalid question format:", question);
         }
       }
-      router.push(`/(tabs)/home/virtual-interview?interviewId=${interviewId}`);
+      router.push(
+        `/(tabs)/home/virtual-interview/reminder?interviewId=${interviewId}`
+      );
     } catch (error) {
       console.error("Error skipping file upload", error);
     } finally {
@@ -301,7 +305,7 @@ const JobInformation = () => {
                       updateFormData={updateFormData}
                       handleNextStep={handleNextStep}
                       handleSubmit={handleSubmit}
-                      handleSubmitRoute={`/virtual-interview/file-upload?jobId=`}
+                      handleSubmitRoute={`/(tabs)/home/virtual-interview/file-upload?interviewId=`}
                       handleSkip={handleSkip}
                       interviewId={interviewId}
                     />

@@ -13,7 +13,14 @@ import {
   BackHandler,
 } from "react-native";
 import NextModal from "@/components/Modal/NextModal";
-import { createAnswer, getQuestions, transcribeVideo } from "@/api";
+import {
+  createAnswer,
+  createRatings,
+  generateFeedback,
+  getFeedbackWithQuestions,
+  getQuestions,
+  transcribeVideo,
+} from "@/api";
 
 const RecordYourself: React.FC = () => {
   const router = useRouter();
@@ -30,11 +37,12 @@ const RecordYourself: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
 
-  const [transcriptions, setTranscriptions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
   const [questions, setQuestions] = useState<string[]>([]);
   const [questionIds, setQuestionIds] = useState<string[]>([]);
+
+  const [feedbackRatings, setFeedbackRatings] = useState<any[]>([]);
+  const hasFetchedQuestions = useRef(false);
 
   const [hasCameraPermission, setHasCameraPermission] = useState<
     boolean | null
@@ -42,6 +50,19 @@ const RecordYourself: React.FC = () => {
   const [hasMicrophonePermission, setHasMicrophonePermission] = useState<
     boolean | null
   >(null);
+
+  const pendingTasks = useRef(new Set<Promise<void>>());
+
+  const addPendingTask = (task: Promise<void>) => {
+    pendingTasks.current.add(task);
+    task.finally(() => {
+      pendingTasks.current.delete(task);
+    });
+  };
+
+  const waitForPendingTasks = async () => {
+    await Promise.all(Array.from(pendingTasks.current));
+  };
 
   // Requests camera and microphone permissions when the component loads.
   useEffect(() => {
@@ -58,12 +79,17 @@ const RecordYourself: React.FC = () => {
   // Retrieves interview questions from an API
   useEffect(() => {
     const fetchQuestions = async () => {
+      if (hasFetchedQuestions.current) return; // Prevent re-fetch
+      hasFetchedQuestions.current = true;
       try {
+        setIsLoading(true);
         const fetchedQuestions = await getQuestions(interviewId);
         setQuestions(fetchedQuestions.questions);
         setQuestionIds(fetchedQuestions.question_id);
       } catch (error) {
         console.error("Error", error.message);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchQuestions();
@@ -123,7 +149,6 @@ const RecordYourself: React.FC = () => {
       </Text>
     );
   }
-
   // Record a video
   const recordVideo = async () => {
     if (cameraRef.current) {
@@ -136,7 +161,7 @@ const RecordYourself: React.FC = () => {
         const endTime = Date.now();
         const videoDuration = (endTime - startTime) / 1000;
 
-        if (videoDuration < 10) {
+        if (videoDuration < 1) {
           Alert.alert(
             "Recording Too Short",
             "Please record for at least 10 seconds."
@@ -144,7 +169,10 @@ const RecordYourself: React.FC = () => {
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);
           setIsModalVisible(true);
-          handleTranscription(recordedVideo.uri);
+          await handleVideoAnswerFeedback(
+            recordedVideo.uri,
+            currentQuestionIndex
+          );
         }
       } catch (error) {
         console.error("Error recording video:", error);
@@ -158,15 +186,20 @@ const RecordYourself: React.FC = () => {
 
   // Stop recording
   const stopRecording = () => {
-    if (cameraRef.current) {
-      cameraRef.current.stopRecording();
-      setIsRecording(false);
-    }
+    setTimeout(() => {
+      if (cameraRef.current) {
+        cameraRef.current.stopRecording();
+        setIsRecording(false);
+      }
+    }, 500);
   };
 
-  // Handle transcriptions
-  const handleTranscription = (videoUri: string): Promise<void> => {
-    return new Promise(async (resolve, reject) => {
+  // Handle the process of transcribing video, saving answers, and generating feedback
+  const handleVideoAnswerFeedback = async (
+    videoUri: string,
+    index: number
+  ): Promise<void> => {
+    const task = (async () => {
       try {
         const videoFile = {
           uri: videoUri,
@@ -175,58 +208,123 @@ const RecordYourself: React.FC = () => {
         } as unknown as File;
 
         const transcription = await transcribeVideo(videoFile);
-        setTranscriptions((prev) => [...prev, transcription]);
-        resolve();
+
+        if (transcription?.transcription) {
+          const answerResponse = await createAnswer({
+            question_id: questionIds[index],
+            answer: transcription.transcription,
+          });
+
+          if (answerResponse?.answer_id) {
+            const feedbackResponse = await generateFeedback({
+              answer_id: answerResponse.answer_id,
+              interview_id: interviewId,
+              answer: transcription.transcription,
+              question: questions[index],
+              wpm: transcription.wpm.toString(),
+              eye_contact: transcription.eye_contact.toString(),
+            });
+
+            if (feedbackResponse?.ratings_data) {
+              setFeedbackRatings((prevRatings) => [
+                ...prevRatings,
+                feedbackResponse.ratings_data,
+              ]);
+            }
+          }
+        } else {
+          console.error("Transcription failed.");
+        }
       } catch (error) {
-        console.error("Error transcribing video:", error.message);
-        reject(error);
+        console.error("Error during API call:", error.message || error);
       }
-    });
+    })();
+
+    addPendingTask(task);
+  };
+
+  // Calculates the average ratings for each feedback
+  const calculateAverageRatings = () => {
+    const totals = feedbackRatings.reduce(
+      (acc, rating) => {
+        acc.grammar_rating += parseInt(rating.grammar_rating) || 0;
+        acc.answer_relevance_rating +=
+          parseInt(rating.answer_relevance_rating) || 0;
+        acc.filler_words_rating += parseInt(rating.filler_words_rating) || 0;
+        acc.pace_of_speech_rating +=
+          parseInt(rating.pace_of_speech_rating) || 0;
+        acc.eye_contact_rating += parseInt(rating.eye_contact_rating) || 0;
+        return acc;
+      },
+      {
+        grammar_rating: 0,
+        answer_relevance_rating: 0,
+        filler_words_rating: 0,
+        pace_of_speech_rating: 0,
+        eye_contact_rating: 0,
+      }
+    );
+
+    const averages = {
+      grammar_rating: totals.grammar_rating / feedbackRatings.length,
+      answer_relevance_rating:
+        totals.answer_relevance_rating / feedbackRatings.length,
+      filler_words_rating: totals.filler_words_rating / feedbackRatings.length,
+      pace_of_speech_rating:
+        totals.pace_of_speech_rating / feedbackRatings.length,
+      eye_contact_rating: totals.eye_contact_rating / feedbackRatings.length,
+    };
+
+    return averages;
   };
 
   // Going to next question
   const handleNext = async () => {
-    if (currentQuestionIndex < 4) {
+    if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
       setIsModalVisible(false);
-
-      if (recordedVideos.length > 0) {
-        const lastVideoUri = recordedVideos[recordedVideos.length - 1];
-        handleTranscription(lastVideoUri);
-      }
     } else {
-      setIsLoading(true);
-      if (recordedVideos.length > 0) {
-        await handleTranscription(recordedVideos[recordedVideos.length - 1]);
-      }
-
-      const answersToSend = transcriptions.map((transcription, index) => ({
-        question_id: questionIds[index] || null,
-        answer: transcription || "",
-      }));
-
       try {
-        for (const answer of answersToSend) {
-          if (answer.question_id && answer.answer) {
-            await createAnswer(answer);
-          }
+        setIsLoading(true);
+
+        // Wait for all feedback tasks to complete
+        await waitForPendingTasks();
+
+        if (feedbackRatings) {
+          const averageRatings = calculateAverageRatings();
+
+          // Wait for ratings creation to finish
+          await createRatings({
+            interview_id: interviewId,
+            answer_relevance: averageRatings.answer_relevance_rating,
+            eye_contact: averageRatings.eye_contact_rating,
+            grammar: averageRatings.grammar_rating,
+            pace_of_speech: averageRatings.pace_of_speech_rating,
+            filler_words: averageRatings.filler_words_rating,
+          });
         }
+
+        setAllQuestionsRecorded(true);
+        setIsModalVisible(false);
+
+        // Navigate to the next screen
+        await handleNextPage()
       } catch (error) {
-        console.error("Error saving answers:", error.message);
+        console.error("Error:", error.message || error);
       } finally {
         setIsLoading(false);
       }
-
-      setAllQuestionsRecorded(true);
-      setIsModalVisible(false);
-
-      router.push({
-        pathname: "/home/record-yourself/feedback",
-        params: {
-          videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
-        },
-      });
     }
+  };
+
+  const handleNextPage = async () => {
+    router.push({
+      pathname: `/home/record-yourself/feedback`,
+      params: {
+        videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
+        interviewId: interviewId,
+      },
+    });
   };
 
   // Format for countdown timer

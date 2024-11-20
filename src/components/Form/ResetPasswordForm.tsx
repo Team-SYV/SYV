@@ -188,6 +188,7 @@ const ResetPasswordForm = () => {
               onChangeText={(text) => setEmailAddress(text)}
               otherStyles="mb- mt-8"
               keyboardType="email-address"
+              autoCapitalize="none"
             />
 
             {errors.general && (

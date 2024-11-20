@@ -17,6 +17,7 @@ import {
   createAnswer,
   createRatings,
   generateFeedback,
+  getFeedbackWithQuestions,
   getQuestions,
   transcribeVideo,
 } from "@/api";
@@ -41,6 +42,7 @@ const RecordYourself: React.FC = () => {
   const [questionIds, setQuestionIds] = useState<string[]>([]);
 
   const [feedbackRatings, setFeedbackRatings] = useState<any[]>([]);
+  const hasFetchedQuestions = useRef(false);
 
   const [hasCameraPermission, setHasCameraPermission] = useState<
     boolean | null
@@ -48,6 +50,19 @@ const RecordYourself: React.FC = () => {
   const [hasMicrophonePermission, setHasMicrophonePermission] = useState<
     boolean | null
   >(null);
+
+  const pendingTasks = useRef(new Set<Promise<void>>());
+
+  const addPendingTask = (task: Promise<void>) => {
+    pendingTasks.current.add(task);
+    task.finally(() => {
+      pendingTasks.current.delete(task);
+    });
+  };
+
+  const waitForPendingTasks = async () => {
+    await Promise.all(Array.from(pendingTasks.current));
+  };
 
   // Requests camera and microphone permissions when the component loads.
   useEffect(() => {
@@ -64,6 +79,8 @@ const RecordYourself: React.FC = () => {
   // Retrieves interview questions from an API
   useEffect(() => {
     const fetchQuestions = async () => {
+      if (hasFetchedQuestions.current) return; // Prevent re-fetch
+      hasFetchedQuestions.current = true;
       try {
         setIsLoading(true);
         const fetchedQuestions = await getQuestions(interviewId);
@@ -144,7 +161,7 @@ const RecordYourself: React.FC = () => {
         const endTime = Date.now();
         const videoDuration = (endTime - startTime) / 1000;
 
-        if (videoDuration < 10) {
+        if (videoDuration < 1) {
           Alert.alert(
             "Recording Too Short",
             "Please record for at least 10 seconds."
@@ -152,7 +169,10 @@ const RecordYourself: React.FC = () => {
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);
           setIsModalVisible(true);
-          handleVideoAnswerFeedback(recordedVideo.uri, currentQuestionIndex);
+          await handleVideoAnswerFeedback(
+            recordedVideo.uri,
+            currentQuestionIndex
+          );
         }
       } catch (error) {
         console.error("Error recording video:", error);
@@ -179,46 +199,48 @@ const RecordYourself: React.FC = () => {
     videoUri: string,
     index: number
   ): Promise<void> => {
-    try {
-      const videoFile = {
-        uri: videoUri,
-        type: "video/mp4",
-        name: videoUri.split("/").pop(),
-      } as unknown as File;
+    const task = (async () => {
+      try {
+        const videoFile = {
+          uri: videoUri,
+          type: "video/mp4",
+          name: videoUri.split("/").pop(),
+        } as unknown as File;
 
-      const transcription = await transcribeVideo(videoFile);
+        const transcription = await transcribeVideo(videoFile);
 
-      if (transcription && transcription.transcription) {
-        // Create answer in the database
-        const answerResponse = await createAnswer({
-          question_id: questionIds[index],
-          answer: transcription.transcription,
-        });
-
-        if (answerResponse && answerResponse.answer_id) {
-          // Generate feedback for each answer
-          const feedbackResponse = await generateFeedback({
-            answer_id: answerResponse.answer_id,
-            interview_id: interviewId,
+        if (transcription?.transcription) {
+          const answerResponse = await createAnswer({
+            question_id: questionIds[index],
             answer: transcription.transcription,
-            question: questions[index],
-            wpm: transcription.wpm.toString(),
-            eye_contact: transcription.eye_contact.toString(),
           });
 
-          if (feedbackResponse && feedbackResponse.ratings_data) {
-            setFeedbackRatings((prevRatings) => [
-              ...prevRatings,
-              feedbackResponse.ratings_data,
-            ]);
+          if (answerResponse?.answer_id) {
+            const feedbackResponse = await generateFeedback({
+              answer_id: answerResponse.answer_id,
+              interview_id: interviewId,
+              answer: transcription.transcription,
+              question: questions[index],
+              wpm: transcription.wpm.toString(),
+              eye_contact: transcription.eye_contact.toString(),
+            });
+
+            if (feedbackResponse?.ratings_data) {
+              setFeedbackRatings((prevRatings) => [
+                ...prevRatings,
+                feedbackResponse.ratings_data,
+              ]);
+            }
           }
+        } else {
+          console.error("Transcription failed.");
         }
-      } else {
-        console.error("Transcription failed.");
+      } catch (error) {
+        console.error("Error during API call:", error.message || error);
       }
-    } catch (error) {
-      console.error("Error during API call:", error.error || error);
-    }
+    })();
+
+    addPendingTask(task);
   };
 
   // Calculates the average ratings for each feedback
@@ -258,24 +280,20 @@ const RecordYourself: React.FC = () => {
 
   // Going to next question
   const handleNext = async () => {
-    if (currentQuestionIndex < 4) {
+    if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
       setIsModalVisible(false);
     } else {
       try {
         setIsLoading(true);
 
-        // Wait for all the video transcriptions, feedback, and ratings to complete
-        const transcriptionPromises = recordedVideos.map((videoUri, index) =>
-          handleVideoAnswerFeedback(videoUri, index)
-        );
+        // Wait for all feedback tasks to complete
+        await waitForPendingTasks();
 
-        await Promise.all(transcriptionPromises);
-
-        if (feedbackRatings.length) {
+        if (feedbackRatings) {
           const averageRatings = calculateAverageRatings();
 
-          // Wait for ratings creation to finish before navigating
+          // Wait for ratings creation to finish
           await createRatings({
             interview_id: interviewId,
             answer_relevance: averageRatings.answer_relevance_rating,
@@ -289,20 +307,24 @@ const RecordYourself: React.FC = () => {
         setAllQuestionsRecorded(true);
         setIsModalVisible(false);
 
-        // Navigate to the next screen with video URIs and ratings data
-        router.push({
-          pathname: `/home/record-yourself/feedback`,
-          params: {
-            videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
-            interviewId: interviewId,
-          },
-        });
+        // Navigate to the next screen
+        await handleNextPage()
       } catch (error) {
-        console.error("Error processing videos:", error);
+        console.error("Error:", error.message || error);
       } finally {
         setIsLoading(false);
       }
     }
+  };
+
+  const handleNextPage = async () => {
+    router.push({
+      pathname: `/home/record-yourself/feedback`,
+      params: {
+        videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
+        interviewId: interviewId,
+      },
+    });
   };
 
   // Format for countdown timer

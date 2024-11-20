@@ -16,7 +16,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Ratings from "@/components/Rating/Ratings";
-import { getFeedback, getQuestions, getRatings } from "@/api";
+import { getFeedbackWithQuestions, getRatings } from "@/api";
 import { RatingsData } from "@/types/ratingsData";
 
 const { width, height } = Dimensions.get("window");
@@ -27,7 +27,6 @@ const Feedback: React.FC = () => {
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList<string>>(null);
 
-  const [questions, setQuestions] = useState([]);
   const [feedbackItem, setFeedbackItem] = useState([]);
   const [ratings, setRatings] = useState<RatingsData>();
 
@@ -63,9 +62,7 @@ const Feedback: React.FC = () => {
     const fetch = async () => {
       try {
         setLoading(true);
-        const fetchedQuestions = await getQuestions(interviewId);
-        setQuestions(fetchedQuestions.questions);
-        const fetchedFeedback = await getFeedback(interviewId);
+        const fetchedFeedback = await getFeedbackWithQuestions(interviewId);
         setFeedbackItem(fetchedFeedback);
         const fetchedRatings = await getRatings(interviewId);
         setRatings(fetchedRatings);
@@ -110,7 +107,6 @@ const Feedback: React.FC = () => {
     }
 
     const feedback = feedbackItem[index] || {};
-    const question = questions[index] || "No question available";
 
     return (
       <View style={styles.itemContainer}>
@@ -120,7 +116,7 @@ const Feedback: React.FC = () => {
               Question {index + 1}
             </Text>
 
-            <Text className="text-sm text-[13px]">{question}</Text>
+            <Text className="text-sm text-[13px]">{feedback.question}</Text>
           </View>
           <View style={styles.videoContainer}>
             <TouchableOpacity

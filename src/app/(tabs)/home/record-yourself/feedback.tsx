@@ -62,6 +62,7 @@ const Feedback: React.FC = () => {
     const fetch = async () => {
       try {
         setLoading(true);
+
         const fetchedFeedback = await getFeedbackWithQuestions(interviewId);
         setFeedbackItem(fetchedFeedback);
         const fetchedRatings = await getRatings(interviewId);

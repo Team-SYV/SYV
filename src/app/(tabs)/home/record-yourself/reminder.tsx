@@ -32,7 +32,7 @@ const Reminder = () => {
     setTimeout(() => {
       setLoading(false);
       router.push(`/(tabs)/home/record-yourself?interviewId=${interviewId}`);
-    }, 2000);
+    }, 1000);
   };
 
   return (

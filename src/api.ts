@@ -239,3 +239,32 @@ export const generateAnswerFeedback = async (formData) => {
     );
   }
 };
+
+export const getFeedbackWithQuestions = async (interviewId: string | string[]) => {
+  try {
+    const response = await api.get(`/api/feedback/get/record/${interviewId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to retrieve feedback with questions"
+    );
+  }
+};
+
+
+export const testeyecontact = async (videoFile: File) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", videoFile);
+
+    const response = await api.post("/api/eye-contact/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    throw new Error(error, error.response);
+  }
+};

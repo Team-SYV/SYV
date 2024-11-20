@@ -32,7 +32,7 @@ const Reminder = () => {
     setTimeout(() => {
       setLoading(false);
       router.push(`/(tabs)/home/virtual-interview?interviewId=${interviewId}`);
-    }, 2000);
+    }, 1000);
   };
 
   return (

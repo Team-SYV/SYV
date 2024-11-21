@@ -67,7 +67,7 @@ const History = () => {
   return (
     <View className="flex-1 bg-white pt-8 px-6">
       {loading ? (
-        <ActivityIndicator size="large" color="#00AACE" className="flex-1" />
+        <ActivityIndicator size="large" color="#00AACE" className="flex-1 mb-[110px]" />
       ) : (
         <>
           <Text className="text-[32px] font-bold text-center">

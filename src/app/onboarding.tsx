@@ -37,7 +37,7 @@ const OnboardingPage = () => {
   };
 
   return (
-    <View className="flex-1">
+    <View className="flex-1 bg-white">
       <FlatList
         ref={flatListRef}
         data={onBoarding}

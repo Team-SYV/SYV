@@ -52,8 +52,8 @@ def eye_contact(frame):
         face_center_y = (face.top() + face.bottom()) // 2
 
         # Relaxed alignment thresholds (adjusted from 80 to 100)
-        horizontal_alignment = np.abs(eyes_center[0] - face_center_x) < 100
-        vertical_alignment = np.abs(eyes_center[1] - face_center_y) < 100
+        horizontal_alignment = np.abs(eyes_center[0] - face_center_x) < 150
+        vertical_alignment = np.abs(eyes_center[1] - face_center_y) < 150
 
         # If both horizontal and vertical alignment are satisfied, return True (eye contact)
         if horizontal_alignment and vertical_alignment:

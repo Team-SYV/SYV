@@ -309,7 +309,7 @@ const RecordYourself: React.FC = () => {
         // Navigate to the next screen
         await handleNextPage()
       } catch (error) {
-        console.error("Error:", error.message || error);
+        console.error("Error:", error.message || error.error);
       } finally {
         setIsLoading(false);
       }

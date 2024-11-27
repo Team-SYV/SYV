@@ -161,10 +161,10 @@ const RecordYourself: React.FC = () => {
         const endTime = Date.now();
         const videoDuration = (endTime - startTime) / 1000;
 
-        if (videoDuration < 10) {
+        if (videoDuration < 5) {
           Alert.alert(
             "Recording Too Short",
-            "Please record for at least 10 seconds."
+            "Please record for at least 5 seconds."
           );
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);

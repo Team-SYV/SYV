@@ -102,6 +102,7 @@ const Feedback: React.FC = () => {
               eyeContact={ratings[0].eye_contact}
               pace={ratings[0].pace_of_speech}
               fillerWords={ratings[0].filler_words}
+              setIsOnPage={setIsOnPage}
             />
           ) : (
             <View className="flex-1 items-center justify-center">

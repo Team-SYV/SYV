@@ -160,7 +160,7 @@ const RecordYourself: React.FC = () => {
         const endTime = Date.now();
         const videoDuration = (endTime - startTime) / 1000;
 
-        if (videoDuration < 5) {
+        if (videoDuration < 1) {
           Alert.alert(
             "Recording Too Short",
             "Please record for at least 5 seconds."
@@ -277,6 +277,16 @@ const RecordYourself: React.FC = () => {
     return averages;
   };
 
+  const handleNextPage = () => {
+    router.push({
+      pathname: `/home/record-yourself/feedback`,
+      params: {
+        videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
+        interviewId: interviewId,
+      },
+    });
+  };
+
   // Going to next question
   const handleNext = async () => {
     if (currentQuestionIndex < questions.length - 1) {
@@ -304,26 +314,15 @@ const RecordYourself: React.FC = () => {
         }
 
         setAllQuestionsRecorded(true);
+        setIsLoading(false);
         setIsModalVisible(false);
 
         // Navigate to the next screen
-        await handleNextPage()
+        handleNextPage();
       } catch (error) {
         console.error("Error:", error.message || error.error);
-      } finally {
-        setIsLoading(false);
       }
     }
-  };
-
-  const handleNextPage = async () => {
-    router.push({
-      pathname: `/home/record-yourself/feedback`,
-      params: {
-        videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
-        interviewId: interviewId,
-      },
-    });
   };
 
   // Format for countdown timer
@@ -414,7 +413,7 @@ const RecordYourself: React.FC = () => {
         }
         onConfirm={() => {
           setIsConfirmationVisible(false);
-          setAllQuestionsRecorded(true)
+          setAllQuestionsRecorded(true);
           router.push("/home");
         }}
         onClose={() => setIsConfirmationVisible(false)}

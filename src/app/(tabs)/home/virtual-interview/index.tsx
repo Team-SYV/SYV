@@ -18,10 +18,12 @@ import {
 import {
   createAnswer,
   createRatings,
+  eyeContact,
   generateAnswerFeedback,
   generateVirtualFeedback,
   getQuestions,
   transcribeVideo,
+  virtualTranscribeVideo,
 } from "@/api";
 import NextModal from "@/components/Modal/NextModal";
 
@@ -138,108 +140,137 @@ const VirtualInterview = () => {
     );
   }
 
-  const handleAPI = async (videoUri: string, index: number): Promise<void> => {
+  const handleTranscription = async (videoUri: string): Promise<void> => {
     const videoFile = {
       uri: videoUri,
       type: "video/mp4",
       name: videoUri.split("/").pop(),
     } as unknown as File;
 
-    const transcription = await transcribeVideo(videoFile);
+    const transcription = await virtualTranscribeVideo(videoFile);
 
-    if (transcription && transcription.transcription) {
+    if (transcription) {
       const updatedAnswers = [...answers, transcription.transcription];
       const updatedWpms = [...wpms, transcription.wpm];
-      const updatedEyeContacts = [...eyeContacts, transcription.eye_contact];
 
-      // Update state with new transcription and metrics
       setAnswers(updatedAnswers);
       setWpms(updatedWpms);
+    }
+
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      {
+        id: uuid.v4() as string,
+        role: Role.User,
+        content: transcription.transcription,
+      },
+    ]);
+  };
+
+  const handleAnswerFeedback = async () => {
+    const form = new FormData();
+    form.append("previous_question", questions[currentQuestionIndex]);
+    form.append("previous_answer", answers[currentQuestionIndex]);
+
+    const feedback = await generateAnswerFeedback(form);
+
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { id: uuid.v4() as string, role: Role.Bot, content: feedback },
+    ]);
+  };
+
+  const processEyeContact = async (videoUri: string): Promise<void> => {
+    const videoFile = {
+      uri: videoUri,
+      type: "video/mp4",
+      name: videoUri.split("/").pop(),
+    } as unknown as File;
+
+    const eye_contact = await eyeContact(videoFile);
+    if (eyeContact) {
+      const updatedEyeContacts = [...eyeContacts, eye_contact.eye_contact];
       setEyeContacts(updatedEyeContacts);
+    }
+  };
+
+  const handleAnswer = async () => {
+    await createAnswer({
+      question_id: questionIds[currentQuestionIndex],
+      answer: answers[currentQuestionIndex],
+    });
+  };
+
+  const handleEnd = async () => {
+    const isLastQuestion = currentQuestionIndex === questions.length - 1;
+    if (isLastQuestion) {
+      if (
+        answers.length === questions.length &&
+        wpms.length === questions.length &&
+        eyeContacts.length === questions.length
+      ) {
+        const feedbackResponse = await generateVirtualFeedback({
+          interview_id: interviewId,
+          answers: answers,
+          questions,
+          wpm: wpms,
+          eye_contact: eyeContacts,
+        });
+
+        if (feedbackResponse && feedbackResponse.ratings_data) {
+          console.log(feedbackResponse.ratings_data);
+          await createRatings({
+            interview_id: interviewId,
+            answer_relevance:
+              feedbackResponse.ratings_data.answer_relevance_rating,
+            eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
+            grammar: feedbackResponse.ratings_data.grammar_rating,
+            pace_of_speech: feedbackResponse.ratings_data.pace_of_speech_rating,
+            filler_words: feedbackResponse.ratings_data.filler_words_rating,
+          });
+        }
+
+        setIsModalVisible(true); // Trigger the modal to navigate to feedback
+      }
 
       setMessages((prevMessages) => [
         ...prevMessages,
         {
           id: uuid.v4() as string,
-          role: Role.User,
-          content: transcription.transcription,
+          role: Role.Bot,
+          content: "Thank you! This concludes your virtual interview.",
         },
       ]);
-
-      const form = new FormData();
-      form.append("previous_question", questions[currentQuestionIndex]);
-      form.append("previous_answer", transcription.transcription);
-
-      const feedback = await generateAnswerFeedback(form);
+    } else {
+      setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
 
       setMessages((prevMessages) => [
         ...prevMessages,
-        { id: uuid.v4() as string, role: Role.Bot, content: feedback },
+        {
+          id: uuid.v4() as string,
+          role: Role.Bot,
+          content: questions[currentQuestionIndex + 1],
+        },
       ]);
-
-      // Save answer in the backend
-      await createAnswer({
-        question_id: questionIds[index],
-        answer: transcription.transcription,
-      });
-
-      // Check if it is the last question
-      const isLastQuestion = index === questions.length - 1;
-
-      if (isLastQuestion) {
-        if (
-          updatedAnswers.length === questions.length &&
-          updatedWpms.length === questions.length &&
-          updatedEyeContacts.length === questions.length
-        ) {
-          const feedbackResponse = await generateVirtualFeedback({
-            interview_id: interviewId,
-            answers: updatedAnswers,
-            questions,
-            wpm: updatedWpms,
-            eye_contact: updatedEyeContacts,
-          });
-
-          if (feedbackResponse && feedbackResponse.ratings_data) {
-            console.log(feedbackResponse.ratings_data);
-            await createRatings({
-              interview_id: interviewId,
-              answer_relevance:
-                feedbackResponse.ratings_data.answer_relevance_rating,
-              eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
-              grammar: feedbackResponse.ratings_data.grammar_rating,
-              pace_of_speech:
-                feedbackResponse.ratings_data.pace_of_speech_rating,
-              filler_words: feedbackResponse.ratings_data.filler_words_rating,
-            });
-          }
-
-          setIsModalVisible(true); // Trigger the modal to navigate to feedback
-        }
-
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            id: uuid.v4() as string,
-            role: Role.Bot,
-            content: "Thank you! This concludes your virtual interview.",
-          },
-        ]);
-      } else {
-        setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
-
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            id: uuid.v4() as string,
-            role: Role.Bot,
-            content: questions[index + 1],
-          },
-        ]);
-      }
     }
   };
 
+  const handleAPI = async (videoUri: string) => {
+    try {
+      processEyeContact(videoUri);
+
+      await handleTranscription(videoUri);
+
+      await handleAnswerFeedback();
+      if (answers.length === currentQuestionIndex + 1) {
+        await handleAnswer();
+      }
+
+      handleEnd();
+    } catch (error) {
+      console.error("Error handling API flow:", error.error);
+    }
+  };
   // Start recording
   const startRecording = async () => {
     Speech.stop();
@@ -259,7 +290,7 @@ const VirtualInterview = () => {
           setIsRecording(false);
           return;
         } else {
-          handleAPI(recordedVideo.uri, currentQuestionIndex);
+          handleAPI(recordedVideo.uri);
           setIsRecording(false);
         }
       } catch (err) {

@@ -114,6 +114,40 @@ export const transcribeVideo = async (videoFile: File) => {
   }
 };
 
+export const virtualTranscribeVideo = async (videoFile: File) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", videoFile);
+
+    const response = await api.post("/api/virtual/transcribe-video/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    throw new Error(error, error.response);
+  }
+};
+
+export const eyeContact = async (videoFile: File) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", videoFile);
+
+    const response = await api.post("/api/eye-contact/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    throw new Error(error, error.response);
+  }
+};
+
 export const createAnswer = async (answerData: AnswerData) => {
   try {
     const response = await api.post(`/api/answer/create`, answerData);

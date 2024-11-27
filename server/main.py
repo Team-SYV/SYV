@@ -118,7 +118,46 @@ async def transcribe_video(file: UploadFile = File(...)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-    
+
+@app.post("/api/virtual/transcribe-video/")
+async def virtual_transcribe_video(file: UploadFile = File(...)):
+    """Receive a video, extract audio, and return transcription text."""
+    try:
+        with NamedTemporaryFile(suffix=".mp4", delete=True) as temp_video:
+            shutil.copyfileobj(file.file, temp_video)
+            temp_video.seek(0)
+
+            temp_audio =  extract_audio(temp_video.name)
+
+            transcription =  transcribe_audio(temp_audio.name)
+
+            transcript = transcription['transcript']
+            wpm = transcription['words_per_minute']
+
+
+            return {"transcription":transcript,"wpm": wpm}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.post("/api/eye-contact/")
+async def eye_contact(file: UploadFile = File(...)):
+    """Receive a video, extract audio, and return transcription text."""
+    try:
+        with NamedTemporaryFile(suffix=".mp4", delete=True) as temp_video:
+            shutil.copyfileobj(file.file, temp_video)
+            temp_video.seek(0)
+
+            eye_contact =  process_video(temp_video.name)
+
+            eye_contact_percentage = eye_contact['eye_contact_percentage']
+
+
+            return {"eye_contact": eye_contact_percentage}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
 @app.post("/api/generate-feedback/")
 async def generate_feedback_api(feedback_input: GenerateFeedbackInput, supabase: Client= Depends(get_supabase)):
     """Generate feedback based on a question and answer."""

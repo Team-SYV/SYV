@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Dimensions } from "react-native";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Spinner from "react-native-loading-spinner-overlay";
-import { useLocalSearchParams, useRouter } from "expo-router"; 
+import { useLocalSearchParams, useRouter } from "expo-router";
 
 const Reminder = () => {
   const [permission, requestPermission] = useCameraPermissions();
   const [loading, setLoading] = useState(false);
-  const router = useRouter(); 
-  const {interviewId} = useLocalSearchParams();
+  const router = useRouter();
+  const { interviewId } = useLocalSearchParams();
 
   const screenHeight = Dimensions.get("window").height;
   const cameraHeight = screenHeight / 2;
@@ -44,8 +44,8 @@ const Reminder = () => {
         facing="front"
       />
 
-      <View className="mt-7">
-        <Text className="text-[14px] mb-2 font-bold text-gray-800 px-4">
+      <View className="mt-4">
+        <Text className="text-[13px] mb-2 font-semibold text-gray-800 px-4">
           For best AI feedback results, please read the following instructions
           below:
         </Text>
@@ -54,13 +54,6 @@ const Reminder = () => {
           <AntDesign name="checkcircleo" size={15} color="black" />
           <Text className="ml-2 text-sm">
             Record in a quiet environment, without any distractions.
-          </Text>
-        </View>
-
-        <View className="flex-row items-center mt-4 px-4">
-          <AntDesign name="checkcircleo" size={15} color="black" />
-          <Text className="ml-2 text-sm">
-            Ensure that there is enough light in the room.
           </Text>
         </View>
 
@@ -73,13 +66,20 @@ const Reminder = () => {
           />
           <Text className="ml-2 text-sm">
             Check your posture and aim for natural, consistent{"\n"}
-            eye contact.
+            eye contact throughout the recording, as it will be analyzed.
+          </Text>
+        </View>
+
+        <View className="flex-row items-center mt-4 px-4">
+          <AntDesign name="checkcircleo" size={15} color="black" />
+          <Text className="ml-2 text-sm">
+            The interview will consist of 10 questions in total.
           </Text>
         </View>
 
         <Text className="mt-5 px-4 text-[13px]">
-          <Text className="font-bold text-[#23626d] ">Please Note: </Text>
-          Only recordings of 10 seconds or more can be analyzed.
+          <Text className="font-semibold text-[#23626d] ">Please Note: </Text>
+          Only recordings of 5 seconds or more can be analyzed.
         </Text>
       </View>
 

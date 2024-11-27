@@ -17,7 +17,6 @@ import {
   createAnswer,
   createRatings,
   generateFeedback,
-  getFeedbackWithQuestions,
   getQuestions,
   transcribeVideo,
 } from "@/api";
@@ -415,6 +414,7 @@ const RecordYourself: React.FC = () => {
         }
         onConfirm={() => {
           setIsConfirmationVisible(false);
+          setAllQuestionsRecorded(true)
           router.push("/home");
         }}
         onClose={() => setIsConfirmationVisible(false)}

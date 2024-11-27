@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { Message, Role } from "@/types/chat";
 import { Camera, CameraView } from "expo-camera";
+import { Audio } from "expo-av";
 import {
   View,
   Text,
@@ -22,8 +23,7 @@ import {
   generateAnswerFeedback,
   generateVirtualFeedback,
   getQuestions,
-  transcribeVideo,
-  virtualTranscribeVideo,
+  transcribeAudio,
 } from "@/api";
 import NextModal from "@/components/Modal/NextModal";
 
@@ -55,9 +55,17 @@ const VirtualInterview = () => {
     boolean | null
   >(null);
 
+  const [permissionResponse, requestPermission] = Audio.usePermissions();
+
   // Requests camera and microphone permissions when the component loads.
   useEffect(() => {
     (async () => {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== "granted") {
+        alert("Audio recording permission is required.");
+        return;
+      }
+
       const cameraPermission = await Camera.requestCameraPermissionsAsync();
       const microphonePermission =
         await Camera.requestMicrophonePermissionsAsync();
@@ -71,7 +79,9 @@ const VirtualInterview = () => {
     const fetchQuestions = async () => {
       try {
         const response = await getQuestions(interviewId);
-        const questions = response.questions;
+        const questions = response.questions.map(
+          (question, index) => `${index + 1}. ${question}`
+        ); // Add numbering
         const questionIds = response.question_id;
         setQuestions(questions);
         setQuestionIds(questionIds);
@@ -82,7 +92,7 @@ const VirtualInterview = () => {
             {
               id: uuid.v4() as string,
               role: Role.Bot,
-              content: questions[0],
+              content: questions[0], // Display the first question with numbering
             },
           ]);
         }
@@ -126,6 +136,13 @@ const VirtualInterview = () => {
   }, []);
 
   // Check if permission has been granted
+  useEffect(() => {
+    (async () => {
+      if (!permissionResponse?.granted) {
+        await requestPermission();
+      }
+    })();
+  }, [permissionResponse]);
   if (hasCameraPermission === null || hasMicrophonePermission === null) {
     return null;
   } else if (!hasCameraPermission) {
@@ -140,18 +157,18 @@ const VirtualInterview = () => {
     );
   }
 
-  const handleTranscription = async (videoUri: string): Promise<void> => {
-    const videoFile = {
-      uri: videoUri,
-      type: "video/mp4",
-      name: videoUri.split("/").pop(),
+  const handleTranscription = async (audioUri: string): Promise<void> => {
+    const audioFile = {
+      uri: audioUri,
+      name: "recording.m4a",
+      type: "audio/m4a",
     } as unknown as File;
 
-    const transcription = await virtualTranscribeVideo(videoFile);
-
+    const transcription = await transcribeAudio(audioFile);
+    console.log(transcription);
     if (transcription) {
-      const updatedAnswers = [...answers, transcription.transcription];
-      const updatedWpms = [...wpms, transcription.wpm];
+      const updatedAnswers = [...answers, transcription.transcript];
+      const updatedWpms = [...wpms, transcription.words_per_minute];
 
       setAnswers(updatedAnswers);
       setWpms(updatedWpms);
@@ -162,7 +179,7 @@ const VirtualInterview = () => {
       {
         id: uuid.v4() as string,
         role: Role.User,
-        content: transcription.transcription,
+        content: transcription.transcript,
       },
     ]);
   };
@@ -204,46 +221,50 @@ const VirtualInterview = () => {
   const handleEnd = async () => {
     const isLastQuestion = currentQuestionIndex === questions.length - 1;
     if (isLastQuestion) {
+      // Ensure all data is ready before showing the modal
       if (
         answers.length === questions.length &&
         wpms.length === questions.length &&
         eyeContacts.length === questions.length
       ) {
-        const feedbackResponse = await generateVirtualFeedback({
-          interview_id: interviewId,
-          answers: answers,
-          questions,
-          wpm: wpms,
-          eye_contact: eyeContacts,
-        });
-
-        if (feedbackResponse && feedbackResponse.ratings_data) {
-          console.log(feedbackResponse.ratings_data);
-          await createRatings({
+        try {
+          const feedbackResponse = await generateVirtualFeedback({
             interview_id: interviewId,
-            answer_relevance:
-              feedbackResponse.ratings_data.answer_relevance_rating,
-            eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
-            grammar: feedbackResponse.ratings_data.grammar_rating,
-            pace_of_speech: feedbackResponse.ratings_data.pace_of_speech_rating,
-            filler_words: feedbackResponse.ratings_data.filler_words_rating,
+            answers: answers,
+            questions,
+            wpm: wpms,
+            eye_contact: eyeContacts,
           });
-        }
 
-        setIsModalVisible(true); // Trigger the modal to navigate to feedback
+          if (feedbackResponse?.ratings_data) {
+            await createRatings({
+              interview_id: interviewId,
+              answer_relevance:
+                feedbackResponse.ratings_data.answer_relevance_rating,
+              eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
+              grammar: feedbackResponse.ratings_data.grammar_rating,
+              pace_of_speech:
+                feedbackResponse.ratings_data.pace_of_speech_rating,
+              filler_words: feedbackResponse.ratings_data.filler_words_rating,
+            });
+          }
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            {
+              id: uuid.v4() as string,
+              role: Role.Bot,
+              content: "Thank you! This concludes your virtual interview.",
+            },
+          ]);
+        } catch (error) {
+          console.error("Error during feedback creation:", error);
+        }
       }
 
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: uuid.v4() as string,
-          role: Role.Bot,
-          content: "Thank you! This concludes your virtual interview.",
-        },
-      ]);
+      // Trigger the modal
+      setIsModalVisible(true);
     } else {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
-
       setMessages((prevMessages) => [
         ...prevMessages,
         {
@@ -255,54 +276,80 @@ const VirtualInterview = () => {
     }
   };
 
-  const handleAPI = async (videoUri: string) => {
+  const handleAPI = async (videoUri: string, audioUri: string) => {
     try {
-      processEyeContact(videoUri);
-
-      await handleTranscription(videoUri);
-
+      await handleTranscription(audioUri);
       await handleAnswerFeedback();
       if (answers.length === currentQuestionIndex + 1) {
         await handleAnswer();
       }
+      processEyeContact(videoUri);
 
       handleEnd();
     } catch (error) {
-      console.error("Error handling API flow:", error.error);
+      console.error("Error handling API flow:", error);
     }
   };
   // Start recording
   const startRecording = async () => {
     Speech.stop();
-    if (cameraRef.current && hasCameraPermission && hasMicrophonePermission) {
-      try {
-        setIsRecording(true);
+    if (permissionResponse.status !== "granted") {
+      console.log("Requesting permission...");
+      await requestPermission();
+    }
 
+    if (!hasMicrophonePermission) {
+      alert("Microphone permission is required.");
+      return;
+    }
+
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: true,
+      playsInSilentModeIOS: true,
+    });
+
+    try {
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+
+      if (cameraRef.current && hasCameraPermission) {
+        setIsRecording(true);
         const startTime = Date.now();
+
         const recordedVideo = await cameraRef.current.recordAsync();
 
         const duration = (Date.now() - startTime) / 1000;
 
-        // Check if the recording is less than 10 seconds
         if (duration < 1) {
           alert("Recording must be at least 10 seconds.");
-          cameraRef.current.stopRecording();
-          setIsRecording(false);
+          await recording.stopAndUnloadAsync();
+          await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
           return;
-        } else {
-          handleAPI(recordedVideo.uri);
-          setIsRecording(false);
         }
-      } catch (err) {
-        console.error("Failed to start recording:", err);
+
+        await recording.stopAndUnloadAsync();
+        const uri = recording.getURI();
+
+        if (uri) {
+          await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+          handleAPI(recordedVideo.uri, uri);
+        } else {
+          console.error("No valid audio URI found.");
+        }
+
         setIsRecording(false);
       }
+    } catch (err) {
+      console.error("Failed to start recording:", err);
+      setIsRecording(false);
     }
   };
 
   const stopRecording = async () => {
     if (cameraRef.current && isRecording) {
       await cameraRef.current.stopRecording();
+
       setIsRecording(false);
     }
   };

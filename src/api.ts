@@ -114,20 +114,23 @@ export const transcribeVideo = async (videoFile: File) => {
   }
 };
 
-export const virtualTranscribeVideo = async (videoFile: File) => {
+export const transcribeAudio = async (audioFile: File) => {
   try {
     const formData = new FormData();
-    formData.append("file", videoFile);
+    formData.append("file", audioFile);
 
-    const response = await api.post("/api/virtual/transcribe-video/", formData, {
+    const response = await api.post("/api/transcribe-audio/", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
 
-    return response.data;
+    return response.data.transcription;
   } catch (error) {
-    throw new Error(error, error.response);
+    console.error("Error response from server:", error.response);
+    throw new Error(
+      error.response?.data?.detail || "Failed to transcribe audio"
+    );
   }
 };
 

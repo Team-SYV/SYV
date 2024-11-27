@@ -45,13 +45,14 @@ const Feedback: React.FC = () => {
       if (isFullScreen) {
         setIsFullScreen(false);
         return true;
-      } else {
-        if (isOnPage) {
-          setIsConfirmationVisible(true);
-          return true;
-        }
-        return false;
       }
+
+      if (isOnPage) {
+        setIsConfirmationVisible(true);
+        return true;
+      }
+
+      return false;
     };
 
     const backHandler = BackHandler.addEventListener(

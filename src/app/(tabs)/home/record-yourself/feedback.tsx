@@ -32,6 +32,7 @@ const Feedback: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
+  const [isOnPage, setIsOnPage] = useState(true);
 
   const { videoURIs, interviewId } = useLocalSearchParams();
   const parsedVideos: string[] =
@@ -45,8 +46,13 @@ const Feedback: React.FC = () => {
         setIsFullScreen(false);
         return true;
       }
-      setIsConfirmationVisible(true);
-      return true;
+
+      if (isOnPage) {
+        setIsConfirmationVisible(true);
+        return true;
+      }
+
+      return false;
     };
 
     const backHandler = BackHandler.addEventListener(
@@ -55,7 +61,7 @@ const Feedback: React.FC = () => {
     );
 
     return () => backHandler.remove();
-  }, [isFullScreen]);
+  }, [isFullScreen, isOnPage]);
 
   // Fetch questions, feedback and ratings
   useEffect(() => {
@@ -97,6 +103,7 @@ const Feedback: React.FC = () => {
               eyeContact={ratings[0].eye_contact}
               pace={ratings[0].pace_of_speech}
               fillerWords={ratings[0].filler_words}
+              setIsOnPage={setIsOnPage}
             />
           ) : (
             <View className="flex-1 items-center justify-center">
@@ -277,6 +284,7 @@ const Feedback: React.FC = () => {
         }
         onConfirm={() => {
           setIsConfirmationVisible(false);
+          setIsOnPage(false);
           router.push("/home");
         }}
         onClose={() => setIsConfirmationVisible(false)}

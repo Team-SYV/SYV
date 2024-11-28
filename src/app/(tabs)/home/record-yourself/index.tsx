@@ -17,7 +17,6 @@ import {
   createAnswer,
   createRatings,
   generateFeedback,
-  getFeedbackWithQuestions,
   getQuestions,
   transcribeVideo,
 } from "@/api";
@@ -161,10 +160,10 @@ const RecordYourself: React.FC = () => {
         const endTime = Date.now();
         const videoDuration = (endTime - startTime) / 1000;
 
-        if (videoDuration < 10) {
+        if (videoDuration < 5) {
           Alert.alert(
             "Recording Too Short",
-            "Please record for at least 10 seconds."
+            "Please record for at least 5 seconds."
           );
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);
@@ -278,6 +277,16 @@ const RecordYourself: React.FC = () => {
     return averages;
   };
 
+  const handleNextPage = () => {
+    router.push({
+      pathname: `/home/record-yourself/feedback`,
+      params: {
+        videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
+        interviewId: interviewId,
+      },
+    });
+  };
+
   // Going to next question
   const handleNext = async () => {
     if (currentQuestionIndex < questions.length - 1) {
@@ -306,25 +315,14 @@ const RecordYourself: React.FC = () => {
 
         setAllQuestionsRecorded(true);
         setIsModalVisible(false);
+        setIsLoading(false);
 
         // Navigate to the next screen
-        await handleNextPage()
+        handleNextPage();
       } catch (error) {
-        console.error("Error:", error.message || error);
-      } finally {
-        setIsLoading(false);
+        console.error("Error:", error.message || error.error);
       }
     }
-  };
-
-  const handleNextPage = async () => {
-    router.push({
-      pathname: `/home/record-yourself/feedback`,
-      params: {
-        videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
-        interviewId: interviewId,
-      },
-    });
   };
 
   // Format for countdown timer
@@ -415,6 +413,7 @@ const RecordYourself: React.FC = () => {
         }
         onConfirm={() => {
           setIsConfirmationVisible(false);
+          setAllQuestionsRecorded(true);
           router.push("/home");
         }}
         onClose={() => setIsConfirmationVisible(false)}

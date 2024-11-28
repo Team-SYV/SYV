@@ -17,7 +17,6 @@ import {
   createAnswer,
   createRatings,
   generateFeedback,
-  getFeedbackWithQuestions,
   getQuestions,
   transcribeVideo,
 } from "@/api";
@@ -195,10 +194,7 @@ const RecordYourself: React.FC = () => {
   };
 
   // Handle the process of transcribing video, saving answers, and generating feedback
-  const handleVideoAnswerFeedback = async (
-    videoUri: string,
-    index: number
-  ): Promise<void> => {
+  const handleVideoAnswerFeedback = async (videoUri: string, index: number) => {
     const task = (async () => {
       try {
         const videoFile = {
@@ -277,7 +273,18 @@ const RecordYourself: React.FC = () => {
 
     return averages;
   };
-
+  
+  const waitForFeedbackRatings = async (expectedLength: number) => {
+    return new Promise<void>((resolve) => {
+      const interval = setInterval(() => {
+        if (feedbackRatings.length >= expectedLength) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 100); // Check every 100ms
+    });
+  };
+  
   // Going to next question
   const handleNext = async () => {
     if (currentQuestionIndex < questions.length - 1) {
@@ -287,13 +294,18 @@ const RecordYourself: React.FC = () => {
       try {
         setIsLoading(true);
 
-        // Wait for all feedback tasks to complete
+        // Wait for all feedback generation tasks to complete
+        console.log("Waiting for feedback tasks...");
         await waitForPendingTasks();
+        console.log("Feedback tasks complete.");
 
-        if (feedbackRatings) {
+        // Ensure feedbackRatings is fully populated
+        await waitForFeedbackRatings(questions.length);
+
+        if (feedbackRatings.length > 0) {
           const averageRatings = calculateAverageRatings();
 
-          // Wait for ratings creation to finish
+          // Wait for the ratings creation task to complete
           await createRatings({
             interview_id: interviewId,
             answer_relevance: averageRatings.answer_relevance_rating,
@@ -302,13 +314,15 @@ const RecordYourself: React.FC = () => {
             pace_of_speech: averageRatings.pace_of_speech_rating,
             filler_words: averageRatings.filler_words_rating,
           });
+        } else {
+          console.error("No feedback ratings found. Cannot create ratings.");
         }
 
         setAllQuestionsRecorded(true);
         setIsModalVisible(false);
 
         // Navigate to the next screen
-        await handleNextPage()
+        await handleNextPage();
       } catch (error) {
         console.error("Error:", error.message || error);
       } finally {

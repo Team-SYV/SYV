@@ -14,6 +14,8 @@ import {
   FlatList,
   ScrollView,
   ActivityIndicator,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from "react-native";
 import Ratings from "@/components/Rating/Ratings";
 import { getFeedbackWithQuestions, getRatings } from "@/api";
@@ -26,6 +28,7 @@ const Feedback: React.FC = () => {
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList<string>>(null);
+  const [contentOffset, setContentOffset] = useState(0);
 
   const [feedbackItem, setFeedbackItem] = useState([]);
   const [ratings, setRatings] = useState<RatingsData>();
@@ -62,6 +65,23 @@ const Feedback: React.FC = () => {
 
     return () => backHandler.remove();
   }, [isFullScreen, isOnPage]);
+
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollX.setValue(event.nativeEvent.contentOffset.x);
+    setContentOffset(event.nativeEvent.contentOffset.x);
+  };
+
+  // Handle full-screen exit
+  const handleExitFullScreen = () => {
+    setIsFullScreen(false);
+
+    setTimeout(() => {
+      flatListRef.current?.scrollToOffset({
+        offset: contentOffset,
+        animated: true,
+      });
+    }, 5);
+  };
 
   // Fetch questions, feedback and ratings
   useEffect(() => {
@@ -208,7 +228,7 @@ const Feedback: React.FC = () => {
       ) : isFullScreen ? (
         <View style={styles.fullScreenVideoContainer}>
           <TouchableOpacity
-            onPress={() => setIsFullScreen(false)}
+            onPress={() => handleExitFullScreen()}
             className="absolute right-4 top-14 z-10"
           >
             <AntDesign name="closecircle" size={33} color="#A92703" />
@@ -232,10 +252,7 @@ const Feedback: React.FC = () => {
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-            { useNativeDriver: false }
-          )}
+          onScroll={onScroll}
         />
       )}
 

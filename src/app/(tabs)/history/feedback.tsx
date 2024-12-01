@@ -25,6 +25,7 @@ const Feedback: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { interviewId } = useLocalSearchParams();
 
+  // Fetch questions and feedback for a specific interview when the interviewId changes.
   useEffect(() => {
     const fetch = async () => {
       try {
@@ -98,12 +99,16 @@ const Feedback: React.FC = () => {
                 {feedback.filler_words || "No feedback available"}
               </Text>
 
-              <Text className="font-medium text-[12px] mb-2">
-                Tips & Ideal Answer
-              </Text>
-              <Text className="mb-6 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-                {feedback.tips || "No feedback available"}
-              </Text>
+              {feedbackItem.length > 1 && (
+                <>
+                  <Text className="font-medium text-[12px] mb-2">
+                    Tips & Ideal Answer
+                  </Text>
+                  <Text className="mb-6 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
+                    {feedback.tips || "No feedback available"}
+                  </Text>
+                </>
+              )}
             </>
           </View>
         </ScrollView>

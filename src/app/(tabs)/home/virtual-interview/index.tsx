@@ -36,6 +36,7 @@ const VirtualInterview = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [exit, setExit] = useState(true);
 
   const cameraRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -155,6 +156,7 @@ const VirtualInterview = () => {
     }
   }, [messages]);
 
+  // Sanitize the message and speaks it
   const speak = (message: string) => {
     const sanitizedMessage = message.replace(/^\d+\.\s*/, "");
     Speech.speak(sanitizedMessage, {
@@ -163,17 +165,24 @@ const VirtualInterview = () => {
   };
 
   // Handle hardware back button press
+  const handleBackButtonPress = () => {
+    if (exit) {
+      setIsConfirmationVisible(true);
+      return true;
+    }
+    return false;
+  };
+
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
-      () => {
-        handleBackButtonPress();
-        return true;
-      }
+      handleBackButtonPress
     );
 
-    return () => backHandler.remove();
-  }, []);
+    return () => {
+      backHandler.remove();
+    };
+  }, [isConfirmationVisible, exit]);
 
   // Check if permission has been granted
   useEffect(() => {
@@ -417,10 +426,6 @@ const VirtualInterview = () => {
     </View>
   );
 
-  const handleBackButtonPress = () => {
-    setIsConfirmationVisible(true);
-  };
-
   return (
     <View className="flex-1 justify-between bg-white">
       <Stack.Screen
@@ -487,6 +492,7 @@ const VirtualInterview = () => {
         onConfirm={() => {
           Speech.stop();
           setIsConfirmationVisible(false);
+          setExit(false);
           router.push("/home");
         }}
         onClose={() => setIsConfirmationVisible(false)}

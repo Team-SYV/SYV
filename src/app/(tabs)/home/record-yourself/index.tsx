@@ -50,19 +50,6 @@ const RecordYourself: React.FC = () => {
     boolean | null
   >(null);
 
-  const pendingTasks = useRef(new Set<Promise<void>>());
-
-  const addPendingTask = (task: Promise<void>) => {
-    pendingTasks.current.add(task);
-    task.finally(() => {
-      pendingTasks.current.delete(task);
-    });
-  };
-
-  const waitForPendingTasks = async () => {
-    await Promise.all(Array.from(pendingTasks.current));
-  };
-
   // Requests camera and microphone permissions when the component loads.
   useEffect(() => {
     (async () => {
@@ -78,7 +65,7 @@ const RecordYourself: React.FC = () => {
   // Retrieves interview questions from an API
   useEffect(() => {
     const fetchQuestions = async () => {
-      if (hasFetchedQuestions.current) return; // Prevent re-fetch
+      if (hasFetchedQuestions.current) return;
       hasFetchedQuestions.current = true;
       try {
         setIsLoading(true);
@@ -134,6 +121,30 @@ const RecordYourself: React.FC = () => {
     return () => backHandler.remove();
   }, [allQuestionsRecorded]);
 
+  // Calculates average feedback ratings and creates a new ratings entry
+  useEffect(() => {
+    if (feedbackRatings.length > 0) {
+      if (feedbackRatings.length === 5) {
+        const averageRatings = calculateAverageRatings();
+        console.log("Average", averageRatings);
+
+        createRatings({
+          interview_id: interviewId,
+          answer_relevance: averageRatings.answer_relevance_rating,
+          eye_contact: averageRatings.eye_contact_rating,
+          grammar: averageRatings.grammar_rating,
+          pace_of_speech: averageRatings.pace_of_speech_rating,
+          filler_words: averageRatings.filler_words_rating,
+        });
+        setAllQuestionsRecorded(true);
+        setIsModalVisible(false);
+        setIsLoading(false);
+
+        handleNextPage();
+      }
+    }
+  }, [feedbackRatings]);
+
   // Check if permission has been granted
   if (hasCameraPermission === null || hasMicrophonePermission === null) {
     return null;
@@ -160,10 +171,10 @@ const RecordYourself: React.FC = () => {
         const endTime = Date.now();
         const videoDuration = (endTime - startTime) / 1000;
 
-        if (videoDuration < 10) {
+        if (videoDuration < 5) {
           Alert.alert(
             "Recording Too Short",
-            "Please record for at least 10 seconds."
+            "Please record for at least 5 seconds."
           );
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);
@@ -195,48 +206,44 @@ const RecordYourself: React.FC = () => {
 
   // Handle the process of transcribing video, saving answers, and generating feedback
   const handleVideoAnswerFeedback = async (videoUri: string, index: number) => {
-    const task = (async () => {
-      try {
-        const videoFile = {
-          uri: videoUri,
-          type: "video/mp4",
-          name: videoUri.split("/").pop(),
-        } as unknown as File;
+    try {
+      const videoFile = {
+        uri: videoUri,
+        type: "video/mp4",
+        name: videoUri.split("/").pop(),
+      } as unknown as File;
 
-        const transcription = await transcribeVideo(videoFile);
+      const transcription = await transcribeVideo(videoFile);
 
-        if (transcription?.transcription) {
-          const answerResponse = await createAnswer({
-            question_id: questionIds[index],
+      if (transcription?.transcription) {
+        const answerResponse = await createAnswer({
+          question_id: questionIds[index],
+          answer: transcription.transcription,
+        });
+
+        if (answerResponse?.answer_id) {
+          const feedbackResponse = await generateFeedback({
+            answer_id: answerResponse.answer_id,
+            interview_id: interviewId,
             answer: transcription.transcription,
+            question: questions[index],
+            wpm: transcription.wpm.toString(),
+            eye_contact: transcription.eye_contact.toString(),
           });
 
-          if (answerResponse?.answer_id) {
-            const feedbackResponse = await generateFeedback({
-              answer_id: answerResponse.answer_id,
-              interview_id: interviewId,
-              answer: transcription.transcription,
-              question: questions[index],
-              wpm: transcription.wpm.toString(),
-              eye_contact: transcription.eye_contact.toString(),
-            });
-
-            if (feedbackResponse?.ratings_data) {
-              setFeedbackRatings((prevRatings) => [
-                ...prevRatings,
-                feedbackResponse.ratings_data,
-              ]);
-            }
+          if (feedbackResponse?.ratings_data) {
+            setFeedbackRatings((prevRatings) => [
+              ...prevRatings,
+              feedbackResponse.ratings_data,
+            ]);
           }
-        } else {
-          console.error("Transcription failed.");
         }
-      } catch (error) {
-        console.error("Error during API call:", error.message || error);
+      } else {
+        console.error("Transcription failed.");
       }
-    })();
-
-    addPendingTask(task);
+    } catch (error) {
+      console.error("Error during API call:", error.message || error);
+    }
   };
 
   // Calculates the average ratings for each feedback
@@ -273,65 +280,8 @@ const RecordYourself: React.FC = () => {
 
     return averages;
   };
-  
-  const waitForFeedbackRatings = async (expectedLength: number) => {
-    return new Promise<void>((resolve) => {
-      const interval = setInterval(() => {
-        if (feedbackRatings.length >= expectedLength) {
-          clearInterval(interval);
-          resolve();
-        }
-      }, 100); // Check every 100ms
-    });
-  };
-  
-  // Going to next question
-  const handleNext = async () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
-      setIsModalVisible(false);
-    } else {
-      try {
-        setIsLoading(true);
 
-        // Wait for all feedback generation tasks to complete
-        console.log("Waiting for feedback tasks...");
-        await waitForPendingTasks();
-        console.log("Feedback tasks complete.");
-
-        // Ensure feedbackRatings is fully populated
-        await waitForFeedbackRatings(questions.length);
-
-        if (feedbackRatings.length > 0) {
-          const averageRatings = calculateAverageRatings();
-
-          // Wait for the ratings creation task to complete
-          await createRatings({
-            interview_id: interviewId,
-            answer_relevance: averageRatings.answer_relevance_rating,
-            eye_contact: averageRatings.eye_contact_rating,
-            grammar: averageRatings.grammar_rating,
-            pace_of_speech: averageRatings.pace_of_speech_rating,
-            filler_words: averageRatings.filler_words_rating,
-          });
-        } else {
-          console.error("No feedback ratings found. Cannot create ratings.");
-        }
-
-        setAllQuestionsRecorded(true);
-        setIsModalVisible(false);
-
-        // Navigate to the next screen
-        await handleNextPage();
-      } catch (error) {
-        console.error("Error:", error.message || error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
-
-  const handleNextPage = async () => {
+  const handleNextPage = () => {
     router.push({
       pathname: `/home/record-yourself/feedback`,
       params: {
@@ -339,6 +289,16 @@ const RecordYourself: React.FC = () => {
         interviewId: interviewId,
       },
     });
+  };
+
+  // Going to next question
+  const handleNext = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+      setIsModalVisible(false);
+    } else {
+      setIsLoading(true);
+    }
   };
 
   // Format for countdown timer
@@ -429,6 +389,7 @@ const RecordYourself: React.FC = () => {
         }
         onConfirm={() => {
           setIsConfirmationVisible(false);
+          setAllQuestionsRecorded(true);
           router.push("/home");
         }}
         onClose={() => setIsConfirmationVisible(false)}

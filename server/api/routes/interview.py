@@ -41,20 +41,35 @@ async def get_interview(interview_id: str,supabase: Client= Depends(get_supabase
 
 @router.get("/history/{user_id}", response_model=List[GetInterviewHistory])
 async def get_interview_history(user_id: str, supabase: Client = Depends(get_supabase)):
+    # Fetch interview IDs with ratings
+    rating_response = supabase.table('ratings').select('interview_id').execute()
+    
+    if hasattr(rating_response, 'error') and rating_response.error:
+        raise HTTPException(status_code=500, detail="Failed to retrieve ratings")
+
+    rated_interview_ids = [item['interview_id'] for item in rating_response.data if 'interview_id' in item]
+
+    if not rated_interview_ids:
+        return []  # No interviews with ratings
+
+    # Fetch interview history for the user
     response = supabase.table('interview').select(
         'interview_id', 'job_information_id', 'type', 'created_at'
-    ).eq('user_id', user_id).execute()
+    ).eq('user_id', user_id).in_('interview_id', rated_interview_ids).execute()
 
     if hasattr(response, 'error') and response.error:
         raise HTTPException(status_code=500, detail="Failed to retrieve interview history")
 
     interview_history = response.data if response.data is not None else []
 
+    # Fetch job info details
     job_info_details = {}
     job_information_ids = list(set(interview['job_information_id'] for interview in interview_history))
 
     if job_information_ids:
-        job_info_response = supabase.table('job_information').select('job_information_id', 'job_role', 'company_name').in_('job_information_id', job_information_ids).execute()
+        job_info_response = supabase.table('job_information').select(
+            'job_information_id', 'job_role', 'company_name'
+        ).in_('job_information_id', job_information_ids).execute()
 
         if hasattr(job_info_response, 'error') and job_info_response.error:
             raise HTTPException(status_code=500, detail="Failed to retrieve job info")
@@ -65,6 +80,7 @@ async def get_interview_history(user_id: str, supabase: Client = Depends(get_sup
                 "company_name": job_info['company_name']
             }
 
+    # Return structured response
     return [
         GetInterviewHistory(
             interview_id=interview['interview_id'],

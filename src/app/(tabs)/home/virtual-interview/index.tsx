@@ -77,18 +77,19 @@ const VirtualInterview = () => {
     })();
   }, []);
 
+  // Retrieves interview questions from an API
   useEffect(() => {
     const fetchQuestions = async () => {
       if (hasFetchedQuestions.current) return;
       hasFetchedQuestions.current = true;
       try {
         const response = await getQuestions(interviewId);
+        const questionIds = response.question_id;
         const questions = response.questions.map(
           (question: string, index: number) => `${index + 1}. ${question}`
-        ); // Add numbering
-        const questionIds = response.question_id;
-        setQuestions(questions);
+        );
         setQuestionIds(questionIds);
+        setQuestions(questions);
 
         if (questions.length > 0) {
           setMessages((prevMessages) => [
@@ -122,11 +123,13 @@ const VirtualInterview = () => {
           if (feedbackResponse.ratings_data) {
             await createRatings({
               interview_id: interviewId,
-              answer_relevance: feedbackResponse.ratings_data.answer_relevance_rating,
+              answer_relevance:
+                feedbackResponse.ratings_data.answer_relevance_rating,
               eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
               grammar: feedbackResponse.ratings_data.grammar_rating,
-              pace_of_speech: feedbackResponse.ratings_data.pace_of_speech_rating,
-              filler_words: feedbackResponse.ratings_data.filler_words_rating
+              pace_of_speech:
+                feedbackResponse.ratings_data.pace_of_speech_rating,
+              filler_words: feedbackResponse.ratings_data.filler_words_rating,
             });
             hasGeneratedFeedback.current = true;
           }
@@ -153,7 +156,8 @@ const VirtualInterview = () => {
   }, [messages]);
 
   const speak = (message: string) => {
-    Speech.speak(message, {
+    const sanitizedMessage = message.replace(/^\d+\.\s*/, "");
+    Speech.speak(sanitizedMessage, {
       rate: 1.0,
     });
   };
@@ -212,8 +216,10 @@ const VirtualInterview = () => {
           content: transcription.transcript,
         },
       ]);
-      await handleAnswerFeedback(transcription.transcript, questions[currentQuestionIndex]);
-
+      await handleAnswerFeedback(
+        transcription.transcript,
+        questions[currentQuestionIndex]
+      );
     }
   };
 
@@ -289,7 +295,7 @@ const VirtualInterview = () => {
       // Process eye contact asynchronously
       processEyeContact(videoUri);
 
-      await handleEnd(); // Proceed without waiting for eyeContact
+      await handleEnd();
     } catch (error) {
       console.error("Error handling API flow:", error);
     }

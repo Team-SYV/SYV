@@ -20,13 +20,6 @@ logging.basicConfig(
 )
 
 def generate_feedback(question, answer, wpm, eye_contact):
-    # Log the inputs
-    logging.info(f"Question: {question}")
-    logging.info(f"Answer: {answer}")
-    logging.info(f"Pace of Speech (WPM): {wpm}")
-    logging.info(f"Eye Contact (%): {eye_contact}")
-    
-    # Prepare the prompt
     prompt = f"""
         You are an expert in interview feedback.
 
@@ -52,8 +45,8 @@ def generate_feedback(question, answer, wpm, eye_contact):
             "grammar_rating": "<your rating on grammar, should be a number>", 
             "relevance_rating": "<your rating on answer relevance, should be a number>",
             "filler_rating": "<your rating on filler words, should be a number>",
-            "pace_of_speech_rating": "<your rating on the pace, should be a number>",
-            "eye_contact_rating": "<your rating on eye contact percentage, should be a number>"
+            "pace_of_speech_rating": { get_wpm_rating(wpm)},
+            "eye_contact_rating": {get_eye_contact_rating(eye_contact)}
         }}
     """
 
@@ -93,29 +86,40 @@ def generate_feedback(question, answer, wpm, eye_contact):
             "grammar_rating": 0,
             "relevance_rating": 0,
             "filler_rating": 0,
-            "pace_of_speech_rating": 0,
-            "eye_contact_rating": 0,
+            "pace_of_speech_rating": get_wpm_rating(wpm),
+            "eye_contact_rating": get_eye_contact_rating(eye_contact),
         }
 
     return feedback_dict
 
 def generate_virtual_feedback(questions, answers, wpm, eye_contact):
-    # Check if the inputs have consistent lengths
+    """
+    Generate cumulative feedback for multiple questions and answers, incorporating mean ratings for WPM and eye contact.
+    """
+    # Input validation
     if not (len(questions) == len(answers) == len(wpm) == len(eye_contact)):
-        raise ValueError("The number of questions, answers, WPM, and eye contact data points must match.")
-    
-    # Generate individual feedback for each question-answer pair
-    individual_feedback = []
-    for i, (question, answer) in enumerate(zip(questions, answers)):
-        individual_feedback.append({
-            "question": question,
-            "answer": answer,
-            "wpm": wpm[i],
-            "eye_contact": eye_contact[i]
-        })
+        raise ValueError("The number of questions, answers, WPM, and eye contact values must match.")
 
-    # Construct the prompt with cumulative data for OpenAI completion
-    prompt = f"""
+    if not questions:
+        raise ValueError("Questions cannot be empty.")
+
+    # Generate individual feedback data
+    individual_feedback = []
+    for i in range(len(questions)):
+        feedback_item = {
+            "question": questions[i],
+            "answer": answers[i],
+            "wpm": wpm[i],
+            "eye_contact": eye_contact[i],
+        }
+        individual_feedback.append(feedback_item)
+
+    # Calculate mean WPM and eye contact ratings
+    mean_wpm_rating = (sum(get_wpm_rating(w) for w in wpm)) / len(wpm)
+    mean_eye_contact_rating = sum(get_eye_contact_rating(e) for e in eye_contact) / len(eye_contact)
+
+    # Construct the prompt
+    prompt = """
         You are an expert in interview feedback.
         Based on the interviewee's answers to the following questions, provide detailed and cumulative feedback on their overall performance, focusing on:
         1. Grammar: Start feedback with "Your" and evaluate the grammatical accuracy of the response, noting any errors and suggesting a corrected version.
@@ -127,18 +131,18 @@ def generate_virtual_feedback(questions, answers, wpm, eye_contact):
         Here are the questions and answers:
     """
 
-    for item in individual_feedback:
+    for feedback in individual_feedback:
         prompt += f"""
-            - Question: "{item['question']}"
-            - Answer: "{item['answer']}"
-            - Words per minute: {item['wpm']}
-            - Eye contact percentage: {item['eye_contact']}
+            - Question: "{feedback['question']}"
+            - Answer: "{feedback['answer']}"
+            - WPM: {feedback['wpm']}
+            - Eye Contact: {feedback['eye_contact']}%
         """
 
-    prompt += """
+    prompt += f"""
         Additionally, rate each category out of 5.
         Format your response in the following JSON structure:
-        {
+         {{
             "grammar": "<cumulative feedback on grammar>",
             "relevance": "<cumulative feedback on answer relevance>",
             "filler": "<cumulative feedback on filler words>",
@@ -148,25 +152,30 @@ def generate_virtual_feedback(questions, answers, wpm, eye_contact):
             "grammar_rating": "<cumulative rating for grammar>",
             "relevance_rating": "<cumulative rating for answer relevance>",
             "filler_rating": "<cumulative rating for filler words>",
-            "pace_of_speech_rating": "<cumulative rating for pace>",
-            "eye_contact_rating": "<cumulative rating for eye contact>"
-        }
+            "pace_of_speech_rating": { round(mean_wpm_rating)},
+            "eye_contact_rating": {round(mean_eye_contact_rating)}
+        }}
     """
 
-    completion = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are an expert interview reviewer."},
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=1000
-    )
+    # Call the OpenAI API
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are an expert interview reviewer."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1000  # Adjust for token limits
+        )
+        feedback = completion.choices[0].message.content
+    except Exception as e:
+        logging.error(f"Error during OpenAI API call: {e}")
+        return {
+            "error": "Failed to generate feedback due to an API error.",
+        }
 
-    feedback = completion.choices[0].message.content
-
+    # Parse the feedback response
     feedback_cleaned = feedback.strip("` \n")
-
-    # Parse the response and handle errors if necessary
     try:
         feedback_dict = json.loads(feedback_cleaned)
     except json.JSONDecodeError as e:
@@ -181,8 +190,43 @@ def generate_virtual_feedback(questions, answers, wpm, eye_contact):
             "grammar_rating": 0,
             "relevance_rating": 0,
             "filler_rating": 0,
-            "pace_of_speech_rating":0,
-            "eye_contact_rating": 0,
+            "pace_of_speech_rating":round(mean_wpm_rating),
+            "eye_contact_rating": round(mean_eye_contact_rating),
         }
 
     return feedback_dict
+def get_wpm_rating(wpm):
+    """
+    Scale words per minute (WPM) to a rating from 0 to 5.
+    """
+    if wpm < 80: 
+        return 1
+    elif 80 <= wpm <= 120:  
+        return 2
+    elif 121 <= wpm <= 160:  
+        return 3
+    elif 161 <= wpm <= 200: 
+        return 4
+    elif wpm > 200:  
+        return 5
+    else:
+        return 0 
+
+def get_eye_contact_rating(eye_contact):
+    """
+    Scale eye contact percentage to a rating from 0 to 5.
+    """
+    if eye_contact == 0:
+        return 0
+    elif 1 <= eye_contact <= 20:
+        return 1
+    elif 21 <= eye_contact <= 40:
+        return 2
+    elif 41 <= eye_contact <= 60:
+        return 3
+    elif 61 <= eye_contact <= 80:
+        return 4
+    elif 81 <= eye_contact <= 100:
+        return 5
+    else:
+        return 0 

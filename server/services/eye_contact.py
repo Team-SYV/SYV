@@ -2,16 +2,26 @@ import cv2
 import dlib
 import numpy as np
 
-# Load dlib's face detector and shape predictor (68 face landmarks)
-detector = dlib.get_frontal_face_detector()
-datFile = "services/shape_predictor_68_face_landmarks.dat"  # Path to the shape predictor model
-predictor = dlib.shape_predictor(datFile)
+# Lazy initialization for dlib models
+detector = None
+predictor = None
+
+
+def initialize_models():
+    global detector, predictor
+    if detector is None or predictor is None:
+        detector = dlib.get_frontal_face_detector()
+        datFile = "services/shape_predictor_68_face_landmarks.dat"
+        predictor = dlib.shape_predictor(datFile)
+
 
 def eye_contact(frame):
     """
     Detect if the person is making eye contact in the given video frame.
     Returns True if eye contact is detected, otherwise False.
     """
+    initialize_models()
+
     # Convert to grayscale for face detection
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -24,16 +34,7 @@ def eye_contact(frame):
 
     # Process each detected face
     for face in faces:
-        # Draw face bounding box for debugging
-        cv2.rectangle(frame, (face.left(), face.top()), (face.right(), face.bottom()), (0, 255, 0), 2)
-
         landmarks = predictor(gray, face)  # Get facial landmarks
-
-        # Draw landmarks for debugging (eyes in blue)
-        for n in range(36, 42):  # Left eye landmarks
-            cv2.circle(frame, (landmarks.part(n).x, landmarks.part(n).y), 2, (255, 0, 0), -1)
-        for n in range(42, 48):  # Right eye landmarks
-            cv2.circle(frame, (landmarks.part(n).x, landmarks.part(n).y), 2, (255, 0, 0), -1)
 
         # Eye regions based on facial landmarks
         left_eye = [landmarks.part(i) for i in range(36, 42)]
@@ -44,14 +45,14 @@ def eye_contact(frame):
         right_eye_center = np.mean([(p.x, p.y) for p in right_eye], axis=0)
 
         # Calculate the midpoint between the two eyes
-        eyes_center = ((left_eye_center[0] + right_eye_center[0]) // 2, 
+        eyes_center = ((left_eye_center[0] + right_eye_center[0]) // 2,
                        (left_eye_center[1] + right_eye_center[1]) // 2)
 
         # Calculate the center of the face (using face bounding box)
         face_center_x = (face.left() + face.right()) // 2
         face_center_y = (face.top() + face.bottom()) // 2
 
-        # Relaxed alignment thresholds (adjusted from 80 to 100)
+        # Relaxed alignment thresholds
         horizontal_alignment = np.abs(eyes_center[0] - face_center_x) < 150
         vertical_alignment = np.abs(eyes_center[1] - face_center_y) < 150
 
@@ -66,19 +67,25 @@ def process_video(video_path: str):
     """
     Process the video to detect eye contact in each frame and calculate the percentage of eye contact frames.
     """
+    initialize_models()
+
     # Initialize variables
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-
         return {"eye_contact_percentage": 0}
-    
+
     eye_contact_count = 0
     frame_count = 0
+    frame_skip_rate = 12  
 
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break  # Exit loop when the video ends or there's an error
+
+        if frame_count % frame_skip_rate != 0:
+            frame_count += 1
+            continue
 
         frame_count += 1
 

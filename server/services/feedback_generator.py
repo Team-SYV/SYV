@@ -199,18 +199,16 @@ def get_wpm_rating(wpm):
     """
     Scale words per minute (WPM) to a rating from 0 to 5.
     """
-    if wpm < 80: 
+    if wpm < 90 or wpm > 180: 
         return 1
-    elif 80 <= wpm < 120:  
+    elif 90 <= wpm < 100 or 151 <= wpm <= 160:
         return 2
+    elif 100 <= wpm < 110 or 161 <= wpm <= 170:
+        return 3
+    elif 110 <= wpm < 171 <= wpm <= 180:  
+        return 4
     elif 120 <= wpm <= 150:     
         return 5  
-    elif 151 <= wpm <= 180: 
-        return 4
-    elif 181 <= wpm <= 200:  
-        return 3
-    else:  
-        return 1
 
 def get_eye_contact_rating(eye_contact):
     """

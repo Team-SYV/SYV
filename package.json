@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.2.25",
+    "@expo/config-plugins": "~8.0.0",
     "@mrakesh0608/react-native-loading-dots": "^1.0.9",
     "@react-navigation/native": "^6.1.18",
     "axios": "^1.7.7",

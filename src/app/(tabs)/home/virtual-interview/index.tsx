@@ -17,6 +17,7 @@ import {
   TouchableOpacity,
   Image,
   BackHandler,
+  Alert,
 } from "react-native";
 import {
   createAnswer,
@@ -36,6 +37,7 @@ const VirtualInterview = () => {
   const [messages, setMessages] = useState<Message[]>([]);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  
 
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -47,6 +49,7 @@ const VirtualInterview = () => {
   const [questions, setQuestions] = useState([]);
   const [questionIds, setQuestionIds] = useState([]);
   const [answers, setAnswers] = useState([]);
+  const isStartButtonDisabled = answers.length >= 10;
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [wpms, setWpms] = useState([]);
@@ -145,10 +148,10 @@ const VirtualInterview = () => {
         }
       };
       handleFeedbackRatings();
-    
+
       setTimeout(() => {
-        setIsModalVisible(true); 
-      }, 12000); 
+        setIsModalVisible(true);
+      }, 12000);
     }
   });
 
@@ -370,8 +373,11 @@ const VirtualInterview = () => {
         const recordedVideo = await cameraRef.current.recordAsync();
         const duration = (Date.now() - startTime) / 1000;
 
-        if (duration < 5) {
-          alert("Recording must be at least 5 seconds.");
+        if (duration < 1) {
+          Alert.alert(
+            "Recording Too Short",
+            "Please record for at least 5 seconds."
+          );
           await recording.stopAndUnloadAsync();
           await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
           return;
@@ -508,7 +514,7 @@ const VirtualInterview = () => {
             />
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity className="p-3" onPress={startRecording}>
+          <TouchableOpacity className="p-3" onPress={startRecording} disabled={isStartButtonDisabled} >
             <Image
               source={require("@/assets/icons/mic.png")}
               className="w-14 h-14 rounded-full"

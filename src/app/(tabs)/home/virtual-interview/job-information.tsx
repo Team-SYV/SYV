@@ -186,6 +186,7 @@ const JobInformation = () => {
     } catch (error) {
       console.error("Error creating job description:", error.message);
     } finally {
+      setHasChanges(false);
       setLoading(false);
     }
   };
@@ -261,6 +262,7 @@ const JobInformation = () => {
     } catch (error) {
       console.error("Error skipping file upload", error);
     } finally {
+      setHasChanges(false);
       setLoading(false);
     }
   };

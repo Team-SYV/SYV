@@ -373,7 +373,7 @@ const VirtualInterview = () => {
         const recordedVideo = await cameraRef.current.recordAsync();
         const duration = (Date.now() - startTime) / 1000;
 
-        if (duration < 1) {
+        if (duration < 5) {
           Alert.alert(
             "Recording Too Short",
             "Please record for at least 5 seconds."

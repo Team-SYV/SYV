@@ -71,7 +71,7 @@ const Ratings = () => {
     setTimeout(() => {
       setLoading(false);
       router.push("/home");
-    }, 2000);
+    }, 1000);
   };
 
   return (

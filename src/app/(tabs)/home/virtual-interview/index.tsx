@@ -145,7 +145,10 @@ const VirtualInterview = () => {
         }
       };
       handleFeedbackRatings();
-      setIsModalVisible(true);
+    
+      setTimeout(() => {
+        setIsModalVisible(true); 
+      }, 12000); 
     }
   });
 
@@ -304,7 +307,8 @@ const VirtualInterview = () => {
         {
           id: uuid.v4() as string,
           role: Role.Bot,
-          content: "Thank you! This concludes your virtual interview.",
+          content:
+            "Thank you for your time and participation. This concludes your virtual interview.",
         },
       ]);
     } else {
@@ -366,7 +370,7 @@ const VirtualInterview = () => {
         const recordedVideo = await cameraRef.current.recordAsync();
         const duration = (Date.now() - startTime) / 1000;
 
-        if (duration < 1) {
+        if (duration < 5) {
           alert("Recording must be at least 5 seconds.");
           await recording.stopAndUnloadAsync();
           await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
@@ -403,6 +407,8 @@ const VirtualInterview = () => {
   // Navigates to the feedback page
   const handleNext = () => {
     if (hasGeneratedFeedback.current) {
+      Speech.stop();
+      setExit(false);
       setIsLoading(false);
       setIsModalVisible(false);
 
@@ -453,7 +459,7 @@ const VirtualInterview = () => {
                 containerStyle={{
                   marginRight: 25,
                   marginTop: 12,
-                  marginBottom: 40
+                  marginBottom: 40,
                 }}
                 dots={3}
                 size={8}

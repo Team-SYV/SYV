@@ -51,9 +51,12 @@ const InitialLayout = () => {
   useEffect(() => {
     const handleBackPress = () => {
       if (
-        segments[0] === "(tabs)" &&
-        segments[1] === "home" &&
-        segments.length === 2
+        (segments[0] === "(tabs)" &&
+          (segments[1] === "home" ||
+            segments[1] === "profile" ||
+            segments[1] === "progress" ||
+            segments[1] === "history") &&
+          segments.length === 2)
       ) {
         BackHandler.exitApp();
         return true;

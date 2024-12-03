@@ -3,7 +3,7 @@ import { Slot, useRouter, useSegments } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/clerk-expo";
 import { useEffect } from "react";
-import Toast from "react-native-toast-message";
+import Toast, { ErrorToast } from "react-native-toast-message";
 import StartPage from ".";
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
@@ -49,6 +49,11 @@ const InitialLayout = () => {
   return <Slot />;
 };
 
+// Toast message customization
+const toastConfig = {
+  error: (props) => <ErrorToast {...props} text2NumberOfLines={2} />,
+};
+
 const RootLayoutNav = () => {
   return (
     <ClerkProvider
@@ -58,7 +63,7 @@ const RootLayoutNav = () => {
       <ClerkLoaded>
         <StartPage />
         <InitialLayout />
-        <Toast />
+        <Toast config={toastConfig} />
       </ClerkLoaded>
     </ClerkProvider>
   );

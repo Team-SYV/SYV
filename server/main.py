@@ -96,11 +96,27 @@ async def generate_questions(
         logging.error(f"Error generating questions: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate questions")
     
+@app.post("/api/transcribe-audio/")
+async def transcribe_audio_endpoint(file: UploadFile = File(...)):
+    try:
+        file_path = f"/tmp/{file.filename}"
+        with open(file_path, "wb") as buffer:
+            buffer.write(await file.read())
+
+        transcription = transcribe_audio(file_path)
+
+
+        return {"transcription": transcription}
+
+    except Exception as e:
+        logging.error(f"Error transcribing audio: {e}")
+        raise HTTPException(status_code=500, detail="Failed to transcribe the file")
+
 @app.post("/api/transcribe-video/")
 async def transcribe_video(file: UploadFile = File(...)):
     """Receive a video, extract audio, and return transcription text."""
     try:
-        with NamedTemporaryFile(suffix=".mp4", delete=True) as temp_video:
+        with NamedTemporaryFile(suffix=".mp4", delete=False) as temp_video:
             shutil.copyfileobj(file.file, temp_video)
             temp_video.seek(0)
 
@@ -118,7 +134,21 @@ async def transcribe_video(file: UploadFile = File(...)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-    
+
+@app.post("/api/eye-contact/")
+async def eye_contact(file: UploadFile = File(...)):
+    """Receive a video, process it, and return the eye contact percentage."""
+    try:
+        with NamedTemporaryFile(suffix=".mp4", delete=False) as temp_video:
+            shutil.copyfileobj(file.file, temp_video)
+            temp_video.seek(0)
+
+            result = process_video(temp_video.name)
+            return {"eye_contact": result['eye_contact_percentage']}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing video: {str(e)}")
+
 @app.post("/api/generate-feedback/")
 async def generate_feedback_api(feedback_input: GenerateFeedbackInput, supabase: Client= Depends(get_supabase)):
     """Generate feedback based on a question and answer."""

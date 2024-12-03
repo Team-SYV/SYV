@@ -10,6 +10,7 @@ interface RatingsProps {
   eyeContact: number;
   pace: number;
   fillerWords: number;
+  setIsOnPage: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const Ratings: React.FC<RatingsProps> = ({
@@ -18,6 +19,8 @@ const Ratings: React.FC<RatingsProps> = ({
   eyeContact,
   pace,
   fillerWords,
+  setIsOnPage,
+  
 }) => {
   const progressData = {
     relevance: Math.round(relevance),
@@ -50,9 +53,10 @@ const Ratings: React.FC<RatingsProps> = ({
   const handleGoBack = () => {
     setLoading(true);
     setTimeout(() => {
+      setIsOnPage(false);
       setLoading(false);
       router.push("/home");
-    }, 2000);
+    }, 1000);
   };
 
   return (

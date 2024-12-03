@@ -187,6 +187,7 @@ const JobInformation = () => {
     } catch (error) {
       console.error("Error creating job description:", error.message);
     } finally {
+      setHasChanges(false);
       setLoading(false);
     }
   };
@@ -255,10 +256,13 @@ const JobInformation = () => {
           console.error("Invalid question format:", question);
         }
       }
-      router.push(`/(tabs)/home/record-yourself/reminder?interviewId=${interviewId}`);
+      router.push(
+        `/(tabs)/home/record-yourself/reminder?interviewId=${interviewId}`
+      );
     } catch (error) {
       console.error("Error skipping file upload:", error);
     } finally {
+      setHasChanges(false);
       setLoading(false);
     }
   };

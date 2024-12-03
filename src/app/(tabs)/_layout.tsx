@@ -171,11 +171,11 @@ const TabLayout = () => {
           tabBarLabel: "Profile",
           tabBarStyle: shouldProfileTabBarBeVisible(route)
             ? {
-                height: 56,
+                height: 54,
                 position: "absolute",
                 bottom: 10,
-                left: 8,
-                right: 8,
+                left: 10,
+                right: 10,
                 borderRadius: 15,
                 borderTopWidth: 0,
                 shadowColor: "#000",

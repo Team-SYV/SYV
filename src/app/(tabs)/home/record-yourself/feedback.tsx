@@ -14,6 +14,8 @@ import {
   FlatList,
   ScrollView,
   ActivityIndicator,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from "react-native";
 import Ratings from "@/components/Rating/Ratings";
 import { getFeedbackWithQuestions, getRatings } from "@/api";
@@ -26,12 +28,14 @@ const Feedback: React.FC = () => {
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList<string>>(null);
+  const [contentOffset, setContentOffset] = useState(0);
 
   const [feedbackItem, setFeedbackItem] = useState([]);
   const [ratings, setRatings] = useState<RatingsData>();
 
   const [loading, setLoading] = useState(true);
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
+  const [isOnPage, setIsOnPage] = useState(true);
 
   const { videoURIs, interviewId } = useLocalSearchParams();
   const parsedVideos: string[] =
@@ -45,8 +49,13 @@ const Feedback: React.FC = () => {
         setIsFullScreen(false);
         return true;
       }
-      setIsConfirmationVisible(true);
-      return true;
+
+      if (isOnPage) {
+        setIsConfirmationVisible(true);
+        return true;
+      }
+
+      return false;
     };
 
     const backHandler = BackHandler.addEventListener(
@@ -55,7 +64,24 @@ const Feedback: React.FC = () => {
     );
 
     return () => backHandler.remove();
-  }, [isFullScreen]);
+  }, [isFullScreen, isOnPage]);
+
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollX.setValue(event.nativeEvent.contentOffset.x);
+    setContentOffset(event.nativeEvent.contentOffset.x);
+  };
+
+  // Handle full-screen exit
+  const handleExitFullScreen = () => {
+    setIsFullScreen(false);
+
+    setTimeout(() => {
+      flatListRef.current?.scrollToOffset({
+        offset: contentOffset,
+        animated: true,
+      });
+    }, 5);
+  };
 
   // Fetch questions, feedback and ratings
   useEffect(() => {
@@ -97,6 +123,7 @@ const Feedback: React.FC = () => {
               eyeContact={ratings[0].eye_contact}
               pace={ratings[0].pace_of_speech}
               fillerWords={ratings[0].filler_words}
+              setIsOnPage={setIsOnPage}
             />
           ) : (
             <View className="flex-1 items-center justify-center">
@@ -201,7 +228,7 @@ const Feedback: React.FC = () => {
       ) : isFullScreen ? (
         <View style={styles.fullScreenVideoContainer}>
           <TouchableOpacity
-            onPress={() => setIsFullScreen(false)}
+            onPress={() => handleExitFullScreen()}
             className="absolute right-4 top-14 z-10"
           >
             <AntDesign name="closecircle" size={33} color="#A92703" />
@@ -225,10 +252,7 @@ const Feedback: React.FC = () => {
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-            { useNativeDriver: false }
-          )}
+          onScroll={onScroll}
         />
       )}
 
@@ -277,6 +301,7 @@ const Feedback: React.FC = () => {
         }
         onConfirm={() => {
           setIsConfirmationVisible(false);
+          setIsOnPage(false);
           router.push("/home");
         }}
         onClose={() => setIsConfirmationVisible(false)}

@@ -186,8 +186,6 @@ const RecordYourself: React.FC = () => {
         }
       } catch (error) {
         console.error("Error recording video:", error);
-      } finally {
-        setIsRecording(false);
       }
     } else {
       console.error("Camera reference is null or undefined.");

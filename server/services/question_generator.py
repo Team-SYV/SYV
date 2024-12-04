@@ -19,9 +19,10 @@ def generate_interview_questions(type, industry, experience_level, interview_typ
             Job description: {'' if job_description is None else job_description}.
             Resume details: {'' if resume_text is None else resume_text}.
 
-            Please generate **5 clear and concise interview questions**.
+            Please generate **5 interview questions**.
             Ensure the first question is an introductory one, such as 'Tell me about yourself and a brief background,' 
             Please ensure they are simple, short, straightforward, and easy to understand.
+           
         """
 
     elif(type == "VIRTUAL"):
@@ -34,13 +35,14 @@ def generate_interview_questions(type, industry, experience_level, interview_typ
             Job description: {'' if job_description is None else job_description}.
             Resume details: {'' if resume_text is None else resume_text}.
 
-            Please generate **10 clear and concise interview question**.
+            Please generate **5 interview questions**.
             Ensure the first question is an introductory one, such as 'Tell me about yourself and a brief background,' 
             Please ensure they are simple, short, straightforward, and easy to understand.
+            Speak like we’re having coffee and your are asking me this questions.
             """
               
     completion = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o",
         messages=[
             {"role": "system", "content": "You are an expert interview question generator."},
             {"role": "user", "content": prompt}
@@ -59,11 +61,14 @@ def generate_interview_questions(type, industry, experience_level, interview_typ
 
 def generate_answer_feedback(previous_question, previous_answer):
     prompt = f"""
+
     Previous question: {previous_question}
     Previous answer: {previous_answer}
     
-    Please provide one short sentence starting with "You" that either gives positive praise or indicates if the answer is unclear. If the answer is unclear, suggest how they could improve next time."
-    Speak as if you are talking to me directly.
+    Please provide one short sentence starting with "You" that either gives positive praise or indicates if the answer is unclear. 
+    If the answer is unclear, suggest how they could answer and improve next time.
+    Speak like we’re having coffee and you’re excited to share your knowledge.
+    Dont include emojis.
     """
 
     completion = client.chat.completions.create(

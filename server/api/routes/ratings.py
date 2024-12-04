@@ -17,7 +17,7 @@ def get_supabase() -> Client:
 async def create_ratings(ratings_data: createRatingsInput, supabase: Client= Depends(get_supabase)):
     required_fields = ['answer_relevance', 'eye_contact', 'grammar', 'pace_of_speech', 'filler_words']
     for field in required_fields:
-        if not ratings_data.model_dump().get(field):
+        if ratings_data.model_dump().get(field) is None:
             raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
 
     response = supabase.table('ratings').insert(ratings_data.model_dump()).execute()

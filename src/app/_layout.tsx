@@ -5,6 +5,7 @@ import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/clerk-expo";
 import { useEffect } from "react";
 import Toast, { ErrorToast } from "react-native-toast-message";
 import StartPage from ".";
+import { BackHandler } from "react-native";
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
@@ -45,6 +46,33 @@ const InitialLayout = () => {
       router.replace("/onboarding");
     }
   }, [isSignedIn]);
+
+  // Exit the app when android back button is pressed in home page
+  useEffect(() => {
+    const handleBackPress = () => {
+      if (
+        (segments[0] === "(tabs)" &&
+          (segments[1] === "home" ||
+            segments[1] === "profile" ||
+            segments[1] === "progress" ||
+            segments[1] === "history") &&
+          segments.length === 2)
+      ) {
+        BackHandler.exitApp();
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      handleBackPress
+    );
+
+    return () => {
+      backHandler.remove();
+    };
+  }, [segments]);
 
   return <Slot />;
 };

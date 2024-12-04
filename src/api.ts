@@ -6,6 +6,7 @@ import { QuestionData } from "./types/questionData";
 import { RatingsData } from "./types/ratingsData";
 import { FeedbackData } from "./types/feedbackData";
 import { VirtualFeedbackData } from "./types/virtualFeedbackData";
+import { useAuth } from "@clerk/clerk-expo";
 
 const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL,
@@ -229,21 +230,28 @@ export const getRatings = async (interview_id: string | string[]) => {
   }
 };
 
-export const getInterviewHistory = async (userId: string) => {
+export const getInterviewHistory = async (userId: string, token: string) => {
   try {
-    const response = await api.get(`/api/interview/history/${userId}`);
+    const response = await api.get(`/api/interview/history/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data;
-  } catch (error) { 
-    throw new Error(
-      error.response?.data?.detail || "Failed to retrieve interview count"
-    );
+  } catch (error) {
+    throw new Error(error);
   }
 };
 
-export const getRatingsByUserId = async (userId: string, week_start: string) => {
+export const getRatingsByUserId = async (
+  userId: string,
+  week_start: string
+) => {
   try {
     // Include the week_start parameter in the URL
-    const response = await api.get(`/api/ratings/progress/${userId}?week_start=${week_start}`);
+    const response = await api.get(
+      `/api/ratings/progress/${userId}?week_start=${week_start}`
+    );
     return response.data;
   } catch (error) {
     throw new Error(
@@ -277,17 +285,19 @@ export const generateAnswerFeedback = async (formData) => {
   }
 };
 
-export const getFeedbackWithQuestions = async (interviewId: string | string[]) => {
+export const getFeedbackWithQuestions = async (
+  interviewId: string | string[]
+) => {
   try {
     const response = await api.get(`/api/feedback/get/record/${interviewId}`);
     return response.data;
   } catch (error) {
     throw new Error(
-      error.response?.data?.detail || "Failed to retrieve feedback with questions"
+      error.response?.data?.detail ||
+        "Failed to retrieve feedback with questions"
     );
   }
 };
-
 
 export const testeyecontact = async (videoFile: File) => {
   try {

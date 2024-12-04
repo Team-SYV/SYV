@@ -10,9 +10,11 @@ import { getInterviewHistory } from "@/api";
 import { useUser } from "@clerk/clerk-expo";
 import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
+import { useAuth } from "@clerk/clerk-expo";
 
 const History = () => {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [selectedTab, setSelectedTab] = useState("virtual");
   const [interviewData, setInterviewData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,9 @@ const History = () => {
       const fetch = async () => {
         try {
           setLoading(true);
-          const fetchedHistory = await getInterviewHistory(user.id);
+          const token = await getToken();
+          console.log(token)
+          const fetchedHistory = await getInterviewHistory(user.id, token);
           const sortedHistory = fetchedHistory.sort(
             (a, b) =>
               new Date(b.created_at).getTime() -
@@ -33,7 +37,7 @@ const History = () => {
 
           setInterviewData(sortedHistory);
         } catch (error) {
-          console.error("Error fetching data", error.message);
+          console.error("Error fetching data", error);
         } finally {
           setLoading(false);
         }

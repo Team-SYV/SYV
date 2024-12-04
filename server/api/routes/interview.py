@@ -1,7 +1,8 @@
 from typing import List
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from supabase import Client
 from models.interview import CreateInterview, CreateInterviewResponse, GetInterviewHistory
+from utils.jwt import validate_token
 from utils.supabase import get_supabase_client
 
 router = APIRouter()
@@ -40,7 +41,15 @@ async def get_interview(interview_id: str,supabase: Client= Depends(get_supabase
     )
 
 @router.get("/history/{user_id}", response_model=List[GetInterviewHistory])
-async def get_interview_history(user_id: str, supabase: Client = Depends(get_supabase)):
+async def get_interview_history(user_id: str, request: Request, supabase: Client = Depends(get_supabase)):
+
+     # Validate the token
+    auth_header = request.headers.get("Authorization")
+    validated_user_id = validate_token(auth_header)
+
+    if validated_user_id != user_id:
+        raise HTTPException(status_code=403, detail="Unauthorized access")
+    
     # Fetch interview IDs with ratings
     rating_response = supabase.table('ratings').select('interview_id').execute()
     

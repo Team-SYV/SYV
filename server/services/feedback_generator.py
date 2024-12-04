@@ -21,16 +21,18 @@ logging.basicConfig(
 
 def generate_feedback(question, answer, wpm, eye_contact):
     prompt = f"""
-        You are an expert in interview feedback.
 
-        Please provide concise, easy to understand, straightforward, human-like, and a detailed feedback on the following aspects:
-        
-        1. Grammar: Start feedback with "Your" and evaluate the grammatical accuracy of the answer:"{answer}", noting any errors and suggesting a corrected version.
+        Imagine like you are my teacher and you will provide me a detailed feedback about my job interview performance.
+
+        Please provide concise and detailed feedback on the following aspects:
+        1. Grammar: Start feedback with "Your" and evaluate the grammatical accuracy of the answer: "{answer}", noting any errors related to grammar (e.g., subject-verb agreement, tense consistency, sentence structure), and suggest a corrected version.
         2. Relevance: Start feedback with "Your" and assess how directly and comprehensively the answer: {answer} addresses the question: "{question}". If it does not address the question, suggest a more appropriate response."
         3. Filler Words: Start feedback with "Your" and identify any excessive use of filler words and pauses (like "um," "uh," "like," etc.), and comment on how they may impact the response’s clarity and user's confidence.
         4. Pace of Speech: Start feedback with 'Your' and evaluate the pace of speech based on the words per minute ({wpm} WPM). Suggest adjustments if needed to enhance comprehension and impact."
         5. Eye Contact: Start feedback with "Your" and assess eye contact effectiveness, given the eye contact percentage of ({eye_contact}%), and discuss its effect on overall engagement and user's confidence with the interviewer.
-        6. Tips: Provide an ideal response to the question: "{question}" based on the given answer: "{answer}". Phrase the response as if you were answering the question yourself. If the given answer is incorrect or no answer is provided, suggest an ideal response that directly addresses the question in a clear and effective manner, written as though you were the one answering it.
+        6. Tips: Provide an ideal response to the question: "{question}" based on the given answer: "{answer}". If the given answer is incorrect or no answer is provided, suggest an ideal response that directly addresses the question in a clear and effective manner, written as though you were the one answering it.
+
+        Make it 80% professional and 20% conversational. 
 
         Additionally, rate each of them out of 5.
 
@@ -62,14 +64,13 @@ def generate_feedback(question, answer, wpm, eye_contact):
 
     # Retrieve feedback
     feedback = completion.choices[0].message.content
-    logging.info(f"Raw feedback from OpenAI: {feedback}")
 
     # Clean feedback and handle JSON parsing
     feedback_cleaned = feedback.strip("` \n")
     if feedback_cleaned.lower().startswith("json"):
         feedback_cleaned = feedback_cleaned[4:].strip()
 
-    logging.info(f"Cleaned feedback: {feedback_cleaned}")
+    logging.info(f"Feedback: {feedback_cleaned}")
 
     try:
         feedback_dict = json.loads(feedback_cleaned)
@@ -120,14 +121,17 @@ def generate_virtual_feedback(questions, answers, wpm, eye_contact):
 
     # Construct the prompt
     prompt = """
-        You are an expert in interview feedback.
+        Imagine like you are my teacher and you will provide me a detailed feedback about my job interview performance.
+        
         Based on the interviewee's answers to the following questions, provide detailed and cumulative feedback on their overall performance, focusing on:
-        1. Grammar: Start feedback with "Your" and evaluate the grammatical accuracy of the response, noting any errors and suggesting a corrected version.
+        1. Grammar: Start feedback with "Your" and evaluate the grammatical accuracy of the response, noting any errors related to grammar (e.g., subject-verb agreement, tense consistency, sentence structure) and suggesting a corrected version.
         2. Relevance: Start feedback with "Your" and assess how directly and comprehensively the answer addresses the question". If it does not address the question, suggest a more appropriate response."
         3. Filler Words: Start feedback with "Your" and identify any excessive use of filler words or pauses (like "um," "uh," "like," etc.), and comment on how they may impact the response’s clarity and user's confidence.
         4. Pace of Speech: Start feedback with "Your" and evaluate the pace based on the words per minute ({wpm} WPM) and suggest if adjustments are needed for better comprehension or impact.
         5. Eye Contact: Start feedback with "Your" and assess eye contact effectiveness, given the eye contact percentage ({eye_contact}%), and discuss its effect on the overall engagement and user's confidence with the interviewer.
         
+        Make it 80% professional and 20% conversational. 
+
         Here are the questions and answers:
     """
 
@@ -176,6 +180,8 @@ def generate_virtual_feedback(questions, answers, wpm, eye_contact):
 
     # Parse the feedback response
     feedback_cleaned = feedback.strip("` \n")
+    logging.info(f"Feedback: {feedback_cleaned}")
+
     try:
         feedback_dict = json.loads(feedback_cleaned)
     except json.JSONDecodeError as e:

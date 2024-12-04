@@ -37,7 +37,6 @@ const VirtualInterview = () => {
   const [messages, setMessages] = useState<Message[]>([]);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  
 
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -302,9 +301,9 @@ const VirtualInterview = () => {
 
   // Advances to the next question or ends the interview with a thank you message if it's the last question.
   const handleEnd = async () => {
-    const isLastQuestion = eyeContacts.length === questions.length - 1;
+    const isLastMessage = currentQuestionIndex === questions.length - 1;
 
-    if (isLastQuestion) {
+    if (isLastMessage) {
       setMessages((prevMessages) => [
         ...prevMessages,
         {
@@ -514,7 +513,11 @@ const VirtualInterview = () => {
             />
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity className="p-3" onPress={startRecording} disabled={isStartButtonDisabled} >
+          <TouchableOpacity
+            className="p-3"
+            onPress={startRecording}
+            disabled={isStartButtonDisabled}
+          >
             <Image
               source={require("@/assets/icons/mic.png")}
               className="w-14 h-14 rounded-full"

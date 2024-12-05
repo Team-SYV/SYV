@@ -30,7 +30,7 @@ import {
   createQuestions,
   generateQuestions,
 } from "@/api";
-import { useUser } from "@clerk/clerk-expo";
+import { useAuth } from "@clerk/clerk-expo";
 import { cleanQuestion } from "@/utils/cleanQuestion";
 
 const JobInformation = () => {
@@ -44,7 +44,8 @@ const JobInformation = () => {
   });
 
   const router = useRouter();
-  const { user } = useUser();
+  const { getToken } = useAuth();
+
   const [activeStep, setActiveStep] = useState<number>(0);
   const [errors, setErrors] = useState<{ [key: number]: string }>({});
   const [loading, setLoading] = useState(false);
@@ -162,9 +163,9 @@ const JobInformation = () => {
   const handleSubmit = async () => {
     try {
       setLoading(true);
+      const token = await getToken();
 
       const jobData = {
-        user_id: user.id,
         industry: formData.selectedIndustry,
         job_role: formData.selectedJobRole,
         interview_type: formData.selectedInterviewType,
@@ -173,15 +174,14 @@ const JobInformation = () => {
         job_description: formData.jobDescription || "None",
       };
 
-      const jobInformationResponse = await createJobInformation(jobData);
+      const jobInformationResponse = await createJobInformation(jobData, token);
       const jobInformationId = jobInformationResponse.job_information_id;
 
       const interviewData = {
-        user_id: user.id,
         job_information_id: jobInformationId,
         type: "RECORD",
       };
-      const interviewResponse = await createInterview(interviewData);
+      const interviewResponse = await createInterview(interviewData, token);
       const interviewId = interviewResponse.interview_id;
       setInterviewId(interviewId);
     } catch (error) {
@@ -196,9 +196,9 @@ const JobInformation = () => {
   const handleSkip = async () => {
     try {
       setLoading(true);
+      const token = await getToken();
 
       const jobData = {
-        user_id: user.id,
         industry: formData.selectedIndustry,
         job_role: formData.selectedJobRole,
         interview_type: formData.selectedInterviewType,
@@ -208,14 +208,13 @@ const JobInformation = () => {
       };
 
       //  Creates job information
-      const jobInformationResponse = await createJobInformation(jobData);
+      const jobInformationResponse = await createJobInformation(jobData, token);
       const jobInformationId = jobInformationResponse.job_information_id;
       const interviewData = {
-        user_id: user.id,
         job_information_id: jobInformationId,
         type: "RECORD",
       };
-      const interviewResponse = await createInterview(interviewData);
+      const interviewResponse = await createInterview(interviewData, token);
       const interviewId = interviewResponse.interview_id;
       setInterviewId(interviewId);
 
@@ -256,9 +255,10 @@ const JobInformation = () => {
           console.error("Invalid question format:", question);
         }
       }
-      router.push(
-        `/(tabs)/home/record-yourself/reminder?interviewId=${interviewId}`
-      );
+      router.push({
+        pathname: `/(tabs)/home/record-yourself/reminder`,
+        params: { interviewId: interviewId },
+      });
     } catch (error) {
       console.error("Error skipping file upload:", error);
     } finally {

@@ -11,13 +11,25 @@ def get_supabase() -> Client:
     return get_supabase_client()
 
 @router.post("/create",  response_model=CreateInterviewResponse)
-async def create_interview(interview_data: CreateInterview, supabase: Client= Depends(get_supabase)):
-    required_fields = ['user_id', 'job_information_id', 'type']
+async def create_interview(interview_data: CreateInterview, request: Request, supabase: Client= Depends(get_supabase)):
+
+    # Validate the token
+    auth_header = request.headers.get("Authorization")
+
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+    validated_user_id = validate_token(auth_header)
+
+    required_fields = ['job_information_id', 'type']
     for field in required_fields:
         if not interview_data.model_dump().get(field):
             raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
 
-    response = supabase.table('interview').insert(interview_data.model_dump()).execute()
+    interview_data_dict = interview_data.model_dump()
+    interview_data_dict['user_id'] = validated_user_id
+
+    response = supabase.table('interview').insert(interview_data_dict).execute()
 
     if hasattr(response, 'error') and response.error:
         raise HTTPException(status_code=500, detail="Failed to create interview")

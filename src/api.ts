@@ -12,12 +12,18 @@ const api = axios.create({
 });
 
 export const createJobInformation = async (
-  jobInformationData: JobInformationData
+  jobInformationData: JobInformationData,
+  token: string
 ) => {
   try {
     const response = await api.post(
       "/api/job_information/create",
-      jobInformationData
+      jobInformationData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
     return response.data;
   } catch (error) {
@@ -38,9 +44,13 @@ export const getJobInformation = async (jobId: string | string[]) => {
   }
 };
 
-export const createInterview = async (interviewData: InterviewData) => {
+export const createInterview = async (interviewData: InterviewData, token: string) => {
   try {
-    const response = await api.post("/api/interview/create", interviewData);
+    const response = await api.post("/api/interview/create", interviewData,{
+      headers:{
+        Authorization: `Bearer ${token}`,
+      }
+    });
     return response.data;
   } catch (error) {
     throw new Error(

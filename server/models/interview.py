@@ -2,7 +2,6 @@ from datetime import datetime
 from pydantic import BaseModel
 
 class CreateInterview(BaseModel):
-    user_id: str
     job_information_id: str
     type: str
    

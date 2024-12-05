@@ -136,9 +136,10 @@ const History = () => {
                   onPress={() => {
                     if (!buttonDisabled) {
                       setButtonDisabled(true);
-                      router.push(
-                        `/history/feedback?interviewId=${item.interview_id}`
-                      );
+                      router.push({
+                        pathname: `/history/feedback`,
+                        params: { interview_id: item.interview_id },
+                      });
                       setTimeout(() => setButtonDisabled(false), 1000);
                     }
                   }}

@@ -205,7 +205,7 @@ def get_wpm_rating(wpm):
         return 2
     elif 100 <= wpm < 110 or 161 <= wpm <= 170:
         return 3
-    elif 110 <= wpm < 171 <= wpm <= 180:  
+    elif 110 <= wpm < 120 or  171 <= wpm <= 180:        
         return 4
     elif 120 <= wpm <= 150:     
         return 5  

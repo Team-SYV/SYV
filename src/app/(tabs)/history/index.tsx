@@ -1,26 +1,18 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-} from "react-native";
+import {View,Text,TouchableOpacity, FlatList, ActivityIndicator} from "react-native";
 import React, { useState } from "react";
 import { getInterviewHistory } from "@/api";
-import { useUser } from "@clerk/clerk-expo";
 import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
 
 const History = () => {
-  const { user } = useUser();
   const { getToken } = useAuth();
   const [selectedTab, setSelectedTab] = useState("virtual");
   const [interviewData, setInterviewData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [buttonDisabled, setButtonDisabled] = useState(false);
 
-  // Fetch interview history data on component mount
+  // Fetch interview history data 
   useFocusEffect(
     React.useCallback(() => {
       const fetch = async () => {
@@ -41,11 +33,11 @@ const History = () => {
           setLoading(false);
         }
       };
-
-      if (user) {
+      const token =  getToken()
+      if (token) {
         fetch();
       }
-    }, [user])
+    }, [getToken])
   );
 
   // Helper function to format the date

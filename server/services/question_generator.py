@@ -35,7 +35,7 @@ def generate_interview_questions(type, industry, experience_level, interview_typ
             Job description: {'' if job_description is None else job_description}.
             Resume details: {'' if resume_text is None else resume_text}.
 
-            Please generate **5 interview questions**.
+            Please generate **10 interview questions**.
             Ensure the first question is an introductory one, such as 'Tell me about yourself and a brief background,' 
             Please ensure they are simple, short, straightforward, and easy to understand.
             Speak like we’re having coffee and your are asking me this questions.

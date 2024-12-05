@@ -40,15 +40,16 @@ async def get_interview(interview_id: str,supabase: Client= Depends(get_supabase
     type=response.data[0]['type']     
     )
 
-@router.get("/history/{user_id}", response_model=List[GetInterviewHistory])
-async def get_interview_history(user_id: str, request: Request, supabase: Client = Depends(get_supabase)):
+@router.get("/history/", response_model=List[GetInterviewHistory])
+async def get_interview_history(request: Request, supabase: Client = Depends(get_supabase)):
 
      # Validate the token
     auth_header = request.headers.get("Authorization")
-    validated_user_id = validate_token(auth_header)
 
-    if validated_user_id != user_id:
-        raise HTTPException(status_code=403, detail="Unauthorized access")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+    validated_user_id = validate_token(auth_header)
     
     # Fetch interview IDs with ratings
     rating_response = supabase.table('ratings').select('interview_id').execute()
@@ -59,12 +60,12 @@ async def get_interview_history(user_id: str, request: Request, supabase: Client
     rated_interview_ids = [item['interview_id'] for item in rating_response.data if 'interview_id' in item]
 
     if not rated_interview_ids:
-        return []  # No interviews with ratings
+        return []  
 
     # Fetch interview history for the user
     response = supabase.table('interview').select(
         'interview_id', 'job_information_id', 'type', 'created_at'
-    ).eq('user_id', user_id).in_('interview_id', rated_interview_ids).execute()
+    ).eq('user_id', validated_user_id).in_('interview_id', rated_interview_ids).execute()
 
     if hasattr(response, 'error') and response.error:
         raise HTTPException(status_code=500, detail="Failed to retrieve interview history")

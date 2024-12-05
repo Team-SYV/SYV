@@ -6,7 +6,6 @@ import { QuestionData } from "./types/questionData";
 import { RatingsData } from "./types/ratingsData";
 import { FeedbackData } from "./types/feedbackData";
 import { VirtualFeedbackData } from "./types/virtualFeedbackData";
-import { useAuth } from "@clerk/clerk-expo";
 
 const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL,
@@ -230,16 +229,18 @@ export const getRatings = async (interview_id: string | string[]) => {
   }
 };
 
-export const getInterviewHistory = async (userId: string, token: string) => {
+export const getInterviewHistory = async (token: string) => {
   try {
-    const response = await api.get(`/api/interview/history/${userId}`, {
+    const response = await api.get(`/api/interview/history/`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
     return response.data;
   } catch (error) {
-    throw new Error(error);
+    throw new Error(
+      error.response?.data?.detail || "Failed to retrieve history"
+    );
   }
 };
 

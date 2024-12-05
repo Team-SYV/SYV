@@ -27,8 +27,7 @@ const History = () => {
         try {
           setLoading(true);
           const token = await getToken();
-          console.log(token)
-          const fetchedHistory = await getInterviewHistory(user.id, token);
+          const fetchedHistory = await getInterviewHistory(token);
           const sortedHistory = fetchedHistory.sort(
             (a, b) =>
               new Date(b.created_at).getTime() -

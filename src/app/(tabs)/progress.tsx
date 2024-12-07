@@ -3,12 +3,13 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import dayjs from "dayjs";
 import { Feather } from "@expo/vector-icons";
 import { LineChart } from "react-native-gifted-charts";
-import { useUser } from "@clerk/clerk-expo";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useFocusEffect } from "@react-navigation/native";
 import { getRatingsByUserId } from "@/api";
 
 const Progress = () => {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("answerRelevance");
 
@@ -29,10 +30,11 @@ const Progress = () => {
   const fetchRatings = async () => {
     setLoading(true);
     try {
+      const token = await getToken();
       const weekStartFormatted = currentWeekStart.format("YYYY-MM-DD");
       const fetchedProgress = await getRatingsByUserId(
-        user.id,
-        weekStartFormatted
+        weekStartFormatted,
+        token
       );
       setRatingsData(fetchedProgress);
     } catch (error) {

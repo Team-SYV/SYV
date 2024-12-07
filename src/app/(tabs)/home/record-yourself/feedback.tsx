@@ -20,6 +20,7 @@ import {
 import Ratings from "@/components/Rating/Ratings";
 import { getFeedbackWithQuestions, getRatings } from "@/api";
 import { RatingsData } from "@/types/ratingsData";
+import { useAuth } from "@clerk/clerk-expo";
 
 const { width, height } = Dimensions.get("window");
 
@@ -41,6 +42,7 @@ const Feedback: React.FC = () => {
   const parsedVideos: string[] =
     typeof videoURIs === "string" ? (JSON.parse(videoURIs) as string[]) : [];
   const videosWithRatings = [...parsedVideos, "ratings"];
+  const { getToken } = useAuth();
 
   // Android back button
   useEffect(() => {
@@ -87,11 +89,12 @@ const Feedback: React.FC = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
+        const token = await getToken();
         setLoading(true);
 
-        const fetchedFeedback = await getFeedbackWithQuestions(interviewId);
+        const fetchedFeedback = await getFeedbackWithQuestions(interviewId, token);
         setFeedbackItem(fetchedFeedback);
-        const fetchedRatings = await getRatings(interviewId);
+        const fetchedRatings = await getRatings(interviewId, token);
         setRatings(fetchedRatings);
       } catch (error) {
         console.error("Error fetching data", error.message);

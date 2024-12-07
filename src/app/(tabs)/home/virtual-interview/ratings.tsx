@@ -4,10 +4,12 @@ import { Text, View, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Spinner from "react-native-loading-spinner-overlay";
 import { getRatings } from "@/api";
+import { useAuth } from "@clerk/clerk-expo";
 
 const Ratings = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { getToken } = useAuth();
   const { interviewId } = useLocalSearchParams();
   const [fetchedRatings, setFetchedRatings] = useState({
     relevance: 0,
@@ -29,8 +31,9 @@ const Ratings = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
+        const token = await getToken();
         setLoading(true);
-        const fetchedRatings = await getRatings(interviewId);
+        const fetchedRatings = await getRatings(interviewId, token);
         console.log(fetchedRatings);
         setFetchedRatings({
           relevance: fetchedRatings[0].answer_relevance,

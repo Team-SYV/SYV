@@ -1,5 +1,4 @@
 export interface JobInformationData {
-  user_id: string | string[];
   industry: string;
   job_role: string;
   interview_type: string;

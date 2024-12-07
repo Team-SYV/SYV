@@ -33,9 +33,13 @@ export const createJobInformation = async (
   }
 };
 
-export const getJobInformation = async (jobId: string | string[]) => {
+export const getJobInformation = async (jobId: string | string[], token: string) => {
   try {
-    const response = await api.get(`/api/job_information/get/${jobId}`);
+    const response = await api.get(`/api/job_information/get/${jobId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data;
   } catch (error) {
     throw new Error(
@@ -44,12 +48,15 @@ export const getJobInformation = async (jobId: string | string[]) => {
   }
 };
 
-export const createInterview = async (interviewData: InterviewData, token: string) => {
+export const createInterview = async (
+  interviewData: InterviewData,
+  token: string
+) => {
   try {
-    const response = await api.post("/api/interview/create", interviewData,{
-      headers:{
+    const response = await api.post("/api/interview/create", interviewData, {
+      headers: {
         Authorization: `Bearer ${token}`,
-      }
+      },
     });
     return response.data;
   } catch (error) {
@@ -59,9 +66,16 @@ export const createInterview = async (interviewData: InterviewData, token: strin
   }
 };
 
-export const getInterview = async (interviewId: string | string[]) => {
+export const getInterview = async (
+  interviewId: string | string[],
+  token: string
+) => {
   try {
-    const response = await api.get(`/api/interview/get/${interviewId}`);
+    const response = await api.get(`/api/interview/get/${interviewId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data;
   } catch (error) {
     throw new Error(
@@ -85,9 +99,13 @@ export const generateQuestions = async (formData: FormData) => {
   }
 };
 
-export const createQuestions = async (questionData: QuestionData) => {
+export const createQuestions = async (questionData: QuestionData, token: string) => {
   try {
-    const response = await api.post(`/api/question/create`, questionData);
+    const response = await api.post(`/api/question/create`, questionData,{
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data;
   } catch (error) {
     throw new Error(
@@ -96,9 +114,13 @@ export const createQuestions = async (questionData: QuestionData) => {
   }
 };
 
-export const getQuestions = async (interview_id: string | string[]) => {
+export const getQuestions = async (interview_id: string | string[], token: string) => {
   try {
-    const response = await api.get(`/api/question/get/${interview_id}`);
+    const response = await api.get(`/api/question/get/${interview_id}`,{
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data;
   } catch (error) {
     throw new Error(
@@ -161,9 +183,13 @@ export const eyeContact = async (videoFile: File) => {
   }
 };
 
-export const createAnswer = async (answerData: AnswerData) => {
+export const createAnswer = async (answerData: AnswerData, token: string) => {
   try {
-    const response = await api.post(`/api/answer/create`, answerData);
+    const response = await api.post(`/api/answer/create`, answerData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data;
   } catch (error) {
     throw new Error(
@@ -172,9 +198,13 @@ export const createAnswer = async (answerData: AnswerData) => {
   }
 };
 
-export const getFeedback = async (interview_id: string | string[]) => {
+export const getFeedback = async (interview_id: string | string[], token: string) => {
   try {
-    const response = await api.get(`/api/feedback/get/${interview_id}`);
+    const response = await api.get(`/api/feedback/get/${interview_id}`,{
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data;
   } catch (error) {
     throw new Error(
@@ -183,11 +213,12 @@ export const getFeedback = async (interview_id: string | string[]) => {
   }
 };
 
-export const generateFeedback = async (feedbackData: FeedbackData) => {
+export const generateFeedback = async (feedbackData: FeedbackData, token: string) => {
   try {
     const response = await api.post("/api/generate-feedback/", feedbackData, {
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
     });
     return response.data;
@@ -199,7 +230,8 @@ export const generateFeedback = async (feedbackData: FeedbackData) => {
 };
 
 export const generateVirtualFeedback = async (
-  VirtualFeedbackData: VirtualFeedbackData
+  VirtualFeedbackData: VirtualFeedbackData,
+  token: string
 ) => {
   try {
     const response = await api.post(
@@ -208,6 +240,7 @@ export const generateVirtualFeedback = async (
       {
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
       }
     );
@@ -219,18 +252,26 @@ export const generateVirtualFeedback = async (
   }
 };
 
-export const createRatings = async (ratingsData: RatingsData) => {
+export const createRatings = async (ratingsData: RatingsData, token: string) => {
   try {
-    const response = await api.post("/api/ratings/create", ratingsData);
+    const response = await api.post("/api/ratings/create", ratingsData,{
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.detail || "Failed to create ratings");
   }
 };
 
-export const getRatings = async (interview_id: string | string[]) => {
+export const getRatings = async (interview_id: string | string[], token: string) => {
   try {
-    const response = await api.get(`/api/ratings/get/${interview_id}`);
+    const response = await api.get(`/api/ratings/get/${interview_id}`,{
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data;
   } catch (error) {
     throw new Error(
@@ -254,20 +295,20 @@ export const getInterviewHistory = async (token: string) => {
   }
 };
 
-export const getRatingsByUserId = async (
-  userId: string,
-  week_start: string
-) => {
+export const getRatingsByUserId = async (weekStart: string, token: string) => {
   try {
-    // Include the week_start parameter in the URL
-    const response = await api.get(
-      `/api/ratings/progress/${userId}?week_start=${week_start}`
-    );
+    const response = await api.get(`/api/ratings/progress/`, {
+      params: {
+        week_start: weekStart,
+      },
+      headers: {
+        'Authorization': `Bearer ${token}`, 
+      },
+    });
     return response.data;
   } catch (error) {
-    throw new Error(
-      error.response?.data?.detail || "Failed to retrieve ratings by user ID"
-    );
+    console.error('Error fetching ratings:', error);
+    throw new Error(error?.response?.data?.detail || 'Failed to retrieve ratings by user ID');
   }
 };
 
@@ -297,32 +338,19 @@ export const generateAnswerFeedback = async (formData) => {
 };
 
 export const getFeedbackWithQuestions = async (
-  interviewId: string | string[]
+  interviewId: string | string[], token: string
 ) => {
   try {
-    const response = await api.get(`/api/feedback/get/record/${interviewId}`);
+    const response = await api.get(`/api/feedback/get/record/${interviewId}`,{
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data;
   } catch (error) {
     throw new Error(
       error.response?.data?.detail ||
         "Failed to retrieve feedback with questions"
     );
-  }
-};
-
-export const testeyecontact = async (videoFile: File) => {
-  try {
-    const formData = new FormData();
-    formData.append("file", videoFile);
-
-    const response = await api.post("/api/eye-contact/", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
-    return response.data;
-  } catch (error) {
-    throw new Error(error, error.response);
   }
 };

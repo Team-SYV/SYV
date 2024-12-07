@@ -250,7 +250,7 @@ const JobInformation = () => {
             interview_id: interviewId,
             question: cleanedQuestion,
           };
-          await createQuestions(questionData);
+          await createQuestions(questionData, token);
         } else {
           console.error("Invalid question format:", question);
         }

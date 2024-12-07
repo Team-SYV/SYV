@@ -138,7 +138,7 @@ const History = () => {
                       setButtonDisabled(true);
                       router.push({
                         pathname: `/history/feedback`,
-                        params: { interview_id: item.interview_id },
+                        params: { interviewId: item.interview_id },
                       });
                       setTimeout(() => setButtonDisabled(false), 1000);
                     }

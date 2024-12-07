@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from supabase import Client
 from api.webhooks.clerk import clerk_webhook_handler
 from models.feedback import GenerateFeedbackInput, GenerateVirtualFeedbackInput
+from utils.jwt import validate_token
 from services.eye_contact import process_video
 from services.transcribe_audio import transcribe_audio
 from services.feedback_generator import generate_feedback, generate_virtual_feedback
@@ -150,9 +151,32 @@ async def eye_contact(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Error processing video: {str(e)}")
 
 @app.post("/api/generate-feedback/")
-async def generate_feedback_api(feedback_input: GenerateFeedbackInput, supabase: Client= Depends(get_supabase)):
+async def generate_feedback_api(feedback_input: GenerateFeedbackInput, request: Request, supabase: Client = Depends(get_supabase)):
     """Generate feedback based on a question and answer."""
+    
+    # Validate the token
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+    validated_user_id = validate_token(auth_header)
+
     try:
+        # Check if the validated_user_id matches the user_id in the interview table
+        interview_response = supabase.table('interview').select('user_id').eq('interview_id', feedback_input.interview_id).execute()
+        if not interview_response.data:
+            raise HTTPException(status_code=404, detail="Interview not found")
+
+        if hasattr(interview_response, 'error') and interview_response.error:
+            raise HTTPException(status_code=500, detail="Failed to retrieve interview details")
+
+        user_id = interview_response.data[0]['user_id']
+
+        # Authorization check
+        if user_id != validated_user_id:
+            raise HTTPException(status_code=403, detail="You are not authorized to generate feedback for this interview")
+
+        # Generate feedback
         question = feedback_input.question
         answer = feedback_input.answer
         wpm = feedback_input.wpm
@@ -160,13 +184,14 @@ async def generate_feedback_api(feedback_input: GenerateFeedbackInput, supabase:
 
         feedback = generate_feedback(question, answer, wpm, eye_contact)
 
+        # Prepare feedback and ratings data
         feedback_data = {
             "grammar": feedback.get("grammar", ""),
             "answer_relevance": feedback.get("relevance", ""),
             "filler_words": feedback.get("filler", ""),
             "pace_of_speech": feedback.get("pace_of_speech", ""),
             "eye_contact": feedback.get("eye_contact", ""),
-            "tips": feedback.get("tips",""),
+            "tips": feedback.get("tips", ""),
             "answer_id": feedback_input.answer_id,
             "interview_id": feedback_input.interview_id
         }
@@ -177,21 +202,46 @@ async def generate_feedback_api(feedback_input: GenerateFeedbackInput, supabase:
             "filler_words_rating": feedback.get("filler_rating", 0),
             "pace_of_speech_rating": feedback.get("pace_of_speech_rating", 0),
             "eye_contact_rating": feedback.get("eye_contact_rating", 0),
-
         }
+
+        # Insert feedback into the database
         response = supabase.table('feedback').insert(feedback_data).execute()
         if hasattr(response, 'error') and response.error:
             raise HTTPException(status_code=500, detail="Failed to create feedback")
-        return {"feedback_id": response.data[0]['feedback_id'], "ratings_data": ratings_data }
+
+        return {"feedback_id": response.data[0]['feedback_id'], "ratings_data": ratings_data}
+
     except Exception as e:
         logging.error(f"Error generating feedback: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate feedback")
     
 @app.post("/api/generate-virtual-feedback/")
-async def generate_virtual_feedback_api(input: GenerateVirtualFeedbackInput,supabase: Client = Depends(get_supabase)
-):
+async def generate_virtual_feedback_api(input: GenerateVirtualFeedbackInput, request: Request, supabase: Client = Depends(get_supabase)):
     """Generate virtual feedback based on multiple questions and answers."""
+    
+    # Validate the Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+    validated_user_id = validate_token(auth_header)
+
     try:
+        # Step 1: Validate that the user is authorized for the given interview_id
+        interview_response = supabase.table('interview').select('user_id').eq('interview_id', input.interview_id).execute()
+        if not interview_response.data:
+            raise HTTPException(status_code=404, detail="Interview not found")
+
+        if hasattr(interview_response, 'error') and interview_response.error:
+            raise HTTPException(status_code=500, detail="Failed to retrieve interview details")
+
+        user_id = interview_response.data[0]['user_id']
+
+        # Authorization check
+        if user_id != validated_user_id:
+            raise HTTPException(status_code=403, detail="You are not authorized")
+
+        # Step 2: Generate feedback
         feedback = generate_virtual_feedback(input.questions, input.answers, input.wpm, input.eye_contact)
 
         feedback_data = {
@@ -212,16 +262,17 @@ async def generate_virtual_feedback_api(input: GenerateVirtualFeedbackInput,supa
             "eye_contact_rating": feedback.get("eye_contact_rating", 0),
         }
 
+        # Step 3: Insert feedback into the database
         response = supabase.table('feedback').insert(feedback_data).execute()
         if hasattr(response, 'error') and response.error:
             raise HTTPException(status_code=500, detail="Failed to create feedback")
 
+        # Step 4: Return feedback ID and ratings data
         return {"feedback_id": response.data[0]['feedback_id'], "ratings_data": ratings_data}
 
     except Exception as e:
         logging.error(f"Error generating virtual feedback: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate virtual feedback")
-    
 @app.post("/api/generate-answer-feedback/")
 async def generate_answer_feedback_endpoint(
     previous_question: str = Form(...), 

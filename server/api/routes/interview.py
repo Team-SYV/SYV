@@ -37,11 +37,24 @@ async def create_interview(interview_data: CreateInterview, request: Request, su
     return CreateInterviewResponse(interview_id=response.data[0]['interview_id'])
 
 @router.get("/get/{interview_id}", response_model=CreateInterview)
-async def get_interview(interview_id: str,supabase: Client= Depends(get_supabase)):
+async def get_interview(interview_id: str, request: Request, supabase: Client= Depends(get_supabase)):
+
+    # Validate the token
+    auth_header = request.headers.get("Authorization")
+
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+    validated_user_id = validate_token(auth_header)
+
+
     response = supabase.table('interview').select('*').eq('interview_id', interview_id).execute()
 
     if not response.data:
         raise HTTPException(status_code=404, detail="Interview not found")
+    
+    if response.data[0]['user_id'] != validated_user_id:
+        raise HTTPException(status_code=403, detail="Unauthorized access to this interview")
 
     if hasattr(response, 'error') and response.error:
         raise HTTPException(status_code=500, detail="Failed to retrieve interview")

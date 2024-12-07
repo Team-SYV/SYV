@@ -37,7 +37,16 @@ async def create_job_information(job_data: CreateJobInformation, request: Reques
     return CreateJobInformationResponse(job_information_id=response.data[0]['job_information_id'])
 
 @router.get("/get/{job_id}", response_model=CreateJobInformation)
-async def get_job_information(job_id: str,supabase: Client= Depends(get_supabase)):
+async def get_job_information(job_id: str, request: Request, supabase: Client= Depends(get_supabase)):
+
+    # Validate the token
+    auth_header = request.headers.get("Authorization")
+
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+    validated_user_id = validate_token(auth_header)
+
     response = supabase.table('job_information').select('*').eq('job_information_id', job_id).execute()
 
     if not response.data:
@@ -45,9 +54,12 @@ async def get_job_information(job_id: str,supabase: Client= Depends(get_supabase
 
     if hasattr(response, 'error') and response.error:
         raise HTTPException(status_code=500, detail="Failed to retrieve job information")
+    
+    job_data = response.data[0]
+    if 'user_id' in job_data and job_data['user_id'] != validated_user_id:
+        raise HTTPException(status_code=403, detail="Unauthorized access to this job information")
 
     return CreateJobInformation(
-            user_id=response.data[0]['user_id'],
             industry=response.data[0]['industry'],
             job_role=response.data[0]['job_role'],
             interview_type=response.data[0]['interview_type'],

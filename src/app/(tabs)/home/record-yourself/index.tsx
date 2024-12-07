@@ -20,9 +20,11 @@ import {
   getQuestions,
   transcribeVideo,
 } from "@/api";
+import { useAuth } from "@clerk/clerk-expo";
 
 const RecordYourself: React.FC = () => {
   const router = useRouter();
+  const { getToken } = useAuth();
   const { interviewId } = useLocalSearchParams();
 
   const cameraRef = useRef(null);
@@ -68,8 +70,9 @@ const RecordYourself: React.FC = () => {
       if (hasFetchedQuestions.current) return;
       hasFetchedQuestions.current = true;
       try {
+        const token = await getToken();
         setIsLoading(true);
-        const fetchedQuestions = await getQuestions(interviewId);
+        const fetchedQuestions = await getQuestions(interviewId, token);
         setQuestions(fetchedQuestions.questions);
         setQuestionIds(fetchedQuestions.question_id);
       } catch (error) {
@@ -121,28 +124,34 @@ const RecordYourself: React.FC = () => {
     return () => backHandler.remove();
   }, [allQuestionsRecorded]);
 
-  // Calculates average feedback ratings and creates a new ratings entry
   useEffect(() => {
-    if (feedbackRatings.length > 0) {
-      if (feedbackRatings.length === 5) {
-        const averageRatings = calculateAverageRatings();
-        console.log("Average", averageRatings);
+    const handleFeedbackRatings = async () => {
+      if (feedbackRatings.length > 0) {
+        if (feedbackRatings.length === 5) {
+          const averageRatings = calculateAverageRatings();
+          const token = await getToken();
 
-        createRatings({
-          interview_id: interviewId,
-          answer_relevance: averageRatings.answer_relevance_rating,
-          eye_contact: averageRatings.eye_contact_rating,
-          grammar: averageRatings.grammar_rating,
-          pace_of_speech: averageRatings.pace_of_speech_rating,
-          filler_words: averageRatings.filler_words_rating,
-        });
-        setAllQuestionsRecorded(true);
-        setIsModalVisible(false);
-        setIsLoading(false);
+          await createRatings(
+            {
+              interview_id: interviewId,
+              answer_relevance: averageRatings.answer_relevance_rating,
+              eye_contact: averageRatings.eye_contact_rating,
+              grammar: averageRatings.grammar_rating,
+              pace_of_speech: averageRatings.pace_of_speech_rating,
+              filler_words: averageRatings.filler_words_rating,
+            },
+            token
+          );
+          setAllQuestionsRecorded(true);
+          setIsModalVisible(false);
+          setIsLoading(false);
 
-        handleNextPage();
+          handleNextPage();
+        }
       }
-    }
+    };
+
+    handleFeedbackRatings();
   }, [feedbackRatings]);
 
   // Check if permission has been granted
@@ -211,13 +220,15 @@ const RecordYourself: React.FC = () => {
         name: videoUri.split("/").pop(),
       } as unknown as File;
 
+      const token = await getToken();
+
       const transcription = await transcribeVideo(videoFile);
 
       if (transcription?.transcription) {
         const answerResponse = await createAnswer({
           question_id: questionIds[index],
           answer: transcription.transcription,
-        });
+        }, token);
 
         if (answerResponse?.answer_id) {
           const feedbackResponse = await generateFeedback({
@@ -227,7 +238,7 @@ const RecordYourself: React.FC = () => {
             question: questions[index],
             wpm: transcription.wpm.toString(),
             eye_contact: transcription.eye_contact.toString(),
-          });
+          }, token);
 
           if (feedbackResponse?.ratings_data) {
             setFeedbackRatings((prevRatings) => [

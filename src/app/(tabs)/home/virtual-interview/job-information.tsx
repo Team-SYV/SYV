@@ -194,8 +194,8 @@ const JobInformation = () => {
   // When file upload is skipped
   const handleSkip = async () => {
     try {
-      setLoading(true);
       const token = await getToken();
+      setLoading(true);
 
       const jobData = {
         industry: formData.selectedIndustry,
@@ -250,7 +250,7 @@ const JobInformation = () => {
             interview_id: interviewId,
             question: cleanedQuestion,
           };
-          await createQuestions(questionData);
+          await createQuestions(questionData, token);
         } else {
           console.error("Invalid question format:", question);
         }

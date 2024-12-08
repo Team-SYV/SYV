@@ -9,9 +9,12 @@ export default function Avatar() {
   return (
     <Canvas>
       <OrbitControls />
-      <Suspense>
+      <Suspense fallback={null}>
+        <ambientLight />
+        <directionalLight position={[5, 5, 5]} />
         <Model />
       </Suspense>
+      <perspectiveCamera position={[0, 1, 3]} fov={60} />
     </Canvas>
   );
 }

@@ -31,7 +31,7 @@ const Home = () => {
           text="Talk with Virtual Interviewer"
           textClassName="text-[12px]"
           onPress={() =>
-            router.push("/(tabs)/home/virtual-interview/job-information")
+            router.push("/(tabs)/home/virtual-interview/avatar")
           }
         />
       </View>

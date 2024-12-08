@@ -1,6 +1,28 @@
 const { getDefaultConfig } = require("expo/metro-config");
 const { withNativeWind } = require("nativewind/metro");
 
-const config = getDefaultConfig(__dirname);
+module.exports = (() => {
+  const config = getDefaultConfig(__dirname);
 
-module.exports = withNativeWind(config, { input: "./src/global.css" });
+  const { resolver } = config;
+
+  config.resolver = {
+    ...resolver,
+    assetExts: [...resolver.assetExts, "glb", "gltf", "png", "jpg"],
+    sourceExts: [
+      ...resolver.sourceExts,
+      "js",
+      "jsx",
+      "json",
+      "ts",
+      "tsx",
+      "cjs",
+      "mjs",
+    ],
+    extraNodeModules: {
+      "@": __dirname + "/src", 
+    },
+  };
+
+  return withNativeWind(config, { input: "./src/global.css" });
+})();

@@ -13,6 +13,9 @@
     "@expo/config-plugins": "~8.0.0",
     "@mrakesh0608/react-native-loading-dots": "^1.0.9",
     "@react-navigation/native": "^6.1.18",
+    "@react-three/drei": "^9.120.3",
+    "@react-three/fiber": "^8.17.10",
+    "@shopify/react-native-skia": "^1.2.3",
     "axios": "^1.7.7",
     "cookie": "^0.7.2",
     "expo": "~51.0.39",
@@ -20,6 +23,7 @@
     "expo-camera": "~15.0.16",
     "expo-constants": "~16.0.1",
     "expo-document-picker": "^12.0.2",
+    "expo-gl": "~14.0.2",
     "expo-haptics": "^13.0.1",
     "expo-image-picker": "^15.0.7",
     "expo-linear-gradient": "~13.0.2",
@@ -32,6 +36,7 @@
     "expo-system-ui": "~3.0.7",
     "i": "^0.3.7",
     "nativewind": "^4.0.1",
+    "r3f-native-orbitcontrols": "^1.0.12",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.74.5",
@@ -49,7 +54,8 @@
     "react-native-uuid": "^2.0.3",
     "react-native-web": "~0.19.10",
     "send": "^0.19.1",
-    "tailwindcss": "^3.4.0"
+    "tailwindcss": "^3.4.0",
+    "three": "^0.171.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

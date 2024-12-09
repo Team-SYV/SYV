@@ -11,9 +11,6 @@ type GLTFResult = GLTF & {
     Wolf3D_Teeth: THREE.SkinnedMesh;
     ["hair-60"]: THREE.SkinnedMesh;
     Wolf3D_Glasses: THREE.SkinnedMesh;
-    Wolf3D_Body: THREE.SkinnedMesh;
-    Wolf3D_Outfit_Bottom: THREE.SkinnedMesh;
-    Wolf3D_Outfit_Footwear: THREE.SkinnedMesh;
     Wolf3D_Outfit_Top: THREE.SkinnedMesh;
     Hips: THREE.Bone;
   };
@@ -23,9 +20,6 @@ type GLTFResult = GLTF & {
     Wolf3D_Teeth: THREE.MeshStandardMaterial;
     M_Hair_60: THREE.MeshStandardMaterial;
     Wolf3D_Glasses: THREE.MeshStandardMaterial;
-    Wolf3D_Body: THREE.MeshStandardMaterial;
-    Wolf3D_Outfit_Bottom: THREE.MeshStandardMaterial;
-    Wolf3D_Outfit_Footwear: THREE.MeshStandardMaterial;
     Wolf3D_Outfit_Top: THREE.MeshStandardMaterial;
   };
 };
@@ -36,7 +30,12 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
   ) as GLTFResult;
 
   return (
-    <group {...props} dispose={null} scale={[2, 2, 1]} position={[0, -3, 3]}>
+    <group
+      {...props}
+      dispose={null}
+      scale={[2.4, 2.4, 1]}
+      position={[0, -3, 2.8]}
+    >
       <primitive object={nodes.Hips} />
       <skinnedMesh
         name="EyeLeft"
@@ -79,21 +78,6 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         geometry={nodes.Wolf3D_Glasses.geometry}
         material={materials.Wolf3D_Glasses}
         skeleton={nodes.Wolf3D_Glasses.skeleton}
-      />
-      <skinnedMesh
-        geometry={nodes.Wolf3D_Body.geometry}
-        material={materials.Wolf3D_Body}
-        skeleton={nodes.Wolf3D_Body.skeleton}
-      />
-      <skinnedMesh
-        geometry={nodes.Wolf3D_Outfit_Bottom.geometry}
-        material={materials.Wolf3D_Outfit_Bottom}
-        skeleton={nodes.Wolf3D_Outfit_Bottom.skeleton}
-      />
-      <skinnedMesh
-        geometry={nodes.Wolf3D_Outfit_Footwear.geometry}
-        material={materials.Wolf3D_Outfit_Footwear}
-        skeleton={nodes.Wolf3D_Outfit_Footwear.skeleton}
       />
       <skinnedMesh
         geometry={nodes.Wolf3D_Outfit_Top.geometry}

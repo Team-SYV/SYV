@@ -1,7 +1,8 @@
 import * as THREE from "three";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useGLTF } from "@react-three/drei/native";
 import { GLTF } from "three-stdlib";
+import { useFrame } from "@react-three/fiber";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -22,12 +23,62 @@ type GLTFResult = GLTF & {
     Wolf3D_Glasses: THREE.MeshStandardMaterial;
     Wolf3D_Outfit_Top: THREE.MeshStandardMaterial;
   };
+  scene: THREE.Scene;
 };
 
 export function Model(props: JSX.IntrinsicElements["group"]) {
-  const { nodes, materials } = useGLTF(
+  const [blink, setBlink] = useState(false);
+
+  const { nodes, materials, scene } = useGLTF(
     require("@/assets/models/Avatar.glb")
   ) as GLTFResult;
+
+  // Smoothly changes the influence of a morph target on a 3D model.
+  const lerpMorphTarget = (
+    target: string,
+    value: number,
+    speed = 0.1
+  ): void => {
+    scene.traverse((child) => {
+      const skinnedMesh = child as THREE.SkinnedMesh;
+      if (skinnedMesh.isSkinnedMesh && skinnedMesh.morphTargetDictionary) {
+        const index = skinnedMesh.morphTargetDictionary[target];
+        if (
+          index === undefined ||
+          skinnedMesh.morphTargetInfluences[index] === undefined
+        ) {
+          return;
+        }
+        skinnedMesh.morphTargetInfluences[index] = THREE.MathUtils.lerp(
+          skinnedMesh.morphTargetInfluences[index],
+          value,
+          speed
+        );
+      }
+    });
+  };
+
+  // Updates the eye blink for both eyes
+  useFrame(() => {
+    lerpMorphTarget("eyeBlinkLeft", blink ? 1 : 0, 0.5);
+    lerpMorphTarget("eyeBlinkRight", blink ? 1 : 0, 0.5);
+  });
+
+  //Initiates a random blinking sequence with a random interval between 1 and 5 seconds.
+  useEffect(() => {
+    let blinkTimeout;
+    const nextBlink = () => {
+      blinkTimeout = setTimeout(() => {
+        setBlink(true);
+        setTimeout(() => {
+          setBlink(false);
+          nextBlink();
+        }, 200);
+      }, THREE.MathUtils.randInt(1000, 5000));
+    };
+    nextBlink();
+    return () => clearTimeout(blinkTimeout);
+  }, []);
 
   return (
     <group

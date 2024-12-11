@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useGLTF } from "@react-three/drei/native";
 import { GLTF } from "three-stdlib";
 import { useFrame } from "@react-three/fiber";
-import { Audio } from "expo-av";  
+import { Audio } from "expo-av";
 
 const visemesMapping = {
   A: "viseme_PP",
@@ -23,7 +23,7 @@ type GLTFResult = GLTF & {
     EyeRight: THREE.SkinnedMesh;
     Wolf3D_Head: THREE.SkinnedMesh;
     Wolf3D_Teeth: THREE.SkinnedMesh;
-    Wolf3D_Tongue: THREE.SkinnedMesh;  // Assuming you have a "tongue" mesh
+    Wolf3D_Tongue: THREE.SkinnedMesh; // Assuming you have a "tongue" mesh
     ["hair-60"]: THREE.SkinnedMesh;
     Wolf3D_Glasses: THREE.SkinnedMesh;
     Wolf3D_Outfit_Top: THREE.SkinnedMesh;
@@ -86,9 +86,9 @@ export function Model({ visemeData, ...props }: ModelProps) {
   useEffect(() => {
     if (visemeData && visemeData.metadata.soundFile) {
       const loadAudio = async () => {
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: `data:audio/wav;base64,${visemeData.metadata.soundFile}` }
-        );
+        const { sound } = await Audio.Sound.createAsync({
+          uri: `data:audio/wav;base64,${visemeData.metadata.soundFile}`,
+        });
         audioRef.current = sound;
         await sound.playAsync();
 
@@ -127,9 +127,10 @@ export function Model({ visemeData, ...props }: ModelProps) {
 
   // Handle the mouth, teeth, and tongue viseme updates
   useFrame(() => {
-    if (!visemeData || !visemeData.mouthCues.length || !audioRef.current) return;
+    if (!visemeData || !visemeData.mouthCues.length || !audioRef.current)
+      return;
 
-    const elapsed = audioRef.current.getStatusAsync().then(status => {
+    const elapsed = audioRef.current.getStatusAsync().then((status) => {
       if (status.isLoaded) {
         return status.positionMillis / 1000;
       } else {
@@ -137,7 +138,7 @@ export function Model({ visemeData, ...props }: ModelProps) {
       }
     });
 
-    elapsed.then(time => {
+    elapsed.then((time) => {
       const cue = visemeData.mouthCues.find(
         (cue) => time >= cue.start && time <= cue.end
       );
@@ -150,21 +151,24 @@ export function Model({ visemeData, ...props }: ModelProps) {
 
       // Apply viseme to head
       if (currentViseme) {
-        lerpMorphTarget(currentViseme, 1, 0.1);
+        lerpMorphTarget(currentViseme, 1, 0.2);
       }
 
       // Apply viseme to teeth (for wide mouth shapes like "AA", "O", etc.)
-      if (currentViseme && (currentViseme === "viseme_AA" || currentViseme === "viseme_O")) {
-        lerpMorphTarget("jawOpen", 1, 0.1);  // Open the jaw for "AA", "O"
+      if (
+        currentViseme &&
+        (currentViseme === "viseme_AA" || currentViseme === "viseme_O")
+      ) {
+        lerpMorphTarget("jawOpen", 1, 0.2); // Open the jaw for "AA", "O"
       } else {
-        lerpMorphTarget("jawOpen", 0, 0.1);  // Close teeth for non-speech
+        lerpMorphTarget("jawOpen", 0, 0.2); // Close teeth for non-speech
       }
 
       // Apply viseme to tongue (e.g., when "I", "S", "TH" or certain phonemes are present)
-      if (currentViseme && (currentViseme === "viseme_I" || currentViseme === "viseme_S" || currentViseme === "viseme_TH")) {
-        lerpMorphTarget("tongueOut", 0.5, 0.1);  // Extend tongue for these phonemes
+      if (currentViseme && currentViseme === "viseme_TH") {
+        lerpMorphTarget("tongueOut", 0.5, 0.2); // Extend tongue for these phonemes
       } else {
-        lerpMorphTarget("tongueOut", 0, 0.1);  // Retract tongue for others
+        lerpMorphTarget("tongueOut", 0, 0.2); // Retract tongue for others
       }
 
       // Reset all other visemes to 0

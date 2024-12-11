@@ -37,7 +37,7 @@ import {
 const VirtualInterview = () => {
   const { user } = useUser();
   const { interviewId } = useLocalSearchParams();
-  const {getToken} = useAuth();
+  const { getToken } = useAuth();
 
   const flatListRef = useRef<FlatList>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -71,10 +71,10 @@ const VirtualInterview = () => {
   const hasFetchedQuestions = useRef(false);
   const hasGeneratedFeedback = useRef(false);
 
-  const [visemeData, setVisemeData] = useState<{ 
-    metadata: { soundFile: string; duration: number }; 
-    mouthCues: { start: number; end: number; value: string }[] 
-  }>({ metadata: { soundFile: '', duration: 0 }, mouthCues: [] });
+  const [visemeData, setVisemeData] = useState<{
+    metadata: { soundFile: string; duration: number };
+    mouthCues: { start: number; end: number; value: string }[];
+  }>({ metadata: { soundFile: "", duration: 0 }, mouthCues: [] });
 
   // Requests camera and microphone permissions
   useEffect(() => {
@@ -138,25 +138,31 @@ const VirtualInterview = () => {
         try {
           const token = await getToken();
 
-          const feedbackResponse = await generateVirtualFeedback({
-            interview_id: interviewId,
-            answers,
-            questions,
-            wpm: wpms,
-            eye_contact: eyeContacts,
-          }, token);
+          const feedbackResponse = await generateVirtualFeedback(
+            {
+              interview_id: interviewId,
+              answers,
+              questions,
+              wpm: wpms,
+              eye_contact: eyeContacts,
+            },
+            token
+          );
 
           if (feedbackResponse.ratings_data) {
-            await createRatings({
-              interview_id: interviewId,
-              answer_relevance:
-                feedbackResponse.ratings_data.answer_relevance_rating,
-              eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
-              grammar: feedbackResponse.ratings_data.grammar_rating,
-              pace_of_speech:
-                feedbackResponse.ratings_data.pace_of_speech_rating,
-              filler_words: feedbackResponse.ratings_data.filler_words_rating,
-            }, token);
+            await createRatings(
+              {
+                interview_id: interviewId,
+                answer_relevance:
+                  feedbackResponse.ratings_data.answer_relevance_rating,
+                eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
+                grammar: feedbackResponse.ratings_data.grammar_rating,
+                pace_of_speech:
+                  feedbackResponse.ratings_data.pace_of_speech_rating,
+                filler_words: feedbackResponse.ratings_data.filler_words_rating,
+              },
+              token
+            );
             hasGeneratedFeedback.current = true;
           }
         } catch (error) {
@@ -298,10 +304,13 @@ const VirtualInterview = () => {
   const handleAnswer = async () => {
     const token = await getToken();
 
-    await createAnswer({
-      question_id: questionIds[currentQuestionIndex],
-      answer: answers[currentQuestionIndex],
-    }, token);
+    await createAnswer(
+      {
+        question_id: questionIds[currentQuestionIndex],
+        answer: answers[currentQuestionIndex],
+      },
+      token
+    );
   };
 
   // Advances to the next question or ends the interview with a thank you message if it's the last question.
@@ -309,7 +318,9 @@ const VirtualInterview = () => {
     const isLastMessage = currentQuestionIndex === questions.length - 1;
 
     if (isLastMessage) {
-      const viseme = await generateSpeech("Thank you for your time and participation. This concludes your virtual interview.");
+      const viseme = await generateSpeech(
+        "Thank you for your time and participation. This concludes your virtual interview."
+      );
       setVisemeData(viseme);
 
       setMessages((prevMessages) => [
@@ -323,7 +334,10 @@ const VirtualInterview = () => {
       ]);
     } else {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
-      const cleanedQuestion = questions[currentQuestionIndex + 1].replace(/^\d+\.\s*/, "");
+      const cleanedQuestion = questions[currentQuestionIndex + 1].replace(
+        /^\d+\.\s*/,
+        ""
+      );
       const viseme = await generateSpeech(cleanedQuestion);
       setVisemeData(viseme);
 
@@ -504,14 +518,28 @@ const VirtualInterview = () => {
           ),
         }}
       />
-      <View className="flex-1">
+
+      <View className="flex-1 z-10 mb-3">
         <ImageBackground
           source={require("@/assets/images/background.png")}
           className="w-[96%] h-56 rounded-xl mx-auto my-2 overflow-hidden"
         >
           <Suspense fallback={null}>
             <View className="absolute bottom-0 right-0 left-0 top-0">
-              <Canvas gl={{ localClippingEnabled: true }}>
+              <Canvas
+                gl={{ localClippingEnabled: true }}
+                onCreated={(state) => {
+                  const _gl = state.gl.getContext();
+                  const pixelStorei = _gl.pixelStorei.bind(_gl);
+                  _gl.pixelStorei = function (...args) {
+                    const [parameter] = args;
+                    switch (parameter) {
+                      case _gl.UNPACK_FLIP_Y_WEBGL:
+                        return pixelStorei(...args);
+                    }
+                  };
+                }}
+              >
                 <PerspectiveCamera
                   makeDefault
                   position={[0, 0.8, 4]}

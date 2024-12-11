@@ -268,18 +268,35 @@ const VirtualInterview = () => {
 
   // Handles the feedback for the answer
   const handleAnswerFeedback = async (answer, question) => {
+    const newBotMessage = {
+      id: uuid.v4() as string,
+      role: Role.Bot,
+      content: "",
+      feedback: true,
+    };
+
+    setMessages((prevMessages) => [...prevMessages, newBotMessage]);
+
     const form = new FormData();
     form.append("previous_question", question);
     form.append("previous_answer", answer);
 
-    const feedback = await generateAnswerFeedback(form);
-    const viseme = await generateSpeech(feedback);
-    setVisemeData(viseme);
+    try {
+      const feedback = await generateAnswerFeedback(form);
 
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      { id: uuid.v4() as string, role: Role.Bot, content: feedback },
-    ]);
+      const viseme = await generateSpeech(feedback);
+      setVisemeData(viseme);
+
+      setMessages((prevMessages) =>
+        prevMessages.map((message) =>
+          message.id === newBotMessage.id
+            ? { ...message, content: feedback, feedback: false }
+            : message
+        )
+      );
+    } catch (error) {
+      console.error("Error generating feedback or speech:", error);
+    }
   };
 
   // Process the eye contact
@@ -464,9 +481,27 @@ const VirtualInterview = () => {
             />
             <Text className="text-sm"> Savy </Text>
           </View>
-          <View className="bg-[#CDF1F8] p-4 rounded-lg max-w-[315px] border border-[#ADE3ED]">
-            <Text className="text-sm">{item.content}</Text>
-          </View>
+
+          {item.feedback ? (
+            <View className="flex items-end">
+              <LoadingDots
+                animation="pulse"
+                color="#8c8c8c"
+                containerStyle={{
+                  marginLeft: 22,
+                  marginTop: 8,
+                  marginBottom: 40,
+                }}
+                dots={3}
+                size={8}
+                spacing={4}
+              />
+            </View>
+          ) : (
+            <View className="bg-[#CDF1F8] p-4 rounded-lg max-w-[315px] border border-[#ADE3ED]">
+              <Text className="text-sm">{item.content}</Text>
+            </View>
+          )}
         </View>
       )}
 
@@ -489,7 +524,7 @@ const VirtualInterview = () => {
                 color="#8c8c8c"
                 containerStyle={{
                   marginRight: 25,
-                  marginTop: 12,
+                  marginTop: 8,
                   marginBottom: 40,
                 }}
                 dots={3}

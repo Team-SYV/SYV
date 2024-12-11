@@ -519,40 +519,34 @@ const VirtualInterview = () => {
         }}
       />
 
-      <View className="flex-1 z-10 mb-3">
-        <ImageBackground
-          source={require("@/assets/images/background.png")}
-          className="w-[96%] h-56 rounded-xl mx-auto my-2 overflow-hidden"
-        >
-          <Suspense fallback={null}>
-            <View className="absolute bottom-0 right-0 left-0 top-0">
-              <Canvas
-                gl={{ localClippingEnabled: true }}
-                onCreated={(state) => {
-                  const _gl = state.gl.getContext();
-                  const pixelStorei = _gl.pixelStorei.bind(_gl);
-                  _gl.pixelStorei = function (...args) {
-                    const [parameter] = args;
-                    switch (parameter) {
-                      case _gl.UNPACK_FLIP_Y_WEBGL:
-                        return pixelStorei(...args);
-                    }
-                  };
-                }}
-              >
-                <PerspectiveCamera
-                  makeDefault
-                  position={[0, 0.8, 4]}
-                  fov={50}
-                />
-                <ambientLight intensity={0.8} />
-                <directionalLight position={[5, 5, 5]} />
-                <Model visemeData={visemeData} />
-              </Canvas>
-            </View>
-          </Suspense>
-        </ImageBackground>
-      </View>
+      <ImageBackground
+        source={require("@/assets/images/background.png")}
+        className="w-[96%] h-56 rounded-xl mx-auto my-2 overflow-hidden"
+      >
+        <Suspense fallback={null}>
+          <View className="absolute bottom-0 right-0 left-0 top-0">
+            <Canvas
+              gl={{ localClippingEnabled: true }}
+              onCreated={(state) => {
+                const _gl = state.gl.getContext();
+                const pixelStorei = _gl.pixelStorei.bind(_gl);
+                _gl.pixelStorei = function (...args) {
+                  const [parameter] = args;
+                  switch (parameter) {
+                    case _gl.UNPACK_FLIP_Y_WEBGL:
+                      return pixelStorei(...args);
+                  }
+                };
+              }}
+            >
+              <PerspectiveCamera makeDefault position={[0, 0.8, 4]} fov={50} />
+              <ambientLight intensity={0.8} />
+              <directionalLight position={[5, 5, 5]} />
+              <Model visemeData={visemeData} />
+            </Canvas>
+          </View>
+        </Suspense>
+      </ImageBackground>
 
       <FlatList
         ref={flatListRef}

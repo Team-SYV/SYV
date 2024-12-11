@@ -7,12 +7,12 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 client = OpenAI()
 
-def openai_tts(text: str, filename: str = "output.aac") -> str:
+def openai_tts(text: str, filename: str = "output.wav") -> str:
     response = client.audio.speech.create(
         model="tts-1",  
         voice="nova", 
         input=text,  
-        response_format="aac"
+        response_format="wav"
     )
     
     audio_data = response.content  

@@ -2,7 +2,6 @@ from pydantic import BaseModel
 from typing import Optional
 
 class CreateJobInformation(BaseModel):
-    user_id: str
     industry: str
     job_role: str
     interview_type: str

@@ -24,7 +24,7 @@ import {
 import Stepper from "@/components/Stepper/Stepper";
 import Toast from "react-native-toast-message";
 import StepContent from "@/components/StepContent/StepContent";
-import { useUser } from "@clerk/clerk-expo";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import {
   createInterview,
   createJobInformation,
@@ -44,7 +44,7 @@ const JobInformation = () => {
   });
 
   const router = useRouter();
-  const { user } = useUser();
+  const { getToken } = useAuth();
   const [activeStep, setActiveStep] = useState<number>(0);
   const [errors, setErrors] = useState<{ [key: number]: string }>({});
   const [loading, setLoading] = useState(false);
@@ -162,9 +162,10 @@ const JobInformation = () => {
   const handleSubmit = async () => {
     try {
       setLoading(true);
+      const token = await getToken();
+
 
       const jobData = {
-        user_id: user.id,
         industry: formData.selectedIndustry,
         job_role: formData.selectedJobRole,
         interview_type: formData.selectedInterviewType,
@@ -172,15 +173,14 @@ const JobInformation = () => {
         company_name: formData.companyName || "None",
         job_description: formData.jobDescription || "None",
       };
-      const jobInformationResponse = await createJobInformation(jobData);
+      const jobInformationResponse = await createJobInformation(jobData, token);
       const jobInformationId = jobInformationResponse.job_information_id;
 
       const interviewData = {
-        user_id: user.id,
         job_information_id: jobInformationId,
         type: "VIRTUAL",
       };
-      const interviewResponse = await createInterview(interviewData);
+      const interviewResponse = await createInterview(interviewData, token);
       const interviewId = interviewResponse.interview_id;
       setInterviewId(interviewId);
     } catch (error) {
@@ -194,10 +194,10 @@ const JobInformation = () => {
   // When file upload is skipped
   const handleSkip = async () => {
     try {
+      const token = await getToken();
       setLoading(true);
 
       const jobData = {
-        user_id: user.id,
         industry: formData.selectedIndustry,
         job_role: formData.selectedJobRole,
         interview_type: formData.selectedInterviewType,
@@ -207,15 +207,14 @@ const JobInformation = () => {
       };
 
       //  Creates job information
-      const jobInformationResponse = await createJobInformation(jobData);
+      const jobInformationResponse = await createJobInformation(jobData, token);
       const jobInformationId = jobInformationResponse.job_information_id;
 
       const interviewData = {
-        user_id: user.id,
         job_information_id: jobInformationId,
         type: "VIRTUAL",
       };
-      const interviewResponse = await createInterview(interviewData);
+      const interviewResponse = await createInterview(interviewData, token);
       const interviewId = interviewResponse.interview_id;
       setInterviewId(interviewId);
 
@@ -251,7 +250,7 @@ const JobInformation = () => {
             interview_id: interviewId,
             question: cleanedQuestion,
           };
-          await createQuestions(questionData);
+          await createQuestions(questionData, token);
         } else {
           console.error("Invalid question format:", question);
         }

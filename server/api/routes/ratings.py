@@ -1,11 +1,12 @@
 from typing import List
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from supabase import Client
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Dict
 
 from models.ratings import createRatingsInput, createRatingsResponse, getRatingsResponse
+from utils.jwt import validate_token
 from utils.supabase import get_supabase_client
 
 router = APIRouter()
@@ -13,22 +14,60 @@ router = APIRouter()
 def get_supabase() -> Client:
     return get_supabase_client()
 
-@router.post("/create",  response_model=createRatingsResponse)
-async def create_ratings(ratings_data: createRatingsInput, supabase: Client= Depends(get_supabase)):
-    required_fields = ['answer_relevance', 'eye_contact', 'grammar', 'pace_of_speech', 'filler_words']
+@router.post("/create", response_model=createRatingsResponse)
+async def create_ratings(ratings_data: createRatingsInput, request: Request, supabase: Client = Depends(get_supabase)):
+    # Validate the Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+    validated_user_id = validate_token(auth_header)
+
+    # Validate required fields
+    required_fields = ['answer_relevance', 'eye_contact', 'grammar', 'pace_of_speech', 'filler_words', 'interview_id']
     for field in required_fields:
         if ratings_data.model_dump().get(field) is None:
             raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
 
-    response = supabase.table('ratings').insert(ratings_data.model_dump()).execute()
+    interview_response = supabase.table('interview').select('user_id').eq('interview_id', ratings_data.interview_id).execute()
+    if not interview_response.data:
+        raise HTTPException(status_code=404, detail="Interview not found")
 
+    if hasattr(interview_response, 'error') and interview_response.error:
+        raise HTTPException(status_code=500, detail="Failed to retrieve interview details")
+
+    user_id = interview_response.data[0]['user_id']
+
+    if user_id != validated_user_id:
+        raise HTTPException(status_code=403, detail="You are not authorized to create ratings for this interview")
+
+    response = supabase.table('ratings').insert(ratings_data.model_dump()).execute()
     if hasattr(response, 'error') and response.error:
-        raise HTTPException(status_code=500, detail="Failed to create feedback")
+        raise HTTPException(status_code=500, detail="Failed to create ratings")
 
     return createRatingsResponse(ratings_id=response.data[0]['rating_id'])
 
 @router.get("/get/{interview_id}", response_model=List[getRatingsResponse])
-async def get_feedback(interview_id: str, supabase: Client = Depends(get_supabase)):
+async def get_feedback(interview_id: str, request: Request, supabase: Client = Depends(get_supabase)):
+    # Validate the Authorization header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+    validated_user_id = validate_token(auth_header)
+
+    interview_response = supabase.table('interview').select('user_id').eq('interview_id', interview_id).execute()
+    if not interview_response.data:
+        raise HTTPException(status_code=404, detail="Interview not found")
+
+    if hasattr(interview_response, 'error') and interview_response.error:
+        raise HTTPException(status_code=500, detail="Failed to retrieve interview details")
+
+    user_id = interview_response.data[0]['user_id']
+
+    if user_id != validated_user_id:
+        raise HTTPException(status_code=403, detail="You are not authorized to access this interview's ratings")
+
     response = supabase.table('ratings').select('*').eq('interview_id', interview_id).execute()
 
     if not response.data:
@@ -43,7 +82,7 @@ async def get_feedback(interview_id: str, supabase: Client = Depends(get_supabas
             answer_relevance=ratings['answer_relevance'],
             eye_contact=ratings['eye_contact'],
             grammar=ratings['grammar'],
-            pace_of_speech=ratings.get('pace_of_speech'),  
+            pace_of_speech=ratings.get('pace_of_speech'),
             filler_words=ratings.get('filler_words'),
         )
         for ratings in response.data
@@ -51,10 +90,21 @@ async def get_feedback(interview_id: str, supabase: Client = Depends(get_supabas
 
     return ratings_list
 
-@router.get("/progress/{user_id}", response_model=Dict[str, Dict[str, list]])
-async def get_feedback_by_user_id(user_id: str, week_start: str, supabase: Client = Depends(get_supabase)):
+@router.get("/progress/", response_model=Dict[str, Dict[str, list]])
+async def get_feedback_by_user_id(request: Request, supabase: Client = Depends(get_supabase)):
+
+    # Validate the token
+    auth_header = request.headers.get("Authorization")
+
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+    validated_user_id = validate_token(auth_header)
+
+    week_start = request.query_params.get('week_start')
+
     # Step 1: Fetch all interview_ids for the given user_id
-    interview_response = supabase.table('interview').select('interview_id').eq('user_id', user_id).execute()
+    interview_response = supabase.table('interview').select('interview_id').eq('user_id', validated_user_id).execute()
     
     # Extract all interview_ids
     interview_ids = [interview['interview_id'] for interview in interview_response.data]
@@ -97,11 +147,10 @@ async def get_feedback_by_user_id(user_id: str, week_start: str, supabase: Clien
     # Step 5: Calculate averages for each category by day
     for week_start_date, ratings in ratings_by_day.items():
         for category, rating_list in ratings.items():
-            if category != 'count':  # We don't need to average the 'count'
+            if category != 'count':  
                 for i in range(7):
-                    if ratings_by_day[week_start_date]['count'][i] > 0:  # Avoid division by zero
+                    if ratings_by_day[week_start_date]['count'][i] > 0: 
                         rating_list[i] = round(rating_list[i] / ratings_by_day[week_start_date]['count'][i], 2)
 
     # Step 6: Return the formatted response
     return {week_start_date.strftime("%Y-%m-%d"): ratings_by_day[week_start_date]}
-

@@ -12,6 +12,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
+import { useAuth } from "@clerk/clerk-expo";
 
 const { width } = Dimensions.get("window");
 
@@ -25,14 +26,18 @@ const Feedback: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { interviewId } = useLocalSearchParams();
 
+  const { getToken } = useAuth();
+
   // Fetch questions and feedback for a specific interview when the interviewId changes.
   useEffect(() => {
+    console.log("interviewId", interviewId);
     const fetch = async () => {
       try {
         setLoading(true);
-        const fetchedQuestions = await getQuestions(interviewId);
+        const token = await getToken();
+        const fetchedQuestions = await getQuestions(interviewId, token);
         setQuestions(fetchedQuestions.questions);
-        const fetchedFeedback = await getFeedback(interviewId);
+        const fetchedFeedback = await getFeedback(interviewId, token);
         setFeedbackItem(fetchedFeedback);
       } catch (error) {
         console.error("Error fetching data", error.message);

@@ -10,9 +10,11 @@ import { Image } from "react-native";
 import Spinner from "react-native-loading-spinner-overlay";
 import { createQuestions, generateQuestions, getInterview, getJobInformation } from "@/api";
 import { cleanQuestion } from "@/utils/cleanQuestion";
+import { useAuth } from "@clerk/clerk-expo";
 
 const FileUpload = () => {
   const router = useRouter();
+  const { getToken } = useAuth();
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileName, setFileName] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -70,10 +72,12 @@ const FileUpload = () => {
     setLoading(true);
 
     try {
+      const token = await getToken();
+
       // Fetch the job information
-      const interview = await getInterview(interviewId);
+      const interview = await getInterview(interviewId, token);
       const jobInformationId = interview.job_information_id
-      const jobInfo = await getJobInformation(jobInformationId);
+      const jobInfo = await getJobInformation(jobInformationId, token);
 
       const {
         industry,
@@ -113,7 +117,7 @@ const FileUpload = () => {
             interview_id: interviewId,
             question: cleanedQuestion,
           }
-          await createQuestions(questionData);
+          await createQuestions(questionData, token);
         } else {
           console.error("Invalid question format:", question);
         }

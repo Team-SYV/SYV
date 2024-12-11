@@ -1,4 +1,4 @@
-import { useUser } from "@clerk/clerk-expo";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import * as Speech from "expo-speech";
 import React, { useEffect, useRef, useState } from "react";
 import uuid from "react-native-uuid";
@@ -32,6 +32,7 @@ import {
 const VirtualInterview = () => {
   const { user } = useUser();
   const { interviewId } = useLocalSearchParams();
+  const {getToken} = useAuth();
 
   const flatListRef = useRef<FlatList>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -90,7 +91,8 @@ const VirtualInterview = () => {
       hasFetchedQuestions.current = true;
 
       try {
-        const response = await getQuestions(interviewId);
+        const token = await getToken();
+        const response = await getQuestions(interviewId, token);
         const questionIds = response.question_id;
         const questions = response.questions.map(
           (question: string, index: number) => `${index + 1}. ${question}`
@@ -121,13 +123,15 @@ const VirtualInterview = () => {
     if (eyeContacts.length === 10 && !hasGeneratedFeedback.current) {
       const handleFeedbackRatings = async () => {
         try {
+          const token = await getToken();
+
           const feedbackResponse = await generateVirtualFeedback({
             interview_id: interviewId,
             answers,
             questions,
             wpm: wpms,
             eye_contact: eyeContacts,
-          });
+          }, token);
 
           if (feedbackResponse.ratings_data) {
             await createRatings({
@@ -139,7 +143,7 @@ const VirtualInterview = () => {
               pace_of_speech:
                 feedbackResponse.ratings_data.pace_of_speech_rating,
               filler_words: feedbackResponse.ratings_data.filler_words_rating,
-            });
+            }, token);
             hasGeneratedFeedback.current = true;
           }
         } catch (error) {
@@ -293,10 +297,12 @@ const VirtualInterview = () => {
 
   // Submits the current answer for the selected question to the server.
   const handleAnswer = async () => {
+    const token = await getToken();
+
     await createAnswer({
       question_id: questionIds[currentQuestionIndex],
       answer: answers[currentQuestionIndex],
-    });
+    }, token);
   };
 
   // Advances to the next question or ends the interview with a thank you message if it's the last question.

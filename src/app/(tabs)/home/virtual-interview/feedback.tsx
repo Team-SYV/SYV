@@ -12,6 +12,7 @@ import ConfirmationModal from "@/components/Modal/ConfirmationModal";
 import Spinner from "react-native-loading-spinner-overlay";
 import { getFeedback } from "@/api";
 import { ActivityIndicator } from "react-native";
+import { useAuth } from "@clerk/clerk-expo";
 
 const Feedback: React.FC = () => {
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
@@ -27,13 +28,15 @@ const Feedback: React.FC = () => {
   const [exit, setExit] = useState(true);
   const router = useRouter();
   const { interviewId } = useLocalSearchParams();
+  const {getToken} = useAuth();
 
   // Fetch feedback
   useEffect(() => {
     const fetch = async () => {
       try {
+        const token = await getToken();
         setLoading(true);
-        const fetchedFeedback = await getFeedback(interviewId);
+        const fetchedFeedback = await getFeedback(interviewId, token);
         setFeedbackItem({
           answerRelevance: fetchedFeedback[0].answer_relevance,
           grammar: fetchedFeedback[0].grammar,

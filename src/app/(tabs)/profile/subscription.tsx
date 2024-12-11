@@ -1,10 +1,24 @@
-import { Text, View, Pressable, Image } from "react-native";
+import { Text, View, Pressable, Image, ActivityIndicator } from "react-native";
 import React, { useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import { useRouter } from "expo-router";
 
 const Subscription = () => {
   const [selectedOption, setSelectedOption] = useState("monthly");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSubscribe = () => {
+    if (loading) return;
+
+    setLoading(true);
+
+    setTimeout(() => {
+      router.push(`/profile/success-page?subscription=${selectedOption}`);
+      setLoading(false);
+    }, 1000);
+  };
 
   return (
     <LinearGradient
@@ -81,9 +95,16 @@ const Subscription = () => {
 
         <Pressable
           className="mt-8 mb-4 py-5 bg-[#00AACE] rounded-2xl items-center"
-          onPress={() => {}}
+          onPress={handleSubscribe}
+          disabled={loading}
         >
-          <Text className="text-white text-[15px] font-semibold">Subscribe Now</Text>
+          {loading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text className="text-white text-[15px] font-semibold">
+              Subscribe Now
+            </Text>
+          )}
         </Pressable>
       </View>
     </LinearGradient>

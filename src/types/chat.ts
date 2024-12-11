@@ -8,4 +8,5 @@ export type Message = {
   role: Role;
   content: string;
   loading?: boolean; 
+  feedback?: boolean;
 };

@@ -33,7 +33,10 @@ export const createJobInformation = async (
   }
 };
 
-export const getJobInformation = async (jobId: string | string[], token: string) => {
+export const getJobInformation = async (
+  jobId: string | string[],
+  token: string
+) => {
   try {
     const response = await api.get(`/api/job_information/get/${jobId}`, {
       headers: {
@@ -99,9 +102,12 @@ export const generateQuestions = async (formData: FormData) => {
   }
 };
 
-export const createQuestions = async (questionData: QuestionData, token: string) => {
+export const createQuestions = async (
+  questionData: QuestionData,
+  token: string
+) => {
   try {
-    const response = await api.post(`/api/question/create`, questionData,{
+    const response = await api.post(`/api/question/create`, questionData, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -114,9 +120,12 @@ export const createQuestions = async (questionData: QuestionData, token: string)
   }
 };
 
-export const getQuestions = async (interview_id: string | string[], token: string) => {
+export const getQuestions = async (
+  interview_id: string | string[],
+  token: string
+) => {
   try {
-    const response = await api.get(`/api/question/get/${interview_id}`,{
+    const response = await api.get(`/api/question/get/${interview_id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -198,9 +207,12 @@ export const createAnswer = async (answerData: AnswerData, token: string) => {
   }
 };
 
-export const getFeedback = async (interview_id: string | string[], token: string) => {
+export const getFeedback = async (
+  interview_id: string | string[],
+  token: string
+) => {
   try {
-    const response = await api.get(`/api/feedback/get/${interview_id}`,{
+    const response = await api.get(`/api/feedback/get/${interview_id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -213,7 +225,10 @@ export const getFeedback = async (interview_id: string | string[], token: string
   }
 };
 
-export const generateFeedback = async (feedbackData: FeedbackData, token: string) => {
+export const generateFeedback = async (
+  feedbackData: FeedbackData,
+  token: string
+) => {
   try {
     const response = await api.post("/api/generate-feedback/", feedbackData, {
       headers: {
@@ -252,9 +267,12 @@ export const generateVirtualFeedback = async (
   }
 };
 
-export const createRatings = async (ratingsData: RatingsData, token: string) => {
+export const createRatings = async (
+  ratingsData: RatingsData,
+  token: string
+) => {
   try {
-    const response = await api.post("/api/ratings/create", ratingsData,{
+    const response = await api.post("/api/ratings/create", ratingsData, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -265,9 +283,12 @@ export const createRatings = async (ratingsData: RatingsData, token: string) => 
   }
 };
 
-export const getRatings = async (interview_id: string | string[], token: string) => {
+export const getRatings = async (
+  interview_id: string | string[],
+  token: string
+) => {
   try {
-    const response = await api.get(`/api/ratings/get/${interview_id}`,{
+    const response = await api.get(`/api/ratings/get/${interview_id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -302,13 +323,15 @@ export const getRatingsByUserId = async (weekStart: string, token: string) => {
         week_start: weekStart,
       },
       headers: {
-        'Authorization': `Bearer ${token}`, 
+        Authorization: `Bearer ${token}`,
       },
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching ratings:', error);
-    throw new Error(error?.response?.data?.detail || 'Failed to retrieve ratings by user ID');
+    console.error("Error fetching ratings:", error);
+    throw new Error(
+      error?.response?.data?.detail || "Failed to retrieve ratings by user ID"
+    );
   }
 };
 
@@ -338,10 +361,11 @@ export const generateAnswerFeedback = async (formData) => {
 };
 
 export const getFeedbackWithQuestions = async (
-  interviewId: string | string[], token: string
+  interviewId: string | string[],
+  token: string
 ) => {
   try {
-    const response = await api.get(`/api/feedback/get/record/${interviewId}`,{
+    const response = await api.get(`/api/feedback/get/record/${interviewId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -351,6 +375,22 @@ export const getFeedbackWithQuestions = async (
     throw new Error(
       error.response?.data?.detail ||
         "Failed to retrieve feedback with questions"
+    );
+  }
+};
+
+export const generateSpeech = async (text: string) => {
+  try {
+    const response = await api.get(`/api/visemes/get`,{
+      params: {
+        text: text,
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to generate speech"
     );
   }
 };

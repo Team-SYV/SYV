@@ -19,6 +19,7 @@ from api.routes.question import router as question_router
 from api.routes.answer import router as answer_router
 from api.routes.feedback import router as feedback_router
 from api.routes.ratings import router as ratings_router
+from api.routes.visemes import router as vicemes_router
 
 
 import os
@@ -48,6 +49,7 @@ app.include_router(question_router, prefix="/api/question", tags=["question"])
 app.include_router(answer_router, prefix="/api/answer", tags=["answer"])
 app.include_router(feedback_router, prefix="/api/feedback", tags=["feedback"])
 app.include_router(ratings_router, prefix="/api/ratings", tags=["ratings"])
+app.include_router(vicemes_router, prefix="/api/visemes", tags=["vicemes"])
 
 @app.post("/api/webhooks/", status_code=status.HTTP_204_NO_CONTENT)
 async def webhook_handler(request: Request, response: Response):

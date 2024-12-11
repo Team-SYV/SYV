@@ -31,7 +31,12 @@ const Reminder = () => {
 
     setTimeout(() => {
       setLoading(false);
-      router.push(`/(tabs)/home/virtual-interview?interviewId=${interviewId}`);
+      router.push({
+        pathname: "/(tabs)/home/virtual-interview",
+        params: {
+          interviewId: interviewId,
+        },
+      });
     }, 1000);
   };
 

@@ -164,7 +164,6 @@ const JobInformation = () => {
       setLoading(true);
       const token = await getToken();
 
-
       const jobData = {
         industry: formData.selectedIndustry,
         job_role: formData.selectedJobRole,
@@ -255,9 +254,12 @@ const JobInformation = () => {
           console.error("Invalid question format:", question);
         }
       }
-      router.push(
-        `/(tabs)/home/virtual-interview/reminder?interviewId=${interviewId}`
-      );
+        router.push({
+          pathname: "/(tabs)/home/virtual-interview/reminder",
+          params: {
+            interviewId: interviewId,
+          },
+        });
     } catch (error) {
       console.error("Error skipping file upload", error);
     } finally {

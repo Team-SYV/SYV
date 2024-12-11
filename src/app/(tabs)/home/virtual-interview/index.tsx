@@ -1,6 +1,6 @@
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import * as Speech from "expo-speech";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, Suspense } from "react";
 import uuid from "react-native-uuid";
 import ConfirmationModal from "@/components/Modal/ConfirmationModal";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,6 +10,9 @@ import { Camera, CameraView } from "expo-camera";
 import { Audio } from "expo-av";
 import { LoadingDots } from "@mrakesh0608/react-native-loading-dots";
 import NextModal from "@/components/Modal/NextModal";
+import { Canvas } from "@react-three/fiber";
+import { PerspectiveCamera } from "@react-three/drei";
+import { Model } from "@/components/Avatar/Model";
 import {
   View,
   Text,
@@ -18,12 +21,14 @@ import {
   Image,
   BackHandler,
   Alert,
+  ImageBackground,
 } from "react-native";
 import {
   createAnswer,
   createRatings,
   eyeContact,
   generateAnswerFeedback,
+  generateSpeech,
   generateVirtualFeedback,
   getQuestions,
   transcribeAudio,
@@ -66,6 +71,11 @@ const VirtualInterview = () => {
   const hasFetchedQuestions = useRef(false);
   const hasGeneratedFeedback = useRef(false);
 
+  const [visemeData, setVisemeData] = useState<{ 
+    metadata: { soundFile: string; duration: number }; 
+    mouthCues: { start: number; end: number; value: string }[] 
+  }>({ metadata: { soundFile: '', duration: 0 }, mouthCues: [] });
+
   // Requests camera and microphone permissions
   useEffect(() => {
     (async () => {
@@ -102,6 +112,9 @@ const VirtualInterview = () => {
 
         if (questions.length > 0) {
           // Adds the first question as a bot message if questions are available.
+          const cleanedQuestion = questions[0].replace(/^\d+\.\s*/, "");
+          const viseme = await generateSpeech(cleanedQuestion);
+          setVisemeData(viseme);
           setMessages((prevMessages) => [
             ...prevMessages,
             {
@@ -162,22 +175,6 @@ const VirtualInterview = () => {
   useEffect(() => {
     flatListRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
-
-  // Automatically read the bot's message when it gets added to the chat
-  useEffect(() => {
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage && lastMessage.role === Role.Bot) {
-      speak(lastMessage.content);
-    }
-  }, [messages]);
-
-  // Speaks a message after removing numeric prefixes.
-  const speak = (message: string) => {
-    const sanitizedMessage = message.replace(/^\d+\.\s*/, "");
-    Speech.speak(sanitizedMessage, {
-      rate: 1.0,
-    });
-  };
 
   // Handle hardware back button press
   const handleBackButtonPress = () => {
@@ -270,6 +267,8 @@ const VirtualInterview = () => {
     form.append("previous_answer", answer);
 
     const feedback = await generateAnswerFeedback(form);
+    const viseme = await generateSpeech(feedback);
+    setVisemeData(viseme);
 
     setMessages((prevMessages) => [
       ...prevMessages,
@@ -310,6 +309,9 @@ const VirtualInterview = () => {
     const isLastMessage = currentQuestionIndex === questions.length - 1;
 
     if (isLastMessage) {
+      const viseme = await generateSpeech("Thank you for your time and participation. This concludes your virtual interview.");
+      setVisemeData(viseme);
+
       setMessages((prevMessages) => [
         ...prevMessages,
         {
@@ -321,6 +323,10 @@ const VirtualInterview = () => {
       ]);
     } else {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+      const cleanedQuestion = questions[currentQuestionIndex + 1].replace(/^\d+\.\s*/, "");
+      const viseme = await generateSpeech(cleanedQuestion);
+      setVisemeData(viseme);
+
       setMessages((prevMessages) => [
         ...prevMessages,
         {
@@ -498,10 +504,27 @@ const VirtualInterview = () => {
           ),
         }}
       />
-      <Image
-        source={require("@/assets/images/avatar.png")}
-        className="w-[96%] h-56 rounded-xl mx-auto mt-1 mb-2"
-      />
+      <View className="flex-1">
+        <ImageBackground
+          source={require("@/assets/images/background.png")}
+          className="w-[96%] h-56 rounded-xl mx-auto my-2 overflow-hidden"
+        >
+          <Suspense fallback={null}>
+            <View className="absolute bottom-0 right-0 left-0 top-0">
+              <Canvas gl={{ localClippingEnabled: true }}>
+                <PerspectiveCamera
+                  makeDefault
+                  position={[0, 0.8, 4]}
+                  fov={50}
+                />
+                <ambientLight intensity={0.8} />
+                <directionalLight position={[5, 5, 5]} />
+                <Model visemeData={visemeData} />
+              </Canvas>
+            </View>
+          </Suspense>
+        </ImageBackground>
+      </View>
 
       <FlatList
         ref={flatListRef}

@@ -4,18 +4,7 @@ import { useGLTF } from "@react-three/drei/native";
 import { GLTF } from "three-stdlib";
 import { useFrame } from "@react-three/fiber";
 import { Audio } from "expo-av";
-
-const visemesMapping = {
-  A: "viseme_PP",
-  B: "viseme_kk",
-  C: "viseme_I",
-  D: "viseme_AA",
-  E: "viseme_O",
-  F: "viseme_U",
-  G: "viseme_FF",
-  H: "viseme_TH",
-  X: "viseme_PP",
-};
+import { visemesMapping } from "@/constants/vismesMapping";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -23,7 +12,7 @@ type GLTFResult = GLTF & {
     EyeRight: THREE.SkinnedMesh;
     Wolf3D_Head: THREE.SkinnedMesh;
     Wolf3D_Teeth: THREE.SkinnedMesh;
-    Wolf3D_Tongue: THREE.SkinnedMesh; // Assuming you have a "tongue" mesh
+    Wolf3D_Tongue: THREE.SkinnedMesh;
     ["hair-60"]: THREE.SkinnedMesh;
     Wolf3D_Glasses: THREE.SkinnedMesh;
     Wolf3D_Outfit_Top: THREE.SkinnedMesh;
@@ -49,15 +38,16 @@ type ModelProps = JSX.IntrinsicElements["group"] & {
 };
 
 export function Model({ visemeData, ...props }: ModelProps) {
-  const [currentViseme, setCurrentViseme] = useState<string | null>(null);
   const [blink, setBlink] = useState(false);
+  const [currentViseme, setCurrentViseme] = useState<string | null>(null);
+
   const { nodes, materials, scene } = useGLTF(
     require("@/assets/models/Avatar.glb")
   ) as GLTFResult;
 
   const audioRef = useRef<Audio.Sound | null>(null);
 
-  // Lerp function for head morphs
+  // Changes the influence of a specific morph target on a 3D model
   const lerpMorphTarget = (
     target: string,
     value: number,
@@ -82,7 +72,7 @@ export function Model({ visemeData, ...props }: ModelProps) {
     });
   };
 
-  // Load and play audio
+  // Loads and play an audio file
   useEffect(() => {
     if (visemeData && visemeData.metadata.soundFile) {
       const loadAudio = async () => {
@@ -125,7 +115,7 @@ export function Model({ visemeData, ...props }: ModelProps) {
     return () => clearTimeout(blinkTimeout);
   }, []);
 
-  // Handle the mouth, teeth, and tongue viseme updates
+  // Matches the current audio playback time with mouth cues to set and animate the appropriate viseme.
   useFrame(() => {
     if (!visemeData || !visemeData.mouthCues.length || !audioRef.current)
       return;
@@ -152,23 +142,6 @@ export function Model({ visemeData, ...props }: ModelProps) {
       // Apply viseme to head
       if (currentViseme) {
         lerpMorphTarget(currentViseme, 1, 0.2);
-      }
-
-      // Apply viseme to teeth (for wide mouth shapes like "AA", "O", etc.)
-      if (
-        currentViseme &&
-        (currentViseme === "viseme_AA" || currentViseme === "viseme_O")
-      ) {
-        lerpMorphTarget("jawOpen", 1, 0.2); // Open the jaw for "AA", "O"
-      } else {
-        lerpMorphTarget("jawOpen", 0, 0.2); // Close teeth for non-speech
-      }
-
-      // Apply viseme to tongue (e.g., when "I", "S", "TH" or certain phonemes are present)
-      if (currentViseme && currentViseme === "viseme_TH") {
-        lerpMorphTarget("tongueOut", 0.5, 0.2); // Extend tongue for these phonemes
-      } else {
-        lerpMorphTarget("tongueOut", 0, 0.2); // Retract tongue for others
       }
 
       // Reset all other visemes to 0

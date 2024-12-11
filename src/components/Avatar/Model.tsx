@@ -162,7 +162,7 @@ export function Model({ visemeData, ...props }: ModelProps) {
 
       // Apply viseme to tongue (e.g., when "I", "S", "TH" or certain phonemes are present)
       if (currentViseme && (currentViseme === "viseme_I" || currentViseme === "viseme_S" || currentViseme === "viseme_TH")) {
-        lerpMorphTarget("tongueOut", 1, 0.1);  // Extend tongue for these phonemes
+        lerpMorphTarget("tongueOut", 0.5, 0.1);  // Extend tongue for these phonemes
       } else {
         lerpMorphTarget("tongueOut", 0, 0.1);  // Retract tongue for others
       }

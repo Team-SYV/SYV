@@ -17,11 +17,11 @@ def get_supabase() -> Client:
 @router.post("/create", response_model=createRatingsResponse)
 async def create_ratings(ratings_data: createRatingsInput, request: Request, supabase: Client = Depends(get_supabase)):
     # Validate the Authorization header
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Authorization header is missing")
+    # auth_header = request.headers.get("Authorization")
+    # if not auth_header:
+    #     raise HTTPException(status_code=401, detail="Authorization header is missing")
 
-    validated_user_id = validate_token(auth_header)
+    # validated_user_id = validate_token(auth_header)
 
     # Validate required fields
     required_fields = ['answer_relevance', 'eye_contact', 'grammar', 'pace_of_speech', 'filler_words', 'interview_id']
@@ -38,8 +38,8 @@ async def create_ratings(ratings_data: createRatingsInput, request: Request, sup
 
     user_id = interview_response.data[0]['user_id']
 
-    if user_id != validated_user_id:
-        raise HTTPException(status_code=403, detail="You are not authorized to create ratings for this interview")
+    # if user_id != validated_user_id:
+        # raise HTTPException(status_code=403, detail="You are not authorized to create ratings for this interview")
 
     response = supabase.table('ratings').insert(ratings_data.model_dump()).execute()
     if hasattr(response, 'error') and response.error:

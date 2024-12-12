@@ -150,6 +150,7 @@ const VirtualInterview = () => {
           );
 
           if (feedbackResponse.ratings_data) {
+            const token = await getToken();
             await createRatings(
               {
                 interview_id: interviewId,

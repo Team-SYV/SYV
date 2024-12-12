@@ -13,7 +13,7 @@ def generate_visemes(audio_file: str, output_dir: str = "visemes_output", viseme
     wav_file = Path(output_dir) / audio  
     convert_to_wav(audio_file, str(wav_file))
 
-    rhubarb_path = "bin/rhubarb/rhubarb"
+    rhubarb_path = "bin/Rhubarb/rhubarb"
     command = [
         rhubarb_path,
         '-f', 'json',

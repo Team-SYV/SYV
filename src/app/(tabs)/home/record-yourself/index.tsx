@@ -220,11 +220,12 @@ const RecordYourself: React.FC = () => {
         name: videoUri.split("/").pop(),
       } as unknown as File;
 
-      const token = await getToken();
 
       const transcription = await transcribeVideo(videoFile);
 
       if (transcription?.transcription) {
+        const token = await getToken();
+
         const answerResponse = await createAnswer({
           question_id: questionIds[index],
           answer: transcription.transcription,

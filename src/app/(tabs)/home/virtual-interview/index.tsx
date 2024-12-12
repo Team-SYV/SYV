@@ -1,6 +1,6 @@
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import * as Speech from "expo-speech";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, Suspense } from "react";
 import uuid from "react-native-uuid";
 import ConfirmationModal from "@/components/Modal/ConfirmationModal";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,6 +10,9 @@ import { Camera, CameraView } from "expo-camera";
 import { Audio } from "expo-av";
 import { LoadingDots } from "@mrakesh0608/react-native-loading-dots";
 import NextModal from "@/components/Modal/NextModal";
+import { Canvas } from "@react-three/fiber";
+import { PerspectiveCamera } from "@react-three/drei";
+import { Model } from "@/components/Avatar/Model";
 import {
   View,
   Text,
@@ -18,12 +21,14 @@ import {
   Image,
   BackHandler,
   Alert,
+  ImageBackground,
 } from "react-native";
 import {
   createAnswer,
   createRatings,
   eyeContact,
   generateAnswerFeedback,
+  generateSpeech,
   generateVirtualFeedback,
   getQuestions,
   transcribeAudio,
@@ -32,7 +37,7 @@ import {
 const VirtualInterview = () => {
   const { user } = useUser();
   const { interviewId } = useLocalSearchParams();
-  const {getToken} = useAuth();
+  const { getToken } = useAuth();
 
   const flatListRef = useRef<FlatList>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -65,6 +70,11 @@ const VirtualInterview = () => {
 
   const hasFetchedQuestions = useRef(false);
   const hasGeneratedFeedback = useRef(false);
+
+  const [visemeData, setVisemeData] = useState<{
+    metadata: { soundFile: string; duration: number };
+    mouthCues: { start: number; end: number; value: string }[];
+  }>({ metadata: { soundFile: "", duration: 0 }, mouthCues: [] });
 
   // Requests camera and microphone permissions
   useEffect(() => {
@@ -102,6 +112,9 @@ const VirtualInterview = () => {
 
         if (questions.length > 0) {
           // Adds the first question as a bot message if questions are available.
+          const cleanedQuestion = questions[0].replace(/^\d+\.\s*/, "");
+          const viseme = await generateSpeech(cleanedQuestion);
+          setVisemeData(viseme);
           setMessages((prevMessages) => [
             ...prevMessages,
             {
@@ -125,25 +138,31 @@ const VirtualInterview = () => {
         try {
           const token = await getToken();
 
-          const feedbackResponse = await generateVirtualFeedback({
-            interview_id: interviewId,
-            answers,
-            questions,
-            wpm: wpms,
-            eye_contact: eyeContacts,
-          }, token);
+          const feedbackResponse = await generateVirtualFeedback(
+            {
+              interview_id: interviewId,
+              answers,
+              questions,
+              wpm: wpms,
+              eye_contact: eyeContacts,
+            },
+            token
+          );
 
           if (feedbackResponse.ratings_data) {
-            await createRatings({
-              interview_id: interviewId,
-              answer_relevance:
-                feedbackResponse.ratings_data.answer_relevance_rating,
-              eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
-              grammar: feedbackResponse.ratings_data.grammar_rating,
-              pace_of_speech:
-                feedbackResponse.ratings_data.pace_of_speech_rating,
-              filler_words: feedbackResponse.ratings_data.filler_words_rating,
-            }, token);
+            await createRatings(
+              {
+                interview_id: interviewId,
+                answer_relevance:
+                  feedbackResponse.ratings_data.answer_relevance_rating,
+                eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
+                grammar: feedbackResponse.ratings_data.grammar_rating,
+                pace_of_speech:
+                  feedbackResponse.ratings_data.pace_of_speech_rating,
+                filler_words: feedbackResponse.ratings_data.filler_words_rating,
+              },
+              token
+            );
             hasGeneratedFeedback.current = true;
           }
         } catch (error) {
@@ -162,22 +181,6 @@ const VirtualInterview = () => {
   useEffect(() => {
     flatListRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
-
-  // Automatically read the bot's message when it gets added to the chat
-  useEffect(() => {
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage && lastMessage.role === Role.Bot) {
-      speak(lastMessage.content);
-    }
-  }, [messages]);
-
-  // Speaks a message after removing numeric prefixes.
-  const speak = (message: string) => {
-    const sanitizedMessage = message.replace(/^\d+\.\s*/, "");
-    Speech.speak(sanitizedMessage, {
-      rate: 1.0,
-    });
-  };
 
   // Handle hardware back button press
   const handleBackButtonPress = () => {
@@ -265,16 +268,35 @@ const VirtualInterview = () => {
 
   // Handles the feedback for the answer
   const handleAnswerFeedback = async (answer, question) => {
+    const newBotMessage = {
+      id: uuid.v4() as string,
+      role: Role.Bot,
+      content: "",
+      feedback: true,
+    };
+
+    setMessages((prevMessages) => [...prevMessages, newBotMessage]);
+
     const form = new FormData();
     form.append("previous_question", question);
     form.append("previous_answer", answer);
 
-    const feedback = await generateAnswerFeedback(form);
+    try {
+      const feedback = await generateAnswerFeedback(form);
 
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      { id: uuid.v4() as string, role: Role.Bot, content: feedback },
-    ]);
+      const viseme = await generateSpeech(feedback);
+      setVisemeData(viseme);
+
+      setMessages((prevMessages) =>
+        prevMessages.map((message) =>
+          message.id === newBotMessage.id
+            ? { ...message, content: feedback, feedback: false }
+            : message
+        )
+      );
+    } catch (error) {
+      console.error("Error generating feedback or speech:", error);
+    }
   };
 
   // Process the eye contact
@@ -299,10 +321,13 @@ const VirtualInterview = () => {
   const handleAnswer = async () => {
     const token = await getToken();
 
-    await createAnswer({
-      question_id: questionIds[currentQuestionIndex],
-      answer: answers[currentQuestionIndex],
-    }, token);
+    await createAnswer(
+      {
+        question_id: questionIds[currentQuestionIndex],
+        answer: answers[currentQuestionIndex],
+      },
+      token
+    );
   };
 
   // Advances to the next question or ends the interview with a thank you message if it's the last question.
@@ -310,6 +335,11 @@ const VirtualInterview = () => {
     const isLastMessage = currentQuestionIndex === questions.length - 1;
 
     if (isLastMessage) {
+      const viseme = await generateSpeech(
+        "Thank you for your time and participation. This concludes your virtual interview."
+      );
+      setVisemeData(viseme);
+
       setMessages((prevMessages) => [
         ...prevMessages,
         {
@@ -321,6 +351,13 @@ const VirtualInterview = () => {
       ]);
     } else {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+      const cleanedQuestion = questions[currentQuestionIndex + 1].replace(
+        /^\d+\.\s*/,
+        ""
+      );
+      const viseme = await generateSpeech(cleanedQuestion);
+      setVisemeData(viseme);
+
       setMessages((prevMessages) => [
         ...prevMessages,
         {
@@ -444,9 +481,27 @@ const VirtualInterview = () => {
             />
             <Text className="text-sm"> Savy </Text>
           </View>
-          <View className="bg-[#CDF1F8] p-4 rounded-lg max-w-[315px] border border-[#ADE3ED]">
-            <Text className="text-sm">{item.content}</Text>
-          </View>
+
+          {item.feedback ? (
+            <View className="flex items-end">
+              <LoadingDots
+                animation="pulse"
+                color="#8c8c8c"
+                containerStyle={{
+                  marginLeft: 22,
+                  marginTop: 8,
+                  marginBottom: 40,
+                }}
+                dots={3}
+                size={8}
+                spacing={4}
+              />
+            </View>
+          ) : (
+            <View className="bg-[#CDF1F8] p-4 rounded-lg max-w-[315px] border border-[#ADE3ED]">
+              <Text className="text-sm">{item.content}</Text>
+            </View>
+          )}
         </View>
       )}
 
@@ -469,7 +524,7 @@ const VirtualInterview = () => {
                 color="#8c8c8c"
                 containerStyle={{
                   marginRight: 25,
-                  marginTop: 12,
+                  marginTop: 8,
                   marginBottom: 40,
                 }}
                 dots={3}
@@ -498,10 +553,35 @@ const VirtualInterview = () => {
           ),
         }}
       />
-      <Image
-        source={require("@/assets/images/avatar.png")}
-        className="w-[96%] h-56 rounded-xl mx-auto mt-1 mb-2"
-      />
+
+      <ImageBackground
+        source={require("@/assets/images/background.png")}
+        className="w-[96%] h-56 rounded-xl mx-auto my-2 overflow-hidden"
+      >
+        <Suspense fallback={null}>
+          <View className="absolute bottom-0 right-0 left-0 top-0">
+            <Canvas
+              gl={{ localClippingEnabled: true }}
+              onCreated={(state) => {
+                const _gl = state.gl.getContext();
+                const pixelStorei = _gl.pixelStorei.bind(_gl);
+                _gl.pixelStorei = function (...args) {
+                  const [parameter] = args;
+                  switch (parameter) {
+                    case _gl.UNPACK_FLIP_Y_WEBGL:
+                      return pixelStorei(...args);
+                  }
+                };
+              }}
+            >
+              <PerspectiveCamera makeDefault position={[0, 0.8, 4]} fov={50} />
+              <ambientLight intensity={0.8} />
+              <directionalLight position={[5, 5, 5]} />
+              <Model visemeData={visemeData} />
+            </Canvas>
+          </View>
+        </Suspense>
+      </ImageBackground>
 
       <FlatList
         ref={flatListRef}

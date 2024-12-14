@@ -16,20 +16,15 @@ const StepContent: React.FC<StepContentProps> = ({
   updateFormData,
   handleNextStep,
   handleSubmit,
-  handleSubmitRoute,
   handleSkip,
-  interviewId,
 }) => {
-  const router = useRouter();
   const [shouldProceed, setShouldProceed] = useState(false);
-  const [proceedClicked, setProceedClicked] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Proceed button
   const onProceed = async () => {
     try {
       setLoading(true);
-      setProceedClicked(true);
       await handleSubmit();
       setLoading(false);
     } catch (err) {
@@ -54,12 +49,6 @@ const StepContent: React.FC<StepContentProps> = ({
       setShouldProceed(false);
     }
   }, [shouldProceed]);
-
-  useEffect(() => {
-    if (proceedClicked && interviewId) {
-      router.push(`${handleSubmitRoute + interviewId}`);
-    }
-  }, [proceedClicked, interviewId, router]);
 
   switch (activeStep) {
     case 0:

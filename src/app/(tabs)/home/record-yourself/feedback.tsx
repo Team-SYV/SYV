@@ -18,9 +18,10 @@ import {
   NativeScrollEvent,
 } from "react-native";
 import Ratings from "@/components/Rating/Ratings";
-import { getFeedbackWithQuestions, getRatings } from "@/api";
 import { RatingsData } from "@/types/ratingsData";
 import { useAuth } from "@clerk/clerk-expo";
+import { getFeedbackRecord } from "@/api/feedback";
+import { getRatings } from "@/api/ratings";
 
 const { width, height } = Dimensions.get("window");
 
@@ -92,7 +93,7 @@ const Feedback: React.FC = () => {
         const token = await getToken();
         setLoading(true);
 
-        const fetchedFeedback = await getFeedbackWithQuestions(interviewId, token);
+        const fetchedFeedback = await getFeedbackRecord(interviewId, token);
         setFeedbackItem(fetchedFeedback);
         const fetchedRatings = await getRatings(interviewId, token);
         setRatings(fetchedRatings);

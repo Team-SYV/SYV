@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useLocalSearchParams } from "expo-router";
-import { getFeedback, getQuestions } from "@/api";
 import {
   View,
   StyleSheet,
@@ -13,6 +12,8 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useAuth } from "@clerk/clerk-expo";
+import { getQuestions } from "@/api/question";
+import { getFeedbackRecord, getFeedbackVirtual } from "@/api/feedback";
 
 const { width } = Dimensions.get("window");
 
@@ -30,14 +31,13 @@ const Feedback: React.FC = () => {
 
   // Fetch questions and feedback for a specific interview when the interviewId changes.
   useEffect(() => {
-    console.log("interviewId", interviewId);
     const fetch = async () => {
       try {
         setLoading(true);
         const token = await getToken();
         const fetchedQuestions = await getQuestions(interviewId, token);
         setQuestions(fetchedQuestions.questions);
-        const fetchedFeedback = await getFeedback(interviewId, token);
+        const fetchedFeedback = await getFeedbackVirtual(interviewId, token);
         setFeedbackItem(fetchedFeedback);
       } catch (error) {
         console.error("Error fetching data", error.message);

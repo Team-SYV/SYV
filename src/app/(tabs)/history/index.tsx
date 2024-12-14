@@ -1,9 +1,9 @@
 import {View,Text,TouchableOpacity, FlatList, ActivityIndicator} from "react-native";
 import React, { useState } from "react";
-import { getInterviewHistory } from "@/api";
 import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
+import { getInterviewHistory } from "@/api/interview";
 
 const History = () => {
   const { getToken } = useAuth();

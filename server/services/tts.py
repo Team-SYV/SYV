@@ -1,3 +1,4 @@
+from pathlib import Path
 import openai
 import os
 from openai import OpenAI
@@ -14,11 +15,14 @@ def openai_tts(text: str, filename: str = "output.wav") -> str:
         input=text,  
         response_format="wav"
     )
-    
     audio_data = response.content  
     
-    with open(filename, 'wb') as audio_file:
+    Path("visemes_output").mkdir(parents=True, exist_ok=True)
+
+    output = Path("visemes_output") / filename
+    
+    with open((output), 'wb') as audio_file:
         audio_file.write(audio_data)
 
-    return filename  
+    return output  
 

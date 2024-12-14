@@ -13,14 +13,12 @@ import {
   BackHandler,
 } from "react-native";
 import NextModal from "@/components/Modal/NextModal";
-import {
-  createAnswer,
-  createRatings,
-  generateFeedback,
-  getQuestions,
-  transcribeVideo,
-} from "@/api";
 import { useAuth } from "@clerk/clerk-expo";
+import { getQuestions } from "@/api/question";
+import { createRatings } from "@/api/ratings";
+import { transcribeVideo } from "@/api/transcription";
+import { createAnswer } from "@/api/answer";
+import { createFeedbackRecord } from "@/api/feedback";
 
 const RecordYourself: React.FC = () => {
   const router = useRouter();
@@ -73,6 +71,7 @@ const RecordYourself: React.FC = () => {
         const token = await getToken();
         setIsLoading(true);
         const fetchedQuestions = await getQuestions(interviewId, token);
+
         setQuestions(fetchedQuestions.questions);
         setQuestionIds(fetchedQuestions.question_id);
       } catch (error) {
@@ -125,7 +124,7 @@ const RecordYourself: React.FC = () => {
   }, [allQuestionsRecorded]);
 
   useEffect(() => {
-    const handleFeedbackRatings = async () => {
+    const handleFeedbackAndRatings = async () => {
       if (feedbackRatings.length > 0) {
         if (feedbackRatings.length === 5) {
           const averageRatings = calculateAverageRatings();
@@ -151,7 +150,7 @@ const RecordYourself: React.FC = () => {
       }
     };
 
-    handleFeedbackRatings();
+    handleFeedbackAndRatings();
   }, [feedbackRatings]);
 
   // Check if permission has been granted
@@ -180,7 +179,7 @@ const RecordYourself: React.FC = () => {
         const endTime = Date.now();
         const videoDuration = (endTime - startTime) / 1000;
 
-        if (videoDuration < 5) {
+        if (videoDuration < 1) {
           Alert.alert(
             "Recording Too Short",
             "Please record for at least 5 seconds."
@@ -225,20 +224,26 @@ const RecordYourself: React.FC = () => {
       const transcription = await transcribeVideo(videoFile);
 
       if (transcription?.transcription) {
-        const answerResponse = await createAnswer({
-          question_id: questionIds[index],
-          answer: transcription.transcription,
-        }, token);
+        const answerResponse = await createAnswer(
+          {
+            question_id: questionIds[index],
+            answer: transcription.transcription,
+          },
+          token
+        );
 
         if (answerResponse?.answer_id) {
-          const feedbackResponse = await generateFeedback({
-            answer_id: answerResponse.answer_id,
-            interview_id: interviewId,
-            answer: transcription.transcription,
-            question: questions[index],
-            wpm: transcription.wpm.toString(),
-            eye_contact: transcription.eye_contact.toString(),
-          }, token);
+          const feedbackResponse = await createFeedbackRecord(
+            {
+              answer_id: answerResponse.answer_id,
+              interview_id: interviewId,
+              answer: transcription.transcription,
+              question: questions[index],
+              pace_of_speech: transcription.wpm.toString(),
+              eye_contact: transcription.eye_contact.toString(),
+            },
+            token
+          );
 
           if (feedbackResponse?.ratings_data) {
             setFeedbackRatings((prevRatings) => [
@@ -360,9 +365,7 @@ const RecordYourself: React.FC = () => {
           >
             {isRecording
               ? formatTime(recordingTime)
-              : `${currentQuestionIndex + 1}. ${
-                  questions[currentQuestionIndex] || ""
-                }`}
+              : ` ${questions[currentQuestionIndex] || ""}`}
           </Text>
 
           <TouchableOpacity onPress={isRecording ? stopRecording : recordVideo}>

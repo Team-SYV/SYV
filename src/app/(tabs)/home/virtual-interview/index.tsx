@@ -23,16 +23,13 @@ import {
   Alert,
   ImageBackground,
 } from "react-native";
-import {
-  createAnswer,
-  createRatings,
-  eyeContact,
-  generateAnswerFeedback,
-  generateSpeech,
-  generateVirtualFeedback,
-  getQuestions,
-  transcribeAudio,
-} from "@/api";
+import { getQuestions } from "@/api/question";
+import { generateSpeech } from "@/api/visemes";
+import { createFeedbackVirtual, generateResponse } from "@/api/feedback";
+import { createRatings } from "@/api/ratings";
+import { transcribeAudio } from "@/api/transcription";
+import { eyeContact } from "@/api/eyeContact";
+import { createAnswer } from "@/api/answer";
 
 const VirtualInterview = () => {
   const { user } = useUser();
@@ -99,7 +96,6 @@ const VirtualInterview = () => {
     const fetchQuestions = async () => {
       if (hasFetchedQuestions.current) return;
       hasFetchedQuestions.current = true;
-
       try {
         const token = await getToken();
         const response = await getQuestions(interviewId, token);
@@ -138,7 +134,7 @@ const VirtualInterview = () => {
         try {
           const token = await getToken();
 
-          const feedbackResponse = await generateVirtualFeedback(
+          const feedbackResponse = await createFeedbackVirtual(
             {
               interview_id: interviewId,
               answers,
@@ -282,7 +278,7 @@ const VirtualInterview = () => {
     form.append("previous_answer", answer);
 
     try {
-      const feedback = await generateAnswerFeedback(form);
+      const feedback = await generateResponse(form);
 
       const viseme = await generateSpeech(feedback);
       setVisemeData(viseme);

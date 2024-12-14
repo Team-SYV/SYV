@@ -10,9 +10,9 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import ConfirmationModal from "@/components/Modal/ConfirmationModal";
 import Spinner from "react-native-loading-spinner-overlay";
-import { getFeedback } from "@/api";
 import { ActivityIndicator } from "react-native";
 import { useAuth } from "@clerk/clerk-expo";
+import { getFeedbackVirtual } from "@/api/feedback";
 
 const Feedback: React.FC = () => {
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
@@ -36,7 +36,7 @@ const Feedback: React.FC = () => {
       try {
         const token = await getToken();
         setLoading(true);
-        const fetchedFeedback = await getFeedback(interviewId, token);
+        const fetchedFeedback = await getFeedbackVirtual(interviewId, token);
         setFeedbackItem({
           answerRelevance: fetchedFeedback[0].answer_relevance,
           grammar: fetchedFeedback[0].grammar,

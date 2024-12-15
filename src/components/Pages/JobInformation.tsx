@@ -167,6 +167,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
       const token = await getToken();
 
       const jobData = {
+        type: interviewType,
         industry: formData.selectedIndustry,
         job_role: formData.selectedJobRole,
         interview_type: formData.selectedInterviewType,

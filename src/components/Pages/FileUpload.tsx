@@ -12,7 +12,7 @@ import { useAuth } from "@clerk/clerk-expo";
 import { createQuestions } from "@/api/question";
 
 type FileuploadProps = {
-  interviewId: string | string[];
+  interviewId: string;
   jobData: string | string[];
   path: "virtual-interview" | "record-yourself";
 };
@@ -88,8 +88,6 @@ const FileUpload: React.FC<FileuploadProps> = ({
       // Fetch the job information
       const fileUri = selectedFile.uri;
 
-      const jobData = parsedJobData;
-     
       const questionFormData = new FormData();
 
 
@@ -99,14 +97,16 @@ const FileUpload: React.FC<FileuploadProps> = ({
         type: "application/pdf",
       } as unknown as Blob);
 
-      questionFormData .append("type", jobData.interviewType);
-      questionFormData .append("industry", jobData.selectedIndustry);
-      questionFormData .append("experience_level", jobData.selectedExperienceLevel);
-      questionFormData .append("interview_type", jobData.selectedInterviewType);
-      questionFormData .append("job_description", jobData.jobDescription || "");
-      questionFormData .append("company_name", jobData.companyName || "");
-      questionFormData .append("job_role", jobData.selectedJobRole);
-      questionFormData.append("interview_id", Array.isArray(interviewId) ? interviewId.join(",") : interviewId);
+
+      questionFormData.append("type", parsedJobData.type);
+      questionFormData.append("industry", parsedJobData.industry);
+      questionFormData.append("experience_level", parsedJobData.experience_level);
+      questionFormData.append("interview_type", parsedJobData.interview_type);
+      questionFormData.append("job_description", parsedJobData.job_description || "");
+      questionFormData.append("company_name", parsedJobData.company_name || "");
+      questionFormData.append("job_role", parsedJobData.job_role);
+      questionFormData.append("interview_id", interviewId);
+
 
       await createQuestions(questionFormData, token);
 

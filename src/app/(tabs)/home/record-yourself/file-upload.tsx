@@ -5,7 +5,7 @@ const FileUploadScreen = () => {
   const { interviewId, jobData } = useLocalSearchParams();
   return (
     <FileUpload
-      interviewId={interviewId}
+      interviewId={interviewId as string}
       jobData={jobData}
       path={"record-yourself"}
     />

@@ -1,4 +1,4 @@
-import FileUpload from "@/components/Pages/fileUpload";
+import FileUpload from "@/components/Pages/FileUpload";
 import { useLocalSearchParams } from "expo-router";
 
 const FileUploadScreen = () => {

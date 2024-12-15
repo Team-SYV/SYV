@@ -216,7 +216,6 @@ const JobInformation: React.FC<JobInformationProps> = ({
   const handleSkip = async () => {
     try {
       const response = await handleInterview();
-      console.log(response)
 
       const token = await getToken();
 

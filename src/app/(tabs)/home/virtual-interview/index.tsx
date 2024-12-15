@@ -100,15 +100,13 @@ const VirtualInterview = () => {
         const token = await getToken();
         const response = await getQuestions(interviewId, token);
         const questionIds = response.question_id;
-        const questions = response.questions.map(
-          (question: string, index: number) => `${index + 1}. ${question}`
-        );
+       
         setQuestionIds(questionIds);
-        setQuestions(questions);
+        setQuestions(response.questions);
 
-        if (questions.length > 0) {
+        if (response.questions.length > 0) {
           // Adds the first question as a bot message if questions are available.
-          const cleanedQuestion = questions[0].replace(/^\d+\.\s*/, "");
+          const cleanedQuestion = response.questions[0].replace(/^\d+\.\s*/, "");
           const viseme = await generateSpeech(cleanedQuestion);
           setVisemeData(viseme);
           setMessages((prevMessages) => [

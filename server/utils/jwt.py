@@ -33,10 +33,10 @@ def validate_token(auth_header: str) -> str:
             options={"verify_signature": True},
         )
     except jwt.ExpiredSignatureError:
-        raise HTTPException("Token has expired.")
+        raise HTTPException(status_code=401, detail="Token has expired.")
     except jwt.DecodeError:
-        raise HTTPException("Token decode error.")
+        raise HTTPException(status_code=401, detail="Token decode error.")
     except jwt.InvalidTokenError:
-        raise HTTPException("Invalid token.")
+        raise HTTPException(status_code=401, detail="Invalid token.")
     user_id = payload.get("sub")
     return user_id

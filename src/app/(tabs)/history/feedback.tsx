@@ -14,6 +14,7 @@ import {
 import { useAuth } from "@clerk/clerk-expo";
 import { getQuestions } from "@/api/question";
 import { getFeedbackRecord, getFeedbackVirtual } from "@/api/feedback";
+import { cleanQuestion } from "@/utils/cleanQuestion";
 
 const { width } = Dimensions.get("window");
 
@@ -67,7 +68,7 @@ const Feedback: React.FC = () => {
                 Question {index + 1}
               </Text>
 
-              <Text className="text-sm text-[13px]">{question}</Text>
+              <Text className="text-sm text-[13px]">{cleanQuestion(question)}</Text>
             </View>
           </View>
         )}

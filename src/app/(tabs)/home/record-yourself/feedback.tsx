@@ -22,6 +22,7 @@ import { RatingsData } from "@/types/ratingsData";
 import { useAuth } from "@clerk/clerk-expo";
 import { getFeedbackRecord } from "@/api/feedback";
 import { getRatings } from "@/api/ratings";
+import { cleanQuestion } from "@/utils/cleanQuestion";
 
 const { width, height } = Dimensions.get("window");
 
@@ -148,7 +149,7 @@ const Feedback: React.FC = () => {
               Question {index + 1}
             </Text>
 
-            <Text className="text-sm text-[13px]">{feedback.question}</Text>
+            <Text className="text-sm text-[13px]">{cleanQuestion(feedback.question)}</Text>
           </View>
           <View style={styles.videoContainer}>
             <TouchableOpacity

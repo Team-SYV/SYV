@@ -12,7 +12,7 @@ def get_supabase() -> Client:
     return get_supabase_client()
 
 @router.post('/create/')
-def create_questions(
+async def create_questions(
     request: Request,
     interview_id: str = Form(...),
     file: UploadFile = File(None),  
@@ -50,7 +50,7 @@ def create_questions(
     resume_text = None
 
     if file:
-            resume_text = pdf_reader(file)
+            resume_text = await pdf_reader(file)
     
     try:
         questions = generate_interview_questions(
@@ -70,8 +70,8 @@ def create_questions(
     for question in questions:
         response = supabase.table('questions').insert({'interview_id': interview_id,'question': question}).execute()
 
-    if hasattr(response, 'error') and response.error:
-        raise HTTPException(status_code=500, detail="Failed to create questions")
+        if hasattr(response, 'error') and response.error:
+            raise HTTPException(status_code=500, detail="Failed to create questions")
     
     return {'message': "Questions Created Successfully"}
     

@@ -92,6 +92,8 @@ const FileUpload: React.FC<FileuploadProps> = ({
      
       const questionFormData = new FormData();
 
+      console.log(interviewId)
+
       questionFormData.append("file", {
         uri: fileUri,
         name: selectedFile.name,
@@ -105,14 +107,14 @@ const FileUpload: React.FC<FileuploadProps> = ({
       questionFormData .append("job_description", jobData.jobDescription || "");
       questionFormData .append("company_name", jobData.companyName || "");
       questionFormData .append("job_role", jobData.selectedJobRole);
-      questionFormData .append("interview_id",interviewId as string);
+      questionFormData .append("interview_id", interviewId as string);
 
       await createQuestions(questionFormData, token);
 
 
 
       // Generate questions
-      await createQuestions(jobData, token);
+      await createQuestions(questionFormData, token);
 
       router.push(`/(tabs)/home/${path}/reminder?interviewId=${interviewId}`);
     } catch (error) {

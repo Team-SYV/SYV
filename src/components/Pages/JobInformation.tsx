@@ -197,7 +197,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
 
       if ("jobData" in response && "interviewId" in response) {
         router.push({
-          pathname: `/(tabs)/home/${path}/upload-file`,
+          pathname: `/(tabs)/home/${path}/file-upload`,
           params: {
             jobData: JSON.stringify(response.jobData),
             interviewId: response.interviewId,

@@ -29,7 +29,7 @@ async def create_record_feedback(feedback_data: CreateRecordFeedbackInput, reque
             raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
 
     # Ensure `wpm` and `eye_contact` are present, even if their values are zero
-    if feedback_data.wpm is None or feedback_data.eye_contact is None:
+    if feedback_data.pace_of_speech is None or feedback_data.eye_contact is None:
         raise HTTPException(status_code=400, detail="Missing required field: wpm or eye_contact")
     
     try:
@@ -50,7 +50,7 @@ async def create_record_feedback(feedback_data: CreateRecordFeedbackInput, reque
         # Generate feedback
         question = feedback_data.question
         answer = feedback_data.answer
-        wpm = feedback_data.wpm
+        wpm = feedback_data.pace_of_speech
         eye_contact = feedback_data.eye_contact
 
         feedback = generate_feedback(question, answer, wpm, eye_contact)
@@ -96,7 +96,7 @@ async def create_virtual_feedback(feedback_data: CreateVirtualFeedbackInput, req
     validated_user_id = validate_token(auth_header)
 
     # Validate the input
-    required_fields = ['interview_id', 'answers', 'questions', 'wpm', 'eye_contact']
+    required_fields = ['interview_id', 'answers', 'questions','pace_of_speech', 'eye_contact']
     for field in required_fields:
         if not feedback_data.model_dump().get(field):
             raise HTTPException(status_code=400, detail=f"Missing required field: {field}")

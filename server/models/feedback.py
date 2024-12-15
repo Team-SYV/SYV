@@ -7,7 +7,7 @@ class CreateRecordFeedbackInput(BaseModel):
     interview_id: str
     answer: str
     question: str
-    wpm: float
+    pace_of_speech: float
     eye_contact: float
 
 

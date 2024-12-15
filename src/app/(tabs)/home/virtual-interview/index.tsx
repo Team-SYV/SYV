@@ -96,32 +96,52 @@ const VirtualInterview = () => {
     const fetchQuestions = async () => {
       if (hasFetchedQuestions.current) return;
       hasFetchedQuestions.current = true;
+
       try {
         const token = await getToken();
         const response = await getQuestions(interviewId, token);
         const questionIds = response.question_id;
-       
+
         setQuestionIds(questionIds);
         setQuestions(response.questions);
 
         if (response.questions.length > 0) {
-          // Adds the first question as a bot message if questions are available.
-          const cleanedQuestion = response.questions[0].replace(/^\d+\.\s*/, "");
-          const viseme = await generateSpeech(cleanedQuestion);
-          setVisemeData(viseme);
+          const firsQuestionId = uuid.v4() as string;
           setMessages((prevMessages) => [
             ...prevMessages,
             {
-              id: uuid.v4() as string,
+              id: firsQuestionId,
               role: Role.Bot,
-              content: response.questions[0],
+              content: "",
+              question: true,
             },
           ]);
+
+          const cleanedQuestion = response.questions[0].replace(
+            /^\d+\.\s*/,
+            ""
+          );
+
+          const viseme = await generateSpeech(cleanedQuestion);
+          setVisemeData(viseme);
+
+          setMessages((prevMessages) =>
+            prevMessages.map((message) =>
+              message.id === firsQuestionId
+                ? {
+                    ...message,
+                    content: response.questions[0],
+                    question: false,
+                  }
+                : message
+            )
+          );
         }
       } catch (error) {
         console.error("Error", error.message);
       }
     };
+
     fetchQuestions();
   }, [interviewId]);
 
@@ -227,14 +247,13 @@ const VirtualInterview = () => {
       type: "audio/mp3",
     } as unknown as File;
 
-    // Add the new message with loading flag
-    const newMessage = {
+    const userMessage = {
       id: uuid.v4() as string,
       role: Role.User,
       content: "",
       loading: true,
     };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
+    setMessages((prevMessages) => [...prevMessages, userMessage]);
 
     const transcription = await transcribeAudio(audioFile);
 
@@ -243,7 +262,7 @@ const VirtualInterview = () => {
       setWpms((prevWpms) => [...prevWpms, transcription.words_per_minute]);
       setMessages((prevMessages) =>
         prevMessages.map((message) =>
-          message.id === newMessage.id
+          message.id === userMessage.id
             ? {
                 ...message,
                 content: transcription.transcript,
@@ -327,39 +346,67 @@ const VirtualInterview = () => {
   // Advances to the next question or ends the interview with a thank you message if it's the last question.
   const handleEnd = async () => {
     const isLastMessage = currentQuestionIndex === questions.length - 1;
+    const nextQuestionId = uuid.v4() as string;
+
+    // Add a placeholder loading bot message.
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      {
+        id: nextQuestionId,
+        role: Role.Bot,
+        content: "",
+        question: true,
+      },
+    ]);
 
     if (isLastMessage) {
-      const viseme = await generateSpeech(
-        "Thank you for your time and participation. This concludes your virtual interview."
-      );
-      setVisemeData(viseme);
+      try {
+        const viseme = await generateSpeech(
+          "Thank you for your time and participation. This concludes your virtual interview."
+        );
+        setVisemeData(viseme);
 
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: uuid.v4() as string,
-          role: Role.Bot,
-          content:
-            "Thank you for your time and participation. This concludes your virtual interview.",
-        },
-      ]);
+        // Replace the placeholder with the final message.
+        setMessages((prevMessages) =>
+          prevMessages.map((message) =>
+            message.id === nextQuestionId
+              ? {
+                  ...message,
+                  content:
+                    "Thank you for your time and participation. This concludes your virtual interview.",
+                  question: false,
+                }
+              : message
+          )
+        );
+      } catch (error) {
+        console.error("Error generating final message speech:", error);
+      }
     } else {
-      setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
-      const cleanedQuestion = questions[currentQuestionIndex + 1].replace(
-        /^\d+\.\s*/,
-        ""
-      );
-      const viseme = await generateSpeech(cleanedQuestion);
-      setVisemeData(viseme);
+      try {
+        setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+        const cleanedQuestion = questions[currentQuestionIndex + 1].replace(
+          /^\d+\.\s*/,
+          ""
+        );
+        const viseme = await generateSpeech(cleanedQuestion);
+        setVisemeData(viseme);
 
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: uuid.v4() as string,
-          role: Role.Bot,
-          content: questions[currentQuestionIndex + 1],
-        },
-      ]);
+        // Replace the placeholder with the next question.
+        setMessages((prevMessages) =>
+          prevMessages.map((message) =>
+            message.id === nextQuestionId
+              ? {
+                  ...message,
+                  content: questions[currentQuestionIndex + 1],
+                  question: false,
+                }
+              : message
+          )
+        );
+      } catch (error) {
+        console.error("Error generating next question speech:", error);
+      }
     }
   };
 
@@ -476,7 +523,7 @@ const VirtualInterview = () => {
             <Text className="text-sm"> Savy </Text>
           </View>
 
-          {item.feedback ? (
+          {item.feedback || item.question ? (
             <View className="flex items-end">
               <LoadingDots
                 animation="pulse"

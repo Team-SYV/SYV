@@ -51,7 +51,9 @@ const VirtualInterview = () => {
   const [questions, setQuestions] = useState([]);
   const [questionIds, setQuestionIds] = useState([]);
   const [answers, setAnswers] = useState([]);
-  const isStartButtonDisabled = answers.length >= 10;
+
+  const [isQuestionLoading, setIsQuestionLoading] = useState<boolean>(false);
+  const isStartButtonDisabled = isQuestionLoading || answers.length >= 10;
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [wpms, setWpms] = useState([]);
@@ -98,6 +100,7 @@ const VirtualInterview = () => {
       hasFetchedQuestions.current = true;
 
       try {
+        setIsQuestionLoading(true);
         const token = await getToken();
         const response = await getQuestions(interviewId, token);
         const questionIds = response.question_id;
@@ -139,6 +142,8 @@ const VirtualInterview = () => {
         }
       } catch (error) {
         console.error("Error", error.message);
+      } finally {
+        setIsQuestionLoading(false);
       }
     };
 
@@ -253,29 +258,40 @@ const VirtualInterview = () => {
       content: "",
       loading: true,
     };
+
     setMessages((prevMessages) => [...prevMessages, userMessage]);
+    setIsQuestionLoading(true);
 
-    const transcription = await transcribeAudio(audioFile);
+    try {
+      // Transcribe the audio
+      const transcription = await transcribeAudio(audioFile);
 
-    if (transcription) {
-      setAnswers((prevAnswers) => [...prevAnswers, transcription.transcript]);
-      setWpms((prevWpms) => [...prevWpms, transcription.words_per_minute]);
-      setMessages((prevMessages) =>
-        prevMessages.map((message) =>
-          message.id === userMessage.id
-            ? {
-                ...message,
-                content: transcription.transcript,
-                loading: false,
-              }
-            : message
-        )
-      );
+      if (transcription) {
+        setAnswers((prevAnswers) => [...prevAnswers, transcription.transcript]);
+        setWpms((prevWpms) => [...prevWpms, transcription.words_per_minute]);
 
-      await handleAnswerFeedback(
-        transcription.transcript,
-        questions[currentQuestionIndex]
-      );
+        setMessages((prevMessages) =>
+          prevMessages.map((message) =>
+            message.id === userMessage.id
+              ? {
+                  ...message,
+                  content: transcription.transcript,
+                  loading: false,
+                }
+              : message
+          )
+        );
+
+        // Trigger feedback for the current question
+        await handleAnswerFeedback(
+          transcription.transcript,
+          questions[currentQuestionIndex]
+        );
+      }
+    } catch (error) {
+      console.error("Error transcribing audio:", error);
+    } finally {
+      setIsQuestionLoading(false);
     }
   };
 
@@ -289,6 +305,7 @@ const VirtualInterview = () => {
     };
 
     setMessages((prevMessages) => [...prevMessages, newBotMessage]);
+    setIsQuestionLoading(true);
 
     const form = new FormData();
     form.append("previous_question", question);
@@ -296,7 +313,6 @@ const VirtualInterview = () => {
 
     try {
       const feedback = await generateResponse(form);
-
       const viseme = await generateSpeech(feedback);
       setVisemeData(viseme);
 
@@ -309,6 +325,8 @@ const VirtualInterview = () => {
       );
     } catch (error) {
       console.error("Error generating feedback or speech:", error);
+    } finally {
+      setIsQuestionLoading(false);
     }
   };
 
@@ -348,7 +366,7 @@ const VirtualInterview = () => {
     const isLastMessage = currentQuestionIndex === questions.length - 1;
     const nextQuestionId = uuid.v4() as string;
 
-    // Add a placeholder loading bot message.
+    // Add a placeholder loading bot message
     setMessages((prevMessages) => [
       ...prevMessages,
       {
@@ -358,15 +376,15 @@ const VirtualInterview = () => {
         question: true,
       },
     ]);
+    setIsQuestionLoading(true);
 
-    if (isLastMessage) {
-      try {
+    try {
+      if (isLastMessage) {
         const viseme = await generateSpeech(
           "Thank you for your time and participation. This concludes your virtual interview."
         );
         setVisemeData(viseme);
 
-        // Replace the placeholder with the final message.
         setMessages((prevMessages) =>
           prevMessages.map((message) =>
             message.id === nextQuestionId
@@ -379,11 +397,8 @@ const VirtualInterview = () => {
               : message
           )
         );
-      } catch (error) {
-        console.error("Error generating final message speech:", error);
-      }
-    } else {
-      try {
+      } else {
+        // Update current question index and fetch next question
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
         const cleanedQuestion = questions[currentQuestionIndex + 1].replace(
           /^\d+\.\s*/,
@@ -392,7 +407,6 @@ const VirtualInterview = () => {
         const viseme = await generateSpeech(cleanedQuestion);
         setVisemeData(viseme);
 
-        // Replace the placeholder with the next question.
         setMessages((prevMessages) =>
           prevMessages.map((message) =>
             message.id === nextQuestionId
@@ -404,9 +418,11 @@ const VirtualInterview = () => {
               : message
           )
         );
-      } catch (error) {
-        console.error("Error generating next question speech:", error);
       }
+    } catch (error) {
+      console.error("Error generating speech:", error);
+    } finally {
+      setIsQuestionLoading(false);
     }
   };
 

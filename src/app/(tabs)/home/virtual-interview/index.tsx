@@ -114,7 +114,7 @@ const VirtualInterview = () => {
             {
               id: uuid.v4() as string,
               role: Role.Bot,
-              content: questions[0],
+              content: response.questions[0],
             },
           ]);
         }

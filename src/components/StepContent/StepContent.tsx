@@ -91,7 +91,7 @@ const StepContent: React.FC<StepContentProps> = ({
           <InterviewTypeCard
             imageSource={require("@/assets/images/behavioral.png")}
             title="Behavioral"
-            description="Involves soft skills, interpersonal interactions, problem-solving approaches, and past experiences."
+            description="Focuses on soft skills, interpersonal communication, problem-solving, and how you've handled past situations in the workplace."
             isSelected={formData.selectedInterviewType === "Behavioral"}
             onPress={() => {
               updateFormData("selectedInterviewType", "Behavioral");
@@ -101,7 +101,7 @@ const StepContent: React.FC<StepContentProps> = ({
           <InterviewTypeCard
             imageSource={require("@/assets/images/technical.png")}
             title="Technical"
-            description="Involves coding challenges, technical problem-solving scenarios, and discussions about specific technologies, tools, or methodologies."
+            description="Assesses your expertise in role-specific skills, industry knowledge, and ability to apply relevant tools and methods."
             isSelected={formData.selectedInterviewType === "Technical"}
             onPress={() => {
               updateFormData("selectedInterviewType", "Technical");

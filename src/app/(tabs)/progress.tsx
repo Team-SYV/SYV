@@ -30,12 +30,9 @@ const Progress = () => {
   const fetchRatings = async () => {
     setLoading(true);
     try {
-      const token = await getToken();
+      const token = await getToken({ template: "supabase" });
       const weekStartFormatted = currentWeekStart.format("YYYY-MM-DD");
-      const fetchedProgress = await getProgress(
-        weekStartFormatted,
-        token
-      );
+      const fetchedProgress = await getProgress(weekStartFormatted, token);
       setRatingsData(fetchedProgress);
     } catch (error) {
       console.error("Error fetching data", error.message);

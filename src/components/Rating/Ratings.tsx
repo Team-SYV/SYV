@@ -20,7 +20,6 @@ const Ratings: React.FC<RatingsProps> = ({
   pace,
   fillerWords,
   setIsOnPage,
-  
 }) => {
   const progressData = {
     relevance: Math.round(relevance),
@@ -30,13 +29,27 @@ const Ratings: React.FC<RatingsProps> = ({
     fillerWords: Math.round(fillerWords),
   };
 
+  const weights = {
+    relevance: 0.4,
+    grammar: 0.2,
+    eyeContact: 0.2,
+    pace: 0.1,
+    fillerWords: 0.1,
+  };
+
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const ratings = Object.values(progressData);
-  const totalRating = ratings.reduce((sum, rating) => sum + rating, 0);
 
-  // Overall rating
-  const overallRating = Math.round(totalRating / ratings.length);
+  const weightedSum = Object.entries(progressData).reduce(
+    (sum, [key, value]) => sum + value * weights[key],
+    0
+  );
+
+  const totalWeight = Object.values(weights).reduce(
+    (sum, weight) => sum + weight,
+    0
+  );
+  const overallRating = Math.round(weightedSum / totalWeight);
 
   const numberOfStars = 5;
   const filledStars = overallRating;

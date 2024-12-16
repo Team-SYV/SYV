@@ -56,7 +56,7 @@ const VirtualInterview = () => {
   const isStartButtonDisabled = isQuestionLoading || answers.length >= 10;
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [wpms, setWpms] = useState([]);
+  const [paceOfSpeech, setPaceOfSpeech] = useState([]);
   const [eyeContacts, setEyeContacts] = useState([]);
 
   const [permissionResponse, requestPermission] = Audio.usePermissions();
@@ -162,7 +162,7 @@ const VirtualInterview = () => {
               interview_id: interviewId,
               answers,
               questions,
-              wpm: wpms,
+              pace_of_speech: paceOfSpeech,
               eye_contact: eyeContacts,
             },
             token
@@ -268,7 +268,7 @@ const VirtualInterview = () => {
 
       if (transcription) {
         setAnswers((prevAnswers) => [...prevAnswers, transcription.transcript]);
-        setWpms((prevWpms) => [...prevWpms, transcription.words_per_minute]);
+        setPaceOfSpeech((prevWpms) => [...prevWpms, transcription.words_per_minute]);
 
         setMessages((prevMessages) =>
           prevMessages.map((message) =>

@@ -11,7 +11,7 @@ export interface FeedbackDataRecord {
     interview_id: string | string [];
     answers: string[];
     questions: string[];
-    wpm: number[];
+    pace_of_speech: number[];
     eye_contact: number[];
   }
   

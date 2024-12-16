@@ -96,7 +96,7 @@ async def create_virtual_feedback(feedback_data: CreateVirtualFeedbackInput, req
     validated_user_id = validate_token(auth_header)
 
     # Validate the input
-    required_fields = ['interview_id', 'answers', 'questions','pace_of_speech', 'eye_contact']
+    required_fields = ['interview_id', 'answers', 'questions']
     for field in required_fields:
         if not feedback_data.model_dump().get(field):
             raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
@@ -117,7 +117,7 @@ async def create_virtual_feedback(feedback_data: CreateVirtualFeedbackInput, req
             raise HTTPException(status_code=403, detail="You are not authorized")
         
         # Generate virtual feedback
-        feedback = generate_feedback_virtual(feedback_data.questions, feedback_data.answers, feedback_data.wpm, feedback_data.eye_contact)
+        feedback = generate_feedback_virtual(feedback_data.questions, feedback_data.answers, feedback_data.pace_of_speech, feedback_data.eye_contact)
 
         feedback_data = {
             "grammar": feedback.get("grammar", ""),

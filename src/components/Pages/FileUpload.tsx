@@ -107,11 +107,6 @@ const FileUpload: React.FC<FileuploadProps> = ({
       questionFormData.append("job_role", parsedJobData.job_role);
       questionFormData.append("interview_id", interviewId);
 
-
-      await createQuestions(questionFormData, token);
-
-
-
       // Generate questions
       await createQuestions(questionFormData, token);
 

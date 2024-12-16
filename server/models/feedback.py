@@ -15,7 +15,7 @@ class CreateVirtualFeedbackInput(BaseModel):
     interview_id: str
     answers: List[str]
     questions: List[str]
-    wpm: List[float]
+    pace_of_speech: List[float]
     eye_contact: List[float]
 
 class CreateFeedbackResponse(BaseModel):

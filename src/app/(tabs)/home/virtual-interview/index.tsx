@@ -90,6 +90,8 @@ const VirtualInterview = () => {
     ],
   });
 
+  const [isTalking, setIsTalking] = useState(false);
+
   // Requests camera and microphone permissions
   useEffect(() => {
     (async () => {
@@ -315,6 +317,8 @@ const VirtualInterview = () => {
 
   // Handles the feedback for the answer
   const handleAnswerFeedback = async (answer, question) => {
+    if (isTalking) return;
+    setIsTalking(true);
     const newBotMessage = {
       id: uuid.v4() as string,
       role: Role.Bot,
@@ -381,10 +385,14 @@ const VirtualInterview = () => {
 
   // Advances to the next question or ends the interview with a thank you message if it's the last question.
   const handleEnd = async () => {
+    if (isTalking ) return;
+    setIsTalking(true);
+
     const isLastMessage = currentQuestionIndex === questions.length - 1;
     const nextQuestionId = uuid.v4() as string;
 
     // Add a placeholder loading bot message
+    
     setMessages((prevMessages) => [
       ...prevMessages,
       {
@@ -398,9 +406,10 @@ const VirtualInterview = () => {
 
     try {
       if (isLastMessage) {
-        const viseme = await createSpeech(
-          "Thank you for your time and participation. This concludes your virtual interview."
-        );
+        const lastMessage =
+          "Thank you for your time and participation. This concludes your virtual interview.";
+
+        const viseme = await createSpeech(lastMessage);
         setSpeechData(viseme);
 
         setMessages((prevMessages) =>
@@ -408,8 +417,7 @@ const VirtualInterview = () => {
             message.id === nextQuestionId
               ? {
                   ...message,
-                  content:
-                    "Thank you for your time and participation. This concludes your virtual interview.",
+                  content: lastMessage,
                   question: false,
                 }
               : message
@@ -461,7 +469,7 @@ const VirtualInterview = () => {
 
   // Start recording
   const startRecording = async () => {
-    Speech.stop();
+    if (isTalking) return;
 
     if (permissionResponse.status !== "granted") {
       console.log("Requesting permission...");
@@ -652,7 +660,11 @@ const VirtualInterview = () => {
               <PerspectiveCamera makeDefault position={[0, 0.8, 4]} fov={50} />
               <ambientLight intensity={0.8} />
               <directionalLight position={[5, 5, 5]} />
-              <Model audio={speechData.audio} visemes={speechData.visemes} />
+              <Model
+                audio={speechData.audio}
+                visemes={speechData.visemes}
+                onAudioEnd={() => setIsTalking(false)}
+              />
             </Canvas>
           </View>
         </Suspense>
@@ -712,7 +724,7 @@ const VirtualInterview = () => {
           </Text>
         }
         onConfirm={() => {
-          Speech.stop();
+          setIsTalking(false);
           setIsConfirmationVisible(false);
           setExit(false);
           router.push("/home");

@@ -38,9 +38,11 @@ type GLTFResult = GLTF & {
 export function Model({
   audio,
   visemes,
+  onAudioEnd,
 }: {
   audio: string;
   visemes: Viseme[];
+  onAudioEnd?: () => void;
 }) {
   const [blink, setBlink] = useState(false);
   const [currentViseme, setCurrentViseme] = useState<Viseme | null>(null);
@@ -50,6 +52,8 @@ export function Model({
   ) as GLTFResult;
 
   const audioRef = useRef<Audio.Sound | null>(null);
+  const visemeRef = useRef<Viseme | null>(null); 
+  const audioPlayingRef = useRef<boolean>(false);
 
   // Changes the influence of a specific morph target on a 3D model
   const lerpMorphTarget = (
@@ -78,23 +82,44 @@ export function Model({
 
   // Loads and play an audio file
   useEffect(() => {
+    if (audioPlayingRef.current) return;
+    let isMounted = true; // Prevent actions if component unmounts early
+
+    const loadAudio = async () => {
+      const { sound } = await Audio.Sound.createAsync({
+        uri: `data:audio/mp3;base64,${audio}`,
+      });
+
+      if (!isMounted) {
+        sound.unloadAsync(); // Cleanup if the component unmounted while loading
+        return;
+      }
+
+      audioRef.current = sound;
+
+      // Monitor playback status to detect when the audio finishes
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && !status.isPlaying && status.didJustFinish) {
+          onAudioEnd?.();
+        }
+      });
+
+      await sound.playAsync();
+    };
+
     if (audio) {
-      const loadAudio = async () => {
-        const { sound } = await Audio.Sound.createAsync({
-          uri: `data:audio/mp3;base64,${audio}`,
-        });
-        audioRef.current = sound;
-        await sound.playAsync();
-
-        return () => {
-          sound.stopAsync();
-          sound.unloadAsync();
-          audioRef.current = null;
-        };
-      };
-
       loadAudio();
     }
+
+    // Cleanup on unmount
+    return () => {
+      isMounted = false; // Stop further actions
+      if (audioRef.current) {
+        audioRef.current.stopAsync();
+        audioRef.current.unloadAsync();
+        audioRef.current = null;
+      }
+    };
   }, [audio]);
 
   // Update eye blink animation

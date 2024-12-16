@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useAuth } from "@clerk/clerk-expo";
 import { getQuestions } from "@/api/question";
-import { getFeedbackRecord, getFeedbackVirtual } from "@/api/feedback";
+import { getFeedbackVirtual } from "@/api/feedback";
 import { cleanQuestion } from "@/utils/cleanQuestion";
 
 const { width } = Dimensions.get("window");
@@ -35,7 +35,7 @@ const Feedback: React.FC = () => {
     const fetch = async () => {
       try {
         setLoading(true);
-        const token = await getToken();
+        const token = await getToken({template:"supabase"});
         const fetchedQuestions = await getQuestions(interviewId, token);
         setQuestions(fetchedQuestions.questions);
         const fetchedFeedback = await getFeedbackVirtual(interviewId, token);
@@ -68,7 +68,9 @@ const Feedback: React.FC = () => {
                 Question {index + 1}
               </Text>
 
-              <Text className="text-sm text-[13px]">{cleanQuestion(question)}</Text>
+              <Text className="text-sm text-[13px]">
+                {cleanQuestion(question)}
+              </Text>
             </View>
           </View>
         )}

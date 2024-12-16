@@ -18,7 +18,8 @@ const History = () => {
       const fetch = async () => {
         try {
           setLoading(true);
-          const token = await getToken();
+          const token = await getToken({template:"supabase"});
+          console.log(token)
           const fetchedHistory = await getInterviewHistory(token);
           const sortedHistory = fetchedHistory.sort(
             (a, b) =>

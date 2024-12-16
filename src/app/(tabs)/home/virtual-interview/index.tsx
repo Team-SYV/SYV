@@ -155,7 +155,7 @@ const VirtualInterview = () => {
     if (eyeContacts.length === 10 && !hasGeneratedFeedback.current) {
       const handleFeedbackRatings = async () => {
         try {
-          const token = await getToken();
+          const token = await getToken({template:"supabase"});
 
           const feedbackResponse = await createFeedbackVirtual(
             {
@@ -350,7 +350,7 @@ const VirtualInterview = () => {
 
   // Submits the current answer for the selected question to the server.
   const handleAnswer = async () => {
-    const token = await getToken();
+    const token = await getToken({template:"supabase"});
 
     await createAnswer(
       {

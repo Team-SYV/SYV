@@ -91,7 +91,7 @@ const Feedback: React.FC = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const token = await getToken();
+        const token = await getToken({template:"supabase"});
         setLoading(true);
 
         const fetchedFeedback = await getFeedbackRecord(interviewId, token);

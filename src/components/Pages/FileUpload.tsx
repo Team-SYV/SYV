@@ -83,7 +83,7 @@ const FileUpload: React.FC<FileuploadProps> = ({
     setLoading(true);
 
     try {
-      const token = await getToken();
+      const token = await getToken({template:"supabase"});
 
       // Fetch the job information
       const fileUri = selectedFile.uri;

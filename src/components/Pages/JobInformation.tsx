@@ -164,7 +164,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
   const handleInterview = async () => {
     try {
       setLoading(true);
-      const token = await getToken();
+      const token = await getToken({template:"supabase"});
 
       const jobData = {
         type: interviewType,
@@ -218,7 +218,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
     try {
       const response = await handleInterview();
 
-      const token = await getToken();
+      const token = await getToken({template:"supabase"});
 
       const questionFormData = new FormData();
 

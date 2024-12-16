@@ -68,7 +68,7 @@ const RecordYourself: React.FC = () => {
       if (hasFetchedQuestions.current) return;
       hasFetchedQuestions.current = true;
       try {
-        const token = await getToken();
+        const token = await getToken({template:"supabase"});
         setIsLoading(true);
         const fetchedQuestions = await getQuestions(interviewId, token);
 
@@ -128,7 +128,7 @@ const RecordYourself: React.FC = () => {
       if (feedbackRatings.length > 0) {
         if (feedbackRatings.length === 5) {
           const averageRatings = calculateAverageRatings();
-          const token = await getToken();
+          const token = await getToken({template:"supabase"});
 
           await createRatings(
             {
@@ -219,7 +219,7 @@ const RecordYourself: React.FC = () => {
         name: videoUri.split("/").pop(),
       } as unknown as File;
 
-      const token = await getToken();
+      const token = await getToken({template:"supabase"});
 
       const transcription = await transcribeVideo(videoFile);
 

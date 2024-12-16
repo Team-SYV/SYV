@@ -31,7 +31,7 @@ const Ratings = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const token = await getToken();
+        const token = await getToken({template:"supabase"});
         setLoading(true);
         const fetchedRatings = await getRatings(interviewId, token);
         console.log(fetchedRatings);

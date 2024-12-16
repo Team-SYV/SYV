@@ -1,9 +1,9 @@
 import {View,Text,TouchableOpacity, FlatList, ActivityIndicator} from "react-native";
 import React, { useState } from "react";
-import { getInterviewHistory } from "@/api";
 import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useAuth } from "@clerk/clerk-expo";
+import { getInterviewHistory } from "@/api/interview";
 
 const History = () => {
   const { getToken } = useAuth();
@@ -18,7 +18,7 @@ const History = () => {
       const fetch = async () => {
         try {
           setLoading(true);
-          const token = await getToken();
+          const token = await getToken({template:"supabase"});
           const fetchedHistory = await getInterviewHistory(token);
           const sortedHistory = fetchedHistory.sort(
             (a, b) =>

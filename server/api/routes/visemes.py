@@ -6,7 +6,7 @@ from services.visemes_generator import generate_visemes
 
 router = APIRouter()
 
-@router.get("/get")
+@router.get("/get/")
 async def generate_speech(text: str):
     audio_file = openai_tts(text)
     

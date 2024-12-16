@@ -23,16 +23,13 @@ import {
   Alert,
   ImageBackground,
 } from "react-native";
-import {
-  createAnswer,
-  createRatings,
-  eyeContact,
-  generateAnswerFeedback,
-  generateSpeech,
-  generateVirtualFeedback,
-  getQuestions,
-  transcribeAudio,
-} from "@/api";
+import { getQuestions } from "@/api/question";
+import { generateSpeech } from "@/api/visemes";
+import { createFeedbackVirtual, generateResponse } from "@/api/feedback";
+import { createRatings } from "@/api/ratings";
+import { transcribeAudio } from "@/api/transcription";
+import { eyeContact } from "@/api/eyeContact";
+import { createAnswer } from "@/api/answer";
 
 const VirtualInterview = () => {
   const { user } = useUser();
@@ -54,10 +51,12 @@ const VirtualInterview = () => {
   const [questions, setQuestions] = useState([]);
   const [questionIds, setQuestionIds] = useState([]);
   const [answers, setAnswers] = useState([]);
-  const isStartButtonDisabled = answers.length >= 10;
+
+  const [isQuestionLoading, setIsQuestionLoading] = useState<boolean>(false);
+  const isStartButtonDisabled = isQuestionLoading || answers.length >= 10;
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [wpms, setWpms] = useState([]);
+  const [paceOfSpeech, setPaceOfSpeech] = useState([]);
   const [eyeContacts, setEyeContacts] = useState([]);
 
   const [permissionResponse, requestPermission] = Audio.usePermissions();
@@ -101,33 +100,53 @@ const VirtualInterview = () => {
       hasFetchedQuestions.current = true;
 
       try {
+        setIsQuestionLoading(true);
         const token = await getToken();
         const response = await getQuestions(interviewId, token);
         const questionIds = response.question_id;
-        const questions = response.questions.map(
-          (question: string, index: number) => `${index + 1}. ${question}`
-        );
-        setQuestionIds(questionIds);
-        setQuestions(questions);
 
-        if (questions.length > 0) {
-          // Adds the first question as a bot message if questions are available.
-          const cleanedQuestion = questions[0].replace(/^\d+\.\s*/, "");
-          const viseme = await generateSpeech(cleanedQuestion);
-          setVisemeData(viseme);
+        setQuestionIds(questionIds);
+        setQuestions(response.questions);
+
+        if (response.questions.length > 0) {
+          const firsQuestionId = uuid.v4() as string;
           setMessages((prevMessages) => [
             ...prevMessages,
             {
-              id: uuid.v4() as string,
+              id: firsQuestionId,
               role: Role.Bot,
-              content: questions[0],
+              content: "",
+              question: true,
             },
           ]);
+
+          const cleanedQuestion = response.questions[0].replace(
+            /^\d+\.\s*/,
+            ""
+          );
+
+          const viseme = await generateSpeech(cleanedQuestion);
+          setVisemeData(viseme);
+
+          setMessages((prevMessages) =>
+            prevMessages.map((message) =>
+              message.id === firsQuestionId
+                ? {
+                    ...message,
+                    content: response.questions[0],
+                    question: false,
+                  }
+                : message
+            )
+          );
         }
       } catch (error) {
         console.error("Error", error.message);
+      } finally {
+        setIsQuestionLoading(false);
       }
     };
+
     fetchQuestions();
   }, [interviewId]);
 
@@ -136,14 +155,14 @@ const VirtualInterview = () => {
     if (eyeContacts.length === 10 && !hasGeneratedFeedback.current) {
       const handleFeedbackRatings = async () => {
         try {
-          const token = await getToken();
+          const token = await getToken({template:"supabase"});
 
-          const feedbackResponse = await generateVirtualFeedback(
+          const feedbackResponse = await createFeedbackVirtual(
             {
               interview_id: interviewId,
               answers,
               questions,
-              wpm: wpms,
+              pace_of_speech: paceOfSpeech,
               eye_contact: eyeContacts,
             },
             token
@@ -233,36 +252,46 @@ const VirtualInterview = () => {
       type: "audio/mp3",
     } as unknown as File;
 
-    // Add the new message with loading flag
-    const newMessage = {
+    const userMessage = {
       id: uuid.v4() as string,
       role: Role.User,
       content: "",
       loading: true,
     };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
 
-    const transcription = await transcribeAudio(audioFile);
+    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    setIsQuestionLoading(true);
 
-    if (transcription) {
-      setAnswers((prevAnswers) => [...prevAnswers, transcription.transcript]);
-      setWpms((prevWpms) => [...prevWpms, transcription.words_per_minute]);
-      setMessages((prevMessages) =>
-        prevMessages.map((message) =>
-          message.id === newMessage.id
-            ? {
-                ...message,
-                content: transcription.transcript,
-                loading: false,
-              }
-            : message
-        )
-      );
+    try {
+      // Transcribe the audio
+      const transcription = await transcribeAudio(audioFile);
 
-      await handleAnswerFeedback(
-        transcription.transcript,
-        questions[currentQuestionIndex]
-      );
+      if (transcription) {
+        setAnswers((prevAnswers) => [...prevAnswers, transcription.transcript]);
+        setPaceOfSpeech((prevWpms) => [...prevWpms, transcription.words_per_minute]);
+
+        setMessages((prevMessages) =>
+          prevMessages.map((message) =>
+            message.id === userMessage.id
+              ? {
+                  ...message,
+                  content: transcription.transcript,
+                  loading: false,
+                }
+              : message
+          )
+        );
+
+        // Trigger feedback for the current question
+        await handleAnswerFeedback(
+          transcription.transcript,
+          questions[currentQuestionIndex]
+        );
+      }
+    } catch (error) {
+      console.error("Error transcribing audio:", error);
+    } finally {
+      setIsQuestionLoading(false);
     }
   };
 
@@ -276,14 +305,14 @@ const VirtualInterview = () => {
     };
 
     setMessages((prevMessages) => [...prevMessages, newBotMessage]);
+    setIsQuestionLoading(true);
 
     const form = new FormData();
     form.append("previous_question", question);
     form.append("previous_answer", answer);
 
     try {
-      const feedback = await generateAnswerFeedback(form);
-
+      const feedback = await generateResponse(form);
       const viseme = await generateSpeech(feedback);
       setVisemeData(viseme);
 
@@ -296,6 +325,8 @@ const VirtualInterview = () => {
       );
     } catch (error) {
       console.error("Error generating feedback or speech:", error);
+    } finally {
+      setIsQuestionLoading(false);
     }
   };
 
@@ -319,7 +350,7 @@ const VirtualInterview = () => {
 
   // Submits the current answer for the selected question to the server.
   const handleAnswer = async () => {
-    const token = await getToken();
+    const token = await getToken({template:"supabase"});
 
     await createAnswer(
       {
@@ -333,39 +364,65 @@ const VirtualInterview = () => {
   // Advances to the next question or ends the interview with a thank you message if it's the last question.
   const handleEnd = async () => {
     const isLastMessage = currentQuestionIndex === questions.length - 1;
+    const nextQuestionId = uuid.v4() as string;
 
-    if (isLastMessage) {
-      const viseme = await generateSpeech(
-        "Thank you for your time and participation. This concludes your virtual interview."
-      );
-      setVisemeData(viseme);
+    // Add a placeholder loading bot message
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      {
+        id: nextQuestionId,
+        role: Role.Bot,
+        content: "",
+        question: true,
+      },
+    ]);
+    setIsQuestionLoading(true);
 
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: uuid.v4() as string,
-          role: Role.Bot,
-          content:
-            "Thank you for your time and participation. This concludes your virtual interview.",
-        },
-      ]);
-    } else {
-      setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
-      const cleanedQuestion = questions[currentQuestionIndex + 1].replace(
-        /^\d+\.\s*/,
-        ""
-      );
-      const viseme = await generateSpeech(cleanedQuestion);
-      setVisemeData(viseme);
+    try {
+      if (isLastMessage) {
+        const viseme = await generateSpeech(
+          "Thank you for your time and participation. This concludes your virtual interview."
+        );
+        setVisemeData(viseme);
 
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: uuid.v4() as string,
-          role: Role.Bot,
-          content: questions[currentQuestionIndex + 1],
-        },
-      ]);
+        setMessages((prevMessages) =>
+          prevMessages.map((message) =>
+            message.id === nextQuestionId
+              ? {
+                  ...message,
+                  content:
+                    "Thank you for your time and participation. This concludes your virtual interview.",
+                  question: false,
+                }
+              : message
+          )
+        );
+      } else {
+        // Update current question index and fetch next question
+        setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+        const cleanedQuestion = questions[currentQuestionIndex + 1].replace(
+          /^\d+\.\s*/,
+          ""
+        );
+        const viseme = await generateSpeech(cleanedQuestion);
+        setVisemeData(viseme);
+
+        setMessages((prevMessages) =>
+          prevMessages.map((message) =>
+            message.id === nextQuestionId
+              ? {
+                  ...message,
+                  content: questions[currentQuestionIndex + 1],
+                  question: false,
+                }
+              : message
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error generating speech:", error);
+    } finally {
+      setIsQuestionLoading(false);
     }
   };
 
@@ -482,7 +539,7 @@ const VirtualInterview = () => {
             <Text className="text-sm"> Savy </Text>
           </View>
 
-          {item.feedback ? (
+          {item.feedback || item.question ? (
             <View className="flex items-end">
               <LoadingDots
                 animation="pulse"
@@ -606,7 +663,9 @@ const VirtualInterview = () => {
           >
             <Image
               source={require("@/assets/icons/mic.png")}
-              className="w-14 h-14 rounded-full"
+              className={`w-14 h-14 rounded-full ${
+                isStartButtonDisabled ? "opacity-40" : ""
+              }`}
             />
           </TouchableOpacity>
         )}

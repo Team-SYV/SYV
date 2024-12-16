@@ -3,8 +3,8 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import { Text, View, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Spinner from "react-native-loading-spinner-overlay";
-import { getRatings } from "@/api";
 import { useAuth } from "@clerk/clerk-expo";
+import { getRatings } from "@/api/ratings";
 
 const Ratings = () => {
   const [loading, setLoading] = useState(false);
@@ -31,7 +31,7 @@ const Ratings = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const token = await getToken();
+        const token = await getToken({template:"supabase"});
         setLoading(true);
         const fetchedRatings = await getRatings(interviewId, token);
         console.log(fetchedRatings);

@@ -1,7 +1,7 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends, Request
 from supabase import Client
-from models.interview import CreateInterview, CreateInterviewResponse, GetInterviewHistory
+from models.interview import CreateInterviewInput, CreateInterviewResponse, GetInterviewResponse
 from utils.jwt import validate_token
 from utils.supabase import get_supabase_client
 
@@ -10,9 +10,9 @@ router = APIRouter()
 def get_supabase() -> Client:
     return get_supabase_client()
 
-@router.post("/create",  response_model=CreateInterviewResponse)
-async def create_interview(interview_data: CreateInterview, request: Request, supabase: Client= Depends(get_supabase)):
-
+@router.post("/create/",  response_model=CreateInterviewResponse)
+async def create_interview(interview_data: CreateInterviewInput, request: Request, supabase: Client= Depends(get_supabase)):
+    
     # Validate the token
     auth_header = request.headers.get("Authorization")
 
@@ -21,14 +21,17 @@ async def create_interview(interview_data: CreateInterview, request: Request, su
 
     validated_user_id = validate_token(auth_header)
 
-    required_fields = ['job_information_id', 'type']
+    # Validate the input 
+    required_fields = ['type', 'job_role']
     for field in required_fields:
         if not interview_data.model_dump().get(field):
             raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
 
+    # Add the user_id to the interview data
     interview_data_dict = interview_data.model_dump()
     interview_data_dict['user_id'] = validated_user_id
 
+    # Insert the interview data
     response = supabase.table('interview').insert(interview_data_dict).execute()
 
     if hasattr(response, 'error') and response.error:
@@ -36,7 +39,7 @@ async def create_interview(interview_data: CreateInterview, request: Request, su
 
     return CreateInterviewResponse(interview_id=response.data[0]['interview_id'])
 
-@router.get("/get/{interview_id}", response_model=CreateInterview)
+@router.get("/get/{interview_id}/", response_model=GetInterviewResponse)
 async def get_interview(interview_id: str, request: Request, supabase: Client= Depends(get_supabase)):
 
     # Validate the token
@@ -47,7 +50,7 @@ async def get_interview(interview_id: str, request: Request, supabase: Client= D
 
     validated_user_id = validate_token(auth_header)
 
-
+    # Fetch the interview data
     response = supabase.table('interview').select('*').eq('interview_id', interview_id).execute()
 
     if not response.data:
@@ -59,13 +62,14 @@ async def get_interview(interview_id: str, request: Request, supabase: Client= D
     if hasattr(response, 'error') and response.error:
         raise HTTPException(status_code=500, detail="Failed to retrieve interview")
 
-    return CreateInterview(
-    user_id=response.data[0]['user_id'],
-    job_information_id=response.data[0]['job_information_id'],
-    type=response.data[0]['type']     
+    return GetInterviewResponse(
+    type=response.data[0]['type'],
+    job_role=response.data[0]['job_role'],
+    company_name=response.data[0].get('company_name'),
+    created_at=response.data[0]['created_at'] 
     )
 
-@router.get("/history/", response_model=List[GetInterviewHistory])
+@router.get("/history/", response_model=List[GetInterviewResponse])
 async def get_interview_history(request: Request, supabase: Client = Depends(get_supabase)):
 
      # Validate the token
@@ -76,7 +80,7 @@ async def get_interview_history(request: Request, supabase: Client = Depends(get
 
     validated_user_id = validate_token(auth_header)
     
-    # Fetch interview IDs with ratings
+    # Only Fetch Rated Interviews
     rating_response = supabase.table('ratings').select('interview_id').execute()
     
     if hasattr(rating_response, 'error') and rating_response.error:
@@ -88,8 +92,7 @@ async def get_interview_history(request: Request, supabase: Client = Depends(get
         return []  
 
     # Fetch interview history for the user
-    response = supabase.table('interview').select(
-        'interview_id', 'job_information_id', 'type', 'created_at'
+    response = supabase.table('interview').select('interview_id', 'type', 'created_at', 'job_role', 'company_name'
     ).eq('user_id', validated_user_id).in_('interview_id', rated_interview_ids).execute()
 
     if hasattr(response, 'error') and response.error:
@@ -97,31 +100,13 @@ async def get_interview_history(request: Request, supabase: Client = Depends(get
 
     interview_history = response.data if response.data is not None else []
 
-    # Fetch job info details
-    job_info_details = {}
-    job_information_ids = list(set(interview['job_information_id'] for interview in interview_history))
-
-    if job_information_ids:
-        job_info_response = supabase.table('job_information').select(
-            'job_information_id', 'job_role', 'company_name'
-        ).in_('job_information_id', job_information_ids).execute()
-
-        if hasattr(job_info_response, 'error') and job_info_response.error:
-            raise HTTPException(status_code=500, detail="Failed to retrieve job info")
-
-        for job_info in job_info_response.data:
-            job_info_details[job_info['job_information_id']] = {
-                "job_role": job_info['job_role'],
-                "company_name": job_info['company_name']
-            }
-
     # Return structured response
     return [
-        GetInterviewHistory(
+        GetInterviewResponse(
             interview_id=interview['interview_id'],
-            job_role=job_info_details.get(interview['job_information_id'], {}).get("job_role", "Unknown Role"),
-            company_name=job_info_details.get(interview['job_information_id'], {}).get("company_name", "Unknown Company"),
             type=interview['type'],
+            job_role=interview['job_role'],
+            company_name=interview['company_name'],
             created_at=interview['created_at']
         )
         for interview in interview_history

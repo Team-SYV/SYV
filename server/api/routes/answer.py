@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from supabase import Client
-from models.answer import CreateAnswer, CreateAnswerResponse
+from models.answer import CreateAnswerInput, CreateAnswerResponse
 from utils.jwt import validate_token
 from utils.supabase import get_supabase_client
 
@@ -9,16 +9,17 @@ router = APIRouter()
 def get_supabase() -> Client:
     return get_supabase_client()
 
-@router.post("/create", response_model=CreateAnswerResponse)
-def create_answer(answer_data: CreateAnswer, request: Request, supabase: Client = Depends(get_supabase)):
-    # Validate the Authorization header
+@router.post("/create/", response_model=CreateAnswerResponse)
+def create_answer(answer_data: CreateAnswerInput, request: Request, supabase: Client = Depends(get_supabase)):
+
+    # Validate the token
     auth_header = request.headers.get("Authorization")
     if not auth_header:
         raise HTTPException(status_code=401, detail="Authorization header is missing")
 
     validated_user_id = validate_token(auth_header)
 
-    # Check required fields
+    # Validate the input
     required_fields = ['question_id', 'answer']
     for field in required_fields:
         if not answer_data.model_dump().get(field):
@@ -46,7 +47,7 @@ def create_answer(answer_data: CreateAnswer, request: Request, supabase: Client 
 
     # Check if the validated_user_id matches the user_id in the interview table
     if user_id != validated_user_id:
-        raise HTTPException(status_code=403, detail="You are not authorized to create an answer for this question")
+        raise HTTPException(status_code=403, detail="You are not authorized")
 
     # Insert the answer into the answers table
     response = supabase.table('answer').insert(answer_data.model_dump()).execute()

@@ -1,18 +1,21 @@
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel
 
-class CreateInterview(BaseModel):
-    job_information_id: str
+class CreateInterviewInput(BaseModel):
     type: str
+    job_role: str
+    company_name: Optional [str] = None
    
 
 class CreateInterviewResponse(BaseModel):
     interview_id: str
 
 
-class GetInterviewHistory(BaseModel):
-    interview_id: str
-    job_role: str
-    company_name: str
+class GetInterviewResponse(BaseModel):
+    interview_id: Optional[str] = None
     type: str
+    job_role: str
+    company_name: Optional [str] = None
     created_at: datetime
+

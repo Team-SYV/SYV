@@ -18,9 +18,11 @@ import {
   NativeScrollEvent,
 } from "react-native";
 import Ratings from "@/components/Rating/Ratings";
-import { getFeedbackWithQuestions, getRatings } from "@/api";
 import { RatingsData } from "@/types/ratingsData";
 import { useAuth } from "@clerk/clerk-expo";
+import { getFeedbackRecord } from "@/api/feedback";
+import { getRatings } from "@/api/ratings";
+import { cleanQuestion } from "@/utils/cleanQuestion";
 
 const { width, height } = Dimensions.get("window");
 
@@ -89,10 +91,10 @@ const Feedback: React.FC = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const token = await getToken();
+        const token = await getToken({template:"supabase"});
         setLoading(true);
 
-        const fetchedFeedback = await getFeedbackWithQuestions(interviewId, token);
+        const fetchedFeedback = await getFeedbackRecord(interviewId, token);
         setFeedbackItem(fetchedFeedback);
         const fetchedRatings = await getRatings(interviewId, token);
         setRatings(fetchedRatings);
@@ -147,7 +149,7 @@ const Feedback: React.FC = () => {
               Question {index + 1}
             </Text>
 
-            <Text className="text-sm text-[13px]">{feedback.question}</Text>
+            <Text className="text-sm text-[13px]">{cleanQuestion(feedback.question)}</Text>
           </View>
           <View style={styles.videoContainer}>
             <TouchableOpacity

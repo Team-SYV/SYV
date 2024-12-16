@@ -42,7 +42,7 @@ def generate_interview_questions(type, industry, experience_level, interview_typ
             """
               
     completion = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are an expert interview question generator."},
             {"role": "user", "content": prompt}
@@ -72,7 +72,7 @@ def generate_answer_feedback(previous_question, previous_answer):
     """
 
     completion = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are an experienced hiring manager in giving feedback."},
             {"role": "user", "content": prompt}

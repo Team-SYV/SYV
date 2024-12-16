@@ -1,11 +1,8 @@
 import os
 from fastapi import HTTPException
-import requests
 import jwt
-from jwt.algorithms import RSAAlgorithm
 
-CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
-
+CLERK_SIGNING_KEY = os.getenv("CLERK_SIGNING_KEY")
 
 def validate_token(auth_header: str) -> str:
     """
@@ -13,30 +10,22 @@ def validate_token(auth_header: str) -> str:
     raises AuthenticationException otherwise
     """
     try:
-        token = auth_header.split(" ")[1]
+        token = auth_header.split(" ",)[-1]
     except (AttributeError, KeyError):
         raise HTTPException(status_code=404,detail="No authentication token provided")
-
-    jwks = requests.get(
-        "https://api.clerk.com/v1/jwks",
-        headers={
-            "Accept": "application/json",
-            "Authorization": f"Bearer {CLERK_SECRET_KEY}",
-        },
-    ).json()
-    public_key = RSAAlgorithm.from_jwk(jwks["keys"][0])
     try:
+        print("token:",token)
         payload = jwt.decode(
             token,
-            public_key,
-            algorithms=["RS256"],
-            options={"verify_signature": True},
+            (CLERK_SIGNING_KEY),
+            algorithms=["HS256"],
+            options={"verify_signature": False},
         )
     except jwt.ExpiredSignatureError:
-        raise HTTPException("Token has expired.")
+        raise HTTPException(status_code=401, detail="Token has expired.")
     except jwt.DecodeError:
-        raise HTTPException("Token decode error.")
+        raise HTTPException(status_code=401, detail="Token decode error.")
     except jwt.InvalidTokenError:
-        raise HTTPException("Invalid token.")
+        raise HTTPException(status_code=401, detail="Invalid token.")
     user_id = payload.get("sub")
     return user_id

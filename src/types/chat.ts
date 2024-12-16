@@ -9,4 +9,5 @@ export type Message = {
   content: string;
   loading?: boolean; 
   feedback?: boolean;
+  question?: boolean;
 };

@@ -13,7 +13,7 @@ def generate_visemes(audio_file: str, output_dir: str = "visemes_output", viseme
     wav_file = Path(output_dir) / audio  
     convert_to_wav(audio_file, str(wav_file))
 
-    rhubarb_path = "bin/Rhubarb/rhubarb"
+    rhubarb_path = "bin/local/rhubarb"
     command = [
         rhubarb_path,
         '-f', 'json',
@@ -39,7 +39,8 @@ def generate_visemes(audio_file: str, output_dir: str = "visemes_output", viseme
 
     try:
         wav_file.unlink()  
-        visemes_output.unlink()  
+        visemes_output.unlink() 
+        Path(audio_file).unlink() 
     except Exception as e:
         print(f"Error deleting files: {e}")
 

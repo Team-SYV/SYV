@@ -663,7 +663,9 @@ const VirtualInterview = () => {
           >
             <Image
               source={require("@/assets/icons/mic.png")}
-              className="w-14 h-14 rounded-full"
+              className={`w-14 h-14 rounded-full ${
+                isStartButtonDisabled ? "opacity-40" : ""
+              }`}
             />
           </TouchableOpacity>
         )}

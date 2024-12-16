@@ -6,6 +6,12 @@ import { useFrame } from "@react-three/fiber";
 import { Audio } from "expo-av";
 import { visemesMapping } from "@/constants/vismesMapping";
 
+type Viseme = {
+  time: number;
+  type: string;
+  value: string;
+};
+
 type GLTFResult = GLTF & {
   nodes: {
     EyeLeft: THREE.SkinnedMesh;
@@ -29,17 +35,15 @@ type GLTFResult = GLTF & {
   scene: THREE.Scene;
 };
 
-type ModelProps = JSX.IntrinsicElements["group"] & {
-  isTalking?: boolean;
-  visemeData?: {
-    metadata: { soundFile: string; duration: number };
-    mouthCues: { start: number; end: number; value: string }[];
-  };
-};
-
-export function Model({ visemeData, ...props }: ModelProps) {
+export function Model({
+  audio,
+  visemes,
+}: {
+  audio: string;
+  visemes: Viseme[];
+}) {
   const [blink, setBlink] = useState(false);
-  const [currentViseme, setCurrentViseme] = useState<string | null>(null);
+  const [currentViseme, setCurrentViseme] = useState<Viseme | null>(null);
 
   const { nodes, materials, scene } = useGLTF(
     require("@/assets/models/Avatar.glb")
@@ -74,10 +78,10 @@ export function Model({ visemeData, ...props }: ModelProps) {
 
   // Loads and play an audio file
   useEffect(() => {
-    if (visemeData && visemeData.metadata.soundFile) {
+    if (audio) {
       const loadAudio = async () => {
         const { sound } = await Audio.Sound.createAsync({
-          uri: `data:audio/wav;base64,${visemeData.metadata.soundFile}`,
+          uri: `data:audio/mp3;base64,${audio}`,
         });
         audioRef.current = sound;
         await sound.playAsync();
@@ -91,7 +95,7 @@ export function Model({ visemeData, ...props }: ModelProps) {
 
       loadAudio();
     }
-  }, [visemeData]);
+  }, [audio]);
 
   // Update eye blink animation
   useFrame(() => {
@@ -117,49 +121,38 @@ export function Model({ visemeData, ...props }: ModelProps) {
 
   // Matches the current audio playback time with mouth cues to set and animate the appropriate viseme.
   useFrame(() => {
-    if (!visemeData || !visemeData.mouthCues.length || !audioRef.current)
-      return;
+    if (!visemes || !audioRef.current) return;
 
-    const elapsed = audioRef.current.getStatusAsync().then((status) => {
-      if (status.isLoaded) {
-        return status.positionMillis / 1000;
-      } else {
-        return 0;
-      }
-    });
+    audioRef.current.getStatusAsync().then((status) => {
+      if (!status.isLoaded) return;
 
-    elapsed.then((time) => {
-      const cue = visemeData.mouthCues.find(
-        (cue) => time >= cue.start && time <= cue.end
-      );
+      const elapsedTime = status.positionMillis; // Elapsed time in milliseconds
 
-      if (cue && visemesMapping[cue.value]) {
-        setCurrentViseme(visemesMapping[cue.value]);
-      } else {
-        setCurrentViseme(null);
-      }
+      // Find the closest viseme based on elapsed time
+      const current = visemes
+        .slice()
+        .reverse()
+        .find((viseme) => viseme.time <= elapsedTime);
 
-      // Apply viseme to head
-      if (currentViseme) {
-        lerpMorphTarget(currentViseme, 1, 0.2);
-      }
+      if (current && current.value !== currentViseme?.value) {
+        setCurrentViseme(current);
 
-      // Reset all other visemes to 0
-      Object.values(visemesMapping).forEach((viseme) => {
-        if (viseme !== currentViseme) {
-          lerpMorphTarget(viseme, 0, 0.1);
+        // Reset all morph targets first
+        Object.keys(visemesMapping).forEach((key) =>
+          lerpMorphTarget(visemesMapping[key], 0, 0.5)
+        );
+
+        // Apply the current viseme morph target
+        const targetViseme = visemesMapping[current.value];
+        if (targetViseme) {
+          lerpMorphTarget(targetViseme, 1, 0.2); // Smoothly animate the morph target to influence 1
         }
-      });
+      }
     });
   });
 
   return (
-    <group
-      {...props}
-      dispose={null}
-      scale={[2.4, 2.4, 1]}
-      position={[0, -3, 2.8]}
-    >
+    <group dispose={null} scale={[2.4, 2.4, 1]} position={[0, -3, 2.8]}>
       <primitive object={nodes.Hips} />
       <skinnedMesh
         name="EyeLeft"

@@ -24,12 +24,12 @@ import {
   ImageBackground,
 } from "react-native";
 import { getQuestions } from "@/api/question";
-import { generateSpeech } from "@/api/visemes";
 import { createFeedbackVirtual, generateResponse } from "@/api/feedback";
 import { createRatings } from "@/api/ratings";
 import { transcribeAudio } from "@/api/transcription";
 import { eyeContact } from "@/api/eyeContact";
 import { createAnswer } from "@/api/answer";
+import { createSpeech } from "@/api/text_to_speech";
 
 const VirtualInterview = () => {
   const { user } = useUser();
@@ -70,10 +70,25 @@ const VirtualInterview = () => {
   const hasFetchedQuestions = useRef(false);
   const hasGeneratedFeedback = useRef(false);
 
-  const [visemeData, setVisemeData] = useState<{
-    metadata: { soundFile: string; duration: number };
-    mouthCues: { start: number; end: number; value: string }[];
-  }>({ metadata: { soundFile: "", duration: 0 }, mouthCues: [] });
+  const [speechData, setSpeechData] = useState<{
+    audio: string;
+    visemes: [
+      {
+        time: number;
+        type: string;
+        value: string;
+      }
+    ];
+  }>({
+    audio: "",
+    visemes: [
+      {
+        time: 0,
+        type: "",
+        value: "",
+      },
+    ],
+  });
 
   // Requests camera and microphone permissions
   useEffect(() => {
@@ -125,8 +140,8 @@ const VirtualInterview = () => {
             ""
           );
 
-          const viseme = await generateSpeech(cleanedQuestion);
-          setVisemeData(viseme);
+          const viseme = await createSpeech(cleanedQuestion);
+          setSpeechData(viseme);
 
           setMessages((prevMessages) =>
             prevMessages.map((message) =>
@@ -155,7 +170,7 @@ const VirtualInterview = () => {
     if (eyeContacts.length === 10 && !hasGeneratedFeedback.current) {
       const handleFeedbackRatings = async () => {
         try {
-          const token = await getToken({template:"supabase"});
+          const token = await getToken({ template: "supabase" });
 
           const feedbackResponse = await createFeedbackVirtual(
             {
@@ -268,7 +283,10 @@ const VirtualInterview = () => {
 
       if (transcription) {
         setAnswers((prevAnswers) => [...prevAnswers, transcription.transcript]);
-        setPaceOfSpeech((prevWpms) => [...prevWpms, transcription.words_per_minute]);
+        setPaceOfSpeech((prevWpms) => [
+          ...prevWpms,
+          transcription.words_per_minute,
+        ]);
 
         setMessages((prevMessages) =>
           prevMessages.map((message) =>
@@ -313,8 +331,8 @@ const VirtualInterview = () => {
 
     try {
       const feedback = await generateResponse(form);
-      const viseme = await generateSpeech(feedback);
-      setVisemeData(viseme);
+      const viseme = await createSpeech(feedback);
+      setSpeechData(viseme);
 
       setMessages((prevMessages) =>
         prevMessages.map((message) =>
@@ -350,7 +368,7 @@ const VirtualInterview = () => {
 
   // Submits the current answer for the selected question to the server.
   const handleAnswer = async () => {
-    const token = await getToken({template:"supabase"});
+    const token = await getToken({ template: "supabase" });
 
     await createAnswer(
       {
@@ -380,10 +398,10 @@ const VirtualInterview = () => {
 
     try {
       if (isLastMessage) {
-        const viseme = await generateSpeech(
+        const viseme = await createSpeech(
           "Thank you for your time and participation. This concludes your virtual interview."
         );
-        setVisemeData(viseme);
+        setSpeechData(viseme);
 
         setMessages((prevMessages) =>
           prevMessages.map((message) =>
@@ -404,8 +422,8 @@ const VirtualInterview = () => {
           /^\d+\.\s*/,
           ""
         );
-        const viseme = await generateSpeech(cleanedQuestion);
-        setVisemeData(viseme);
+        const viseme = await createSpeech(cleanedQuestion);
+        setSpeechData(viseme);
 
         setMessages((prevMessages) =>
           prevMessages.map((message) =>
@@ -634,7 +652,7 @@ const VirtualInterview = () => {
               <PerspectiveCamera makeDefault position={[0, 0.8, 4]} fov={50} />
               <ambientLight intensity={0.8} />
               <directionalLight position={[5, 5, 5]} />
-              <Model visemeData={visemeData} />
+              <Model audio={speechData.audio} visemes={speechData.visemes} />
             </Canvas>
           </View>
         </Suspense>

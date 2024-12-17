@@ -169,49 +169,50 @@ const VirtualInterview = () => {
 
   // Triggers feedback generation and stores ratings when 10 eye contact data points are collected.
   useEffect(() => {
-    if (eyeContacts.length === 10 && !hasGeneratedFeedback.current) {
-      const handleFeedbackRatings = async () => {
-        try {
-          const token = await getToken({ template: "supabase" });
+    const handleFeedbackRatings = async () => {
+      try {
+        const token = await getToken({ template: "supabase" });
 
-          const feedbackResponse = await createFeedbackVirtual(
+        const feedbackResponse = await createFeedbackVirtual(
+          {
+            interview_id: interviewId,
+            answers,
+            questions,
+            pace_of_speech: paceOfSpeech,
+            eye_contact: eyeContacts,
+          },
+          token
+        );
+
+        if (feedbackResponse?.ratings_data) {
+          await createRatings(
             {
               interview_id: interviewId,
-              answers,
-              questions,
-              pace_of_speech: paceOfSpeech,
-              eye_contact: eyeContacts,
+              answer_relevance:
+                feedbackResponse.ratings_data.answer_relevance_rating,
+              eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
+              grammar: feedbackResponse.ratings_data.grammar_rating,
+              pace_of_speech:
+                feedbackResponse.ratings_data.pace_of_speech_rating,
+              filler_words: feedbackResponse.ratings_data.filler_words_rating,
             },
             token
           );
-
-          if (feedbackResponse.ratings_data) {
-            await createRatings(
-              {
-                interview_id: interviewId,
-                answer_relevance:
-                  feedbackResponse.ratings_data.answer_relevance_rating,
-                eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
-                grammar: feedbackResponse.ratings_data.grammar_rating,
-                pace_of_speech:
-                  feedbackResponse.ratings_data.pace_of_speech_rating,
-                filler_words: feedbackResponse.ratings_data.filler_words_rating,
-              },
-              token
-            );
-            hasGeneratedFeedback.current = true;
-          }
-        } catch (error) {
-          console.error("Error during feedback creation:", error);
+          hasGeneratedFeedback.current = true; // Mark as handled
         }
-      };
-      handleFeedbackRatings();
+      } catch (error) {
+        console.error("Error during feedback creation:", error);
+      } finally {
+        setTimeout(() => setIsModalVisible(true), 12000);
+      }
+    };
 
-      setTimeout(() => {
-        setIsModalVisible(true);
-      }, 12000);
+    // Guard condition to ensure it runs once
+    if (eyeContacts.length === 10 && !hasGeneratedFeedback.current) {
+      hasGeneratedFeedback.current = true; // Set the flag early
+      handleFeedbackRatings();
     }
-  });
+  }, [eyeContacts, answers, paceOfSpeech, questions, interviewId, getToken]);
 
   // Scroll to the bottom whenever messages update
   useEffect(() => {

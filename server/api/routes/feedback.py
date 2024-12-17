@@ -148,9 +148,16 @@ async def create_virtual_feedback(feedback_data: CreateVirtualFeedbackInput, req
 
 @router.post("/create/virtual/response/")
 async def generate_response(
+    request: Request,
     previous_question: str = Form(...), 
     previous_answer: str = Form(...)
 ):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+    validate_token(auth_header)
+
     try:
         feedback = generate_answer_feedback(previous_question, previous_answer)
         return {"feedback": feedback}

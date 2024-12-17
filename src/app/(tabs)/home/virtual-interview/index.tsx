@@ -144,7 +144,7 @@ const VirtualInterview = () => {
             ""
           );
 
-          const viseme = await createSpeech(cleanedQuestion);
+          const viseme = await createSpeech(cleanedQuestion, token);
           setSpeechData(viseme);
 
           setMessages((prevMessages) =>
@@ -283,7 +283,8 @@ const VirtualInterview = () => {
 
     try {
       // Transcribe the audio
-      const transcription = await transcribeAudio(audioFile);
+      const token = await getToken({ template: "supabase" });
+      const transcription = await transcribeAudio(audioFile, token);
 
       if (transcription) {
         setAnswers((prevAnswers) => [...prevAnswers, transcription.transcript]);
@@ -336,8 +337,9 @@ const VirtualInterview = () => {
     form.append("previous_answer", answer);
 
     try {
-      const feedback = await generateResponse(form);
-      const viseme = await createSpeech(feedback);
+      const token = await getToken({ template: "supabase" });
+      const feedback = await generateResponse(form, token);
+      const viseme = await createSpeech(feedback, token);
       setSpeechData(viseme);
 
       setMessages((prevMessages) =>
@@ -362,7 +364,8 @@ const VirtualInterview = () => {
       name: videoUri.split("/").pop(),
     } as unknown as File;
 
-    const eyeContactData = await eyeContact(videoFile);
+    const token = await getToken({ template: "supabase" });
+    const eyeContactData = await eyeContact(videoFile, token);
 
     if (eyeContactData) {
       setEyeContacts((prevEyeContacts) => [
@@ -411,7 +414,9 @@ const VirtualInterview = () => {
         const lastMessage =
           "Thank you for your time and participation. This concludes your virtual interview.";
 
-        const viseme = await createSpeech(lastMessage);
+        const token = await getToken({ template: "supabase" });
+
+        const viseme = await createSpeech(lastMessage, token);
         setSpeechData(viseme);
 
         setMessages((prevMessages) =>
@@ -432,7 +437,8 @@ const VirtualInterview = () => {
           /^\d+\.\s*/,
           ""
         );
-        const viseme = await createSpeech(cleanedQuestion);
+        const token = await getToken({ template: "supabase" });
+        const viseme = await createSpeech(cleanedQuestion, token);
         setSpeechData(viseme);
 
         setMessages((prevMessages) =>

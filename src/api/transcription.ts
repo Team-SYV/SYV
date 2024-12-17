@@ -4,7 +4,7 @@ const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL,
 });
 
-export const transcribeAudio = async (audioFile: File) => {
+export const transcribeAudio = async ( audioFile: File, token: string) => {
   try {
     const formData = new FormData();
     formData.append("file", audioFile);
@@ -12,6 +12,7 @@ export const transcribeAudio = async (audioFile: File) => {
     const response = await api.post("/api/transcribe/audio/", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -24,7 +25,7 @@ export const transcribeAudio = async (audioFile: File) => {
   }
 };
 
-export const transcribeVideo = async (videoFile: File) => {
+export const transcribeVideo = async ( videoFile: File, token: string) => {
   try {
     const formData = new FormData();
     formData.append("file", videoFile);
@@ -32,6 +33,7 @@ export const transcribeVideo = async (videoFile: File) => {
     const response = await api.post("/api/transcribe/video/", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
       },
     });
 

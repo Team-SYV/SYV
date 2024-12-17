@@ -51,7 +51,7 @@ export const createFeedbackVirtual = async (
   }
 };
 
-export const generateResponse = async (formData) => {
+export const generateResponse = async (formData: FormData, token: string) => {
   try {
     const response = await api.post(
       "/api/feedback/create/virtual/response/",
@@ -59,6 +59,7 @@ export const generateResponse = async (formData) => {
       {
         headers: {
           "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
         },
       }
     );

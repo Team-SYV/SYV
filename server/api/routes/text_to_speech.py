@@ -1,23 +1,21 @@
 import json
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 import boto3
 import base64
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env
+from utils.jwt import validate_token
+
 load_dotenv()
 
-# Initialize FastAPI app
 router = APIRouter()
 
-# AWS Credentials from environment variables
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_REGION = os.getenv("AWS_REGION")
 
-# Initialize AWS Polly client with credentials
 polly_client = boto3.client(
     "polly",
     aws_access_key_id=AWS_ACCESS_KEY,
@@ -29,7 +27,13 @@ class TextInput(BaseModel):
     text: str
 
 @router.post("/synthesize/")
-async def synthesize_speech(input: TextInput):
+async def synthesize_speech(input: TextInput, request: Request):
+
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+    validate_token(auth_header)
     try:
         # Generate speech audio and visemes
         response_audio = polly_client.synthesize_speech(

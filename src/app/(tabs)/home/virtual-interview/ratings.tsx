@@ -27,14 +27,21 @@ const Ratings = () => {
     fillerWords: fetchedRatings.fillerWords,
   };
 
+  const weights = {
+    relevance: 0.4,
+    grammar: 0.2,
+    eyeContact: 0.2,
+    pace: 0.1,
+    fillerWords: 0.1,
+  };
+
   // Fetch the ratings
   useEffect(() => {
     const fetch = async () => {
       try {
-        const token = await getToken({template:"supabase"});
+        const token = await getToken({ template: "supabase" });
         setLoading(true);
         const fetchedRatings = await getRatings(interviewId, token);
-        console.log(fetchedRatings);
         setFetchedRatings({
           relevance: fetchedRatings[0].answer_relevance,
           grammar: fetchedRatings[0].grammar,
@@ -53,9 +60,16 @@ const Ratings = () => {
     }
   }, [interviewId]);
 
-  const ratings = Object.values(progressData);
-  const totalRating = ratings.reduce((sum, rating) => sum + rating, 0);
-  const overallRating = totalRating / ratings.length;
+  const weightedSum = Object.keys(progressData).reduce((sum, key) => {
+    return sum + progressData[key] * weights[key];
+  }, 0);
+
+  const totalWeight = Object.values(weights).reduce(
+    (sum, weight) => sum + weight,
+    0
+  );
+
+  const overallRating = weightedSum / totalWeight;
 
   const numberOfStars = 5;
   const filledStars = Math.round(overallRating);
@@ -80,7 +94,7 @@ const Ratings = () => {
   return (
     <View className="flex-1 p-6 bg-white">
       <Spinner visible={loading} color="#00AACE" />
-      
+
       {!loading && (
         <>
           <Text className="text-[18px] text-center font-medium">

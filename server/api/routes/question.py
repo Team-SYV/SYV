@@ -68,7 +68,11 @@ async def create_questions(
 
     # Insert the questions
     for question in questions:
-        response = supabase.table('questions').insert({'interview_id': interview_id,'question': question}).execute()
+        clean_question = question.replace('*', '')  
+        response = supabase.table('questions').insert({
+            'interview_id': interview_id,
+            'question': clean_question
+        }).execute()
 
         if hasattr(response, 'error') and response.error:
             raise HTTPException(status_code=500, detail="Failed to create questions")

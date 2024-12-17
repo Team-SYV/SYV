@@ -51,6 +51,7 @@ export function Model({
 
   const audioRef = useRef<Audio.Sound | null>(null);
   const audioPlayingRef = useRef<boolean>(false);
+  
 
   // Changes the influence of a specific morph target on a 3D model
   const lerpMorphTarget = (
@@ -76,6 +77,20 @@ export function Model({
       }
     });
   };
+
+  const stopSpeak = async () => {
+    if (audioRef.current) {
+      await audioRef.current.stopAsync(); // Stop the audio playback
+      audioRef.current = null; // Reset the sound instance
+      audioPlayingRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (!audio || audio === "") {
+      stopSpeak();
+    }
+  }, [audio]);
 
   // Loads and play an audio file
   useEffect(() => {

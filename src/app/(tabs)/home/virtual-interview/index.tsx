@@ -69,6 +69,7 @@ const VirtualInterview = () => {
 
   const hasFetchedQuestions = useRef(false);
   const hasGeneratedFeedback = useRef(false);
+  const exitPage = useRef(false);
 
   const [speechData, setSpeechData] = useState<{
     audio: string;
@@ -467,12 +468,13 @@ const VirtualInterview = () => {
         () => {
           handleEnd();
         },
-        speechData.length != 0 ? speechData.length + 4000 : 0
+        speechData.length != 0 ? speechData.length + 2000 : 0
       );
     } catch (error) {
       console.error("Error handling API flow:", error);
     }
   };
+
 
   // Start recording
   const startRecording = async () => {
@@ -554,6 +556,27 @@ const VirtualInterview = () => {
       });
     }
   };
+
+  const handleExitPage = () => {
+    exitPage.current = true;
+    setQuestions([]);
+    setQuestionIds([]);
+    setAnswers([]);
+    setMessages([]);
+    setPaceOfSpeech([]);
+    setEyeContacts([]);
+    setSpeechData({
+      audio: "",
+      visemes: [
+        {
+          time: 0,
+          type: "",
+          value: "",
+        },
+      ],
+      length: 0,
+    });
+  }
 
   const renderMessage = ({ item }: { item: Message }) => (
     <View
@@ -666,7 +689,7 @@ const VirtualInterview = () => {
               <PerspectiveCamera makeDefault position={[0, 0.8, 4]} fov={50} />
               <ambientLight intensity={0.8} />
               <directionalLight position={[5, 5, 5]} />
-              <Model audio={speechData.audio} visemes={speechData.visemes} />
+              <Model audio={exitPage.current ? "": speechData.audio} visemes={speechData.visemes} />
             </Canvas>
           </View>
         </Suspense>
@@ -726,6 +749,7 @@ const VirtualInterview = () => {
           </Text>
         }
         onConfirm={() => {
+          handleExitPage();
           setIsConfirmationVisible(false);
           setExit(false);
           router.push("/home");

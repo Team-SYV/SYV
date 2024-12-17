@@ -51,9 +51,12 @@ async def synthesize_speech(input: TextInput):
         visemes = response_visemes["AudioStream"].read().decode("utf-8")
         
         lines = visemes.strip().split("\n")
-
         parsed_visemes = [json.loads(line) for line in lines]
 
+        if parsed_visemes:
+            audio_length_ms = parsed_visemes[-1]["time"]
+        else:
+            audio_length_ms = 0
         
         # Base64 encode the audio
         audio_base64 = base64.b64encode(audio_data).decode("utf-8")
@@ -61,6 +64,7 @@ async def synthesize_speech(input: TextInput):
         return {
             "audio": audio_base64,
             "visemes": parsed_visemes,
+            "length": audio_length_ms
         }
         
     except Exception as e:

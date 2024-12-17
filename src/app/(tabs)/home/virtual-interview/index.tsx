@@ -79,6 +79,7 @@ const VirtualInterview = () => {
         value: string;
       }
     ];
+    length?: number;
   }>({
     audio: "",
     visemes: [
@@ -88,6 +89,7 @@ const VirtualInterview = () => {
         value: "",
       },
     ],
+    length: 0,
   });
 
   const [isTalking, setIsTalking] = useState(false);
@@ -461,7 +463,9 @@ const VirtualInterview = () => {
         await handleAnswer();
       }
       processEyeContact(videoUri);
-      await handleEnd();
+      setTimeout(() => {
+       handleEnd();
+      },speechData.length!=0 ? speechData.length + 4000: 0);
     } catch (error) {
       console.error("Error handling API flow:", error);
     }

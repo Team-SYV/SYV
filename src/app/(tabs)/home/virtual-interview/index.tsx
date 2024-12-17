@@ -92,8 +92,6 @@ const VirtualInterview = () => {
     length: 0,
   });
 
-  const [isTalking, setIsTalking] = useState(false);
-
   // Requests camera and microphone permissions
   useEffect(() => {
     (async () => {
@@ -320,8 +318,6 @@ const VirtualInterview = () => {
 
   // Handles the feedback for the answer
   const handleAnswerFeedback = async (answer, question) => {
-    if (isTalking) return;
-    setIsTalking(true);
     const newBotMessage = {
       id: uuid.v4() as string,
       role: Role.Bot,
@@ -390,14 +386,11 @@ const VirtualInterview = () => {
 
   // Advances to the next question or ends the interview with a thank you message if it's the last question.
   const handleEnd = async () => {
-    if (isTalking ) return;
-    setIsTalking(true);
-
     const isLastMessage = currentQuestionIndex === questions.length - 1;
     const nextQuestionId = uuid.v4() as string;
 
     // Add a placeholder loading bot message
-    
+
     setMessages((prevMessages) => [
       ...prevMessages,
       {
@@ -469,9 +462,12 @@ const VirtualInterview = () => {
         await handleAnswer();
       }
       processEyeContact(videoUri);
-      setTimeout(() => {
-       handleEnd();
-      },speechData.length!=0 ? speechData.length + 4000: 0);
+      setTimeout(
+        () => {
+          handleEnd();
+        },
+        speechData.length != 0 ? speechData.length + 4000 : 0
+      );
     } catch (error) {
       console.error("Error handling API flow:", error);
     }
@@ -479,8 +475,6 @@ const VirtualInterview = () => {
 
   // Start recording
   const startRecording = async () => {
-    if (isTalking) return;
-
     if (permissionResponse.status !== "granted") {
       console.log("Requesting permission...");
       await requestPermission();
@@ -670,11 +664,7 @@ const VirtualInterview = () => {
               <PerspectiveCamera makeDefault position={[0, 0.8, 4]} fov={50} />
               <ambientLight intensity={0.8} />
               <directionalLight position={[5, 5, 5]} />
-              <Model
-                audio={speechData.audio}
-                visemes={speechData.visemes}
-                onAudioEnd={() => setIsTalking(false)}
-              />
+              <Model audio={speechData.audio} visemes={speechData.visemes} />
             </Canvas>
           </View>
         </Suspense>
@@ -734,7 +724,6 @@ const VirtualInterview = () => {
           </Text>
         }
         onConfirm={() => {
-          setIsTalking(false);
           setIsConfirmationVisible(false);
           setExit(false);
           router.push("/home");

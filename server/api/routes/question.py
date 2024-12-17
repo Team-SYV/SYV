@@ -103,7 +103,7 @@ def get_questions(interview_id: str, request: Request, supabase: Client = Depend
         raise HTTPException(status_code=403, detail="You are not authorized to access this interview")
 
     # Fetch the questions
-    response = supabase.table('questions').select("*").eq('interview_id', interview_id).execute()
+    response = supabase.table('questions').select("*").eq('interview_id', interview_id).order('created_at', desc=False).execute()
     if not response.data:
         raise HTTPException(status_code=404, detail="No questions found for the given interview ID")
 

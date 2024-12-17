@@ -541,6 +541,7 @@ const VirtualInterview = () => {
 
   // Navigates to the feedback page
   const handleNext = () => {
+    setIsLoading(true);
     if (hasGeneratedFeedback.current) {
       Speech.stop();
       setExit(false);

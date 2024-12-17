@@ -54,7 +54,7 @@ def generate_feedback(question, answer, wpm, eye_contact):
 
     # Call OpenAI API (simulated as client.chat.completions.create here)
     completion = client.chat.completions.create(
-        model="gpt-4-turbo",
+        model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are an expert interview answer reviewer."},
             {"role": "user", "content": prompt}
@@ -164,7 +164,7 @@ def generate_feedback_virtual(questions, answers, wpm, eye_contact):
     # Call the OpenAI API
     try:
         completion = client.chat.completions.create(
-            model="gpt-4-turbo",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are an expert interview reviewer."},
                 {"role": "user", "content": prompt}

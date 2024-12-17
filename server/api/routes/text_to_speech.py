@@ -4,7 +4,9 @@ from pydantic import BaseModel
 import boto3
 import base64
 import os
+import io
 from dotenv import load_dotenv
+from pydub import AudioSegment
 
 from utils.jwt import validate_token
 
@@ -57,10 +59,9 @@ async def synthesize_speech(input: TextInput, request: Request):
         lines = visemes.strip().split("\n")
         parsed_visemes = [json.loads(line) for line in lines]
 
-        if parsed_visemes:
-            audio_length_ms = parsed_visemes[-1]["time"]
-        else:
-            audio_length_ms = 0
+        audio_segment = AudioSegment.from_file(io.BytesIO(audio_data), format="mp3")
+        audio_length_ms = len(audio_segment)
+        
         
         # Base64 encode the audio
         audio_base64 = base64.b64encode(audio_data).decode("utf-8")

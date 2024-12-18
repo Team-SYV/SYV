@@ -84,7 +84,6 @@ export function Model({
       await audioRef.current.stopAsync();
       audioRef.current = null;
       audioPlayingRef.current = false;
-      setIsQuestionLoading(false);
     }
   };
 
@@ -113,15 +112,20 @@ export function Model({
 
       audioRef.current = sound;
 
-      await sound.playAsync();
+      try {
+        await sound.playAsync();
 
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          if (status.didJustFinish) {
-            setIsQuestionLoading(false);
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded) {
+            if (status.didJustFinish) {
+              setIsQuestionLoading(false);
+            }
           }
-        }
-      });
+        });
+      } catch (error) {
+        console.error("Error playing audio:", error);
+        setIsQuestionLoading(false);
+      }
     };
 
     if (audio) {

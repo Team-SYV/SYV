@@ -199,7 +199,7 @@ const VirtualInterview = () => {
             },
             token
           );
-          hasGeneratedFeedback.current = true; // Mark as handled
+          hasGeneratedFeedback.current = true;
         }
       } catch (error) {
         console.error("Error during feedback creation:", error);
@@ -210,7 +210,7 @@ const VirtualInterview = () => {
 
     // Guard condition to ensure it runs once
     if (eyeContacts.length === 10 && !hasGeneratedFeedback.current) {
-      hasGeneratedFeedback.current = true; // Set the flag early
+      hasGeneratedFeedback.current = true;
       handleFeedbackRatings();
     }
   }, [eyeContacts, answers, paceOfSpeech, questions, interviewId, getToken]);
@@ -282,7 +282,6 @@ const VirtualInterview = () => {
     setIsQuestionLoading(true);
 
     try {
-      // Transcribe the audio
       const token = await getToken({ template: "supabase" });
       const transcription = await transcribeAudio(audioFile, token);
 
@@ -305,7 +304,6 @@ const VirtualInterview = () => {
           )
         );
 
-        // Trigger feedback for the current question
         await handleAnswerFeedback(
           transcription.transcript,
           questions[currentQuestionIndex]
@@ -391,8 +389,6 @@ const VirtualInterview = () => {
     const isLastMessage = currentQuestionIndex === questions.length - 1;
     const nextQuestionId = uuid.v4() as string;
 
-    // Add a placeholder loading bot message
-
     setMessages((prevMessages) => [
       ...prevMessages,
       {
@@ -402,6 +398,7 @@ const VirtualInterview = () => {
         question: true,
       },
     ]);
+
     setIsQuestionLoading(true);
 
     try {
@@ -426,7 +423,6 @@ const VirtualInterview = () => {
           )
         );
       } else {
-        // Update current question index and fetch next question
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
         const cleanedQuestion = questions[currentQuestionIndex + 1].replace(
           /^\d+\.\s*/,
@@ -475,11 +471,9 @@ const VirtualInterview = () => {
     }
   };
 
-
   // Start recording
   const startRecording = async () => {
     if (permissionResponse.status !== "granted") {
-      console.log("Requesting permission...");
       await requestPermission();
     }
 
@@ -546,10 +540,20 @@ const VirtualInterview = () => {
   const handleNext = () => {
     setIsLoading(true);
     if (hasGeneratedFeedback.current) {
-      Speech.stop();
       setExit(false);
       setIsLoading(false);
       setIsModalVisible(false);
+      setSpeechData({
+        audio: "",
+        visemes: [
+          {
+            time: 0,
+            type: "",
+            value: "",
+          },
+        ],
+        length: 0,
+      });
 
       router.push({
         pathname: `/home/virtual-interview/feedback?interviewId=${interviewId}`,
@@ -576,7 +580,7 @@ const VirtualInterview = () => {
       ],
       length: 0,
     });
-  }
+  };
 
   const renderMessage = ({ item }: { item: Message }) => (
     <View
@@ -689,7 +693,10 @@ const VirtualInterview = () => {
               <PerspectiveCamera makeDefault position={[0, 0.8, 4]} fov={50} />
               <ambientLight intensity={0.8} />
               <directionalLight position={[5, 5, 5]} />
-              <Model audio={exitPage.current ? "": speechData.audio} visemes={speechData.visemes} />
+              <Model
+                audio={exitPage.current ? "" : speechData.audio}
+                visemes={speechData.visemes}
+              />
             </Canvas>
           </View>
         </Suspense>

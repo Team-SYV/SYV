@@ -80,8 +80,8 @@ export function Model({
 
   const stopSpeak = async () => {
     if (audioRef.current) {
-      await audioRef.current.stopAsync(); // Stop the audio playback
-      audioRef.current = null; // Reset the sound instance
+      await audioRef.current.stopAsync();
+      audioRef.current = null; 
       audioPlayingRef.current = false;
     }
   };

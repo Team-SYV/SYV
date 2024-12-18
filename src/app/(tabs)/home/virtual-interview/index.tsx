@@ -24,22 +24,21 @@ import {
   ImageBackground,
 } from "react-native";
 import { getQuestions } from "@/api/question";
-import { generateSpeech } from "@/api/visemes";
 import { createFeedbackVirtual, generateResponse } from "@/api/feedback";
 import { createRatings } from "@/api/ratings";
 import { transcribeAudio } from "@/api/transcription";
 import { eyeContact } from "@/api/eyeContact";
 import { createAnswer } from "@/api/answer";
+import { createSpeech } from "@/api/text_to_speech";
+import { SpeechData } from "@/types/speechData";
 
 const VirtualInterview = () => {
   const { user } = useUser();
-  const { interviewId } = useLocalSearchParams();
   const { getToken } = useAuth();
+  const { interviewId } = useLocalSearchParams();
 
   const flatListRef = useRef<FlatList>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-
-  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -52,6 +51,7 @@ const VirtualInterview = () => {
   const [questionIds, setQuestionIds] = useState([]);
   const [answers, setAnswers] = useState([]);
 
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isQuestionLoading, setIsQuestionLoading] = useState<boolean>(false);
   const isStartButtonDisabled = isQuestionLoading || answers.length >= 10;
 
@@ -69,11 +69,21 @@ const VirtualInterview = () => {
 
   const hasFetchedQuestions = useRef(false);
   const hasGeneratedFeedback = useRef(false);
+  const exitPage = useRef(false);
 
-  const [visemeData, setVisemeData] = useState<{
-    metadata: { soundFile: string; duration: number };
-    mouthCues: { start: number; end: number; value: string }[];
-  }>({ metadata: { soundFile: "", duration: 0 }, mouthCues: [] });
+  const defaultSpeechData = (): SpeechData => ({
+    audio: "",
+    visemes: [
+      {
+        time: 0,
+        type: "",
+        value: "",
+      },
+    ],
+    length: 0,
+  });
+
+  const [speechData, setSpeechData] = useState<SpeechData>(defaultSpeechData);
 
   // Requests camera and microphone permissions
   useEffect(() => {
@@ -125,8 +135,8 @@ const VirtualInterview = () => {
             ""
           );
 
-          const viseme = await generateSpeech(cleanedQuestion);
-          setVisemeData(viseme);
+          const viseme = await createSpeech(cleanedQuestion, token);
+          setSpeechData(viseme);
 
           setMessages((prevMessages) =>
             prevMessages.map((message) =>
@@ -152,49 +162,49 @@ const VirtualInterview = () => {
 
   // Triggers feedback generation and stores ratings when 10 eye contact data points are collected.
   useEffect(() => {
-    if (eyeContacts.length === 10 && !hasGeneratedFeedback.current) {
-      const handleFeedbackRatings = async () => {
-        try {
-          const token = await getToken({template:"supabase"});
+    const handleFeedbackRatings = async () => {
+      try {
+        const token = await getToken({ template: "supabase" });
 
-          const feedbackResponse = await createFeedbackVirtual(
+        const feedbackResponse = await createFeedbackVirtual(
+          {
+            interview_id: interviewId,
+            answers,
+            questions,
+            pace_of_speech: paceOfSpeech,
+            eye_contact: eyeContacts,
+          },
+          token
+        );
+
+        if (feedbackResponse?.ratings_data) {
+          await createRatings(
             {
               interview_id: interviewId,
-              answers,
-              questions,
-              pace_of_speech: paceOfSpeech,
-              eye_contact: eyeContacts,
+              answer_relevance:
+                feedbackResponse.ratings_data.answer_relevance_rating,
+              eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
+              grammar: feedbackResponse.ratings_data.grammar_rating,
+              pace_of_speech:
+                feedbackResponse.ratings_data.pace_of_speech_rating,
+              filler_words: feedbackResponse.ratings_data.filler_words_rating,
             },
             token
           );
-
-          if (feedbackResponse.ratings_data) {
-            await createRatings(
-              {
-                interview_id: interviewId,
-                answer_relevance:
-                  feedbackResponse.ratings_data.answer_relevance_rating,
-                eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
-                grammar: feedbackResponse.ratings_data.grammar_rating,
-                pace_of_speech:
-                  feedbackResponse.ratings_data.pace_of_speech_rating,
-                filler_words: feedbackResponse.ratings_data.filler_words_rating,
-              },
-              token
-            );
-            hasGeneratedFeedback.current = true;
-          }
-        } catch (error) {
-          console.error("Error during feedback creation:", error);
+          hasGeneratedFeedback.current = true;
         }
-      };
-      handleFeedbackRatings();
+      } catch (error) {
+        console.error("Error during feedback creation:", error);
+      } finally {
+        setTimeout(() => setIsModalVisible(true), 8000);
+      }
+    };
 
-      setTimeout(() => {
-        setIsModalVisible(true);
-      }, 12000);
+    if (eyeContacts.length === 10 && !hasGeneratedFeedback.current) {
+      hasGeneratedFeedback.current = true;
+      handleFeedbackRatings();
     }
-  });
+  }, [eyeContacts, answers, paceOfSpeech, questions, interviewId, getToken]);
 
   // Scroll to the bottom whenever messages update
   useEffect(() => {
@@ -263,12 +273,15 @@ const VirtualInterview = () => {
     setIsQuestionLoading(true);
 
     try {
-      // Transcribe the audio
-      const transcription = await transcribeAudio(audioFile);
+      const token = await getToken({ template: "supabase" });
+      const transcription = await transcribeAudio(audioFile, token);
 
       if (transcription) {
         setAnswers((prevAnswers) => [...prevAnswers, transcription.transcript]);
-        setPaceOfSpeech((prevWpms) => [...prevWpms, transcription.words_per_minute]);
+        setPaceOfSpeech((prevWpms) => [
+          ...prevWpms,
+          transcription.words_per_minute,
+        ]);
 
         setMessages((prevMessages) =>
           prevMessages.map((message) =>
@@ -282,7 +295,6 @@ const VirtualInterview = () => {
           )
         );
 
-        // Trigger feedback for the current question
         await handleAnswerFeedback(
           transcription.transcript,
           questions[currentQuestionIndex]
@@ -312,9 +324,10 @@ const VirtualInterview = () => {
     form.append("previous_answer", answer);
 
     try {
-      const feedback = await generateResponse(form);
-      const viseme = await generateSpeech(feedback);
-      setVisemeData(viseme);
+      const token = await getToken({ template: "supabase" });
+      const feedback = await generateResponse(form, token);
+      const viseme = await createSpeech(feedback, token);
+      setSpeechData(viseme);
 
       setMessages((prevMessages) =>
         prevMessages.map((message) =>
@@ -338,7 +351,8 @@ const VirtualInterview = () => {
       name: videoUri.split("/").pop(),
     } as unknown as File;
 
-    const eyeContactData = await eyeContact(videoFile);
+    const token = await getToken({ template: "supabase" });
+    const eyeContactData = await eyeContact(videoFile, token);
 
     if (eyeContactData) {
       setEyeContacts((prevEyeContacts) => [
@@ -350,7 +364,7 @@ const VirtualInterview = () => {
 
   // Submits the current answer for the selected question to the server.
   const handleAnswer = async () => {
-    const token = await getToken({template:"supabase"});
+    const token = await getToken({ template: "supabase" });
 
     await createAnswer(
       {
@@ -366,7 +380,6 @@ const VirtualInterview = () => {
     const isLastMessage = currentQuestionIndex === questions.length - 1;
     const nextQuestionId = uuid.v4() as string;
 
-    // Add a placeholder loading bot message
     setMessages((prevMessages) => [
       ...prevMessages,
       {
@@ -376,36 +389,39 @@ const VirtualInterview = () => {
         question: true,
       },
     ]);
+
     setIsQuestionLoading(true);
 
     try {
       if (isLastMessage) {
-        const viseme = await generateSpeech(
-          "Thank you for your time and participation. This concludes your virtual interview."
-        );
-        setVisemeData(viseme);
+        const lastMessage =
+          "Thank you for your time and participation. This concludes your virtual interview.";
+
+        const token = await getToken({ template: "supabase" });
+
+        const viseme = await createSpeech(lastMessage, token);
+        setSpeechData(viseme);
 
         setMessages((prevMessages) =>
           prevMessages.map((message) =>
             message.id === nextQuestionId
               ? {
                   ...message,
-                  content:
-                    "Thank you for your time and participation. This concludes your virtual interview.",
+                  content: lastMessage,
                   question: false,
                 }
               : message
           )
         );
       } else {
-        // Update current question index and fetch next question
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
         const cleanedQuestion = questions[currentQuestionIndex + 1].replace(
           /^\d+\.\s*/,
           ""
         );
-        const viseme = await generateSpeech(cleanedQuestion);
-        setVisemeData(viseme);
+        const token = await getToken({ template: "supabase" });
+        const viseme = await createSpeech(cleanedQuestion, token);
+        setSpeechData(viseme);
 
         setMessages((prevMessages) =>
           prevMessages.map((message) =>
@@ -435,7 +451,12 @@ const VirtualInterview = () => {
         await handleAnswer();
       }
       processEyeContact(videoUri);
-      await handleEnd();
+      setTimeout(
+        () => {
+          handleEnd();
+        },
+        speechData.length != 0 ? speechData.length + 3000 : 0
+      );
     } catch (error) {
       console.error("Error handling API flow:", error);
     }
@@ -443,10 +464,7 @@ const VirtualInterview = () => {
 
   // Start recording
   const startRecording = async () => {
-    Speech.stop();
-
     if (permissionResponse.status !== "granted") {
-      console.log("Requesting permission...");
       await requestPermission();
     }
 
@@ -461,6 +479,7 @@ const VirtualInterview = () => {
     });
 
     try {
+      setSpeechData(defaultSpeechData);
       const { recording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
@@ -511,16 +530,28 @@ const VirtualInterview = () => {
 
   // Navigates to the feedback page
   const handleNext = () => {
+    setIsLoading(true);
     if (hasGeneratedFeedback.current) {
-      Speech.stop();
       setExit(false);
       setIsLoading(false);
       setIsModalVisible(false);
+      setSpeechData(defaultSpeechData);
 
       router.push({
         pathname: `/home/virtual-interview/feedback?interviewId=${interviewId}`,
       });
     }
+  };
+
+  const handleExitPage = () => {
+    exitPage.current = true;
+    setQuestions([]);
+    setQuestionIds([]);
+    setAnswers([]);
+    setMessages([]);
+    setPaceOfSpeech([]);
+    setEyeContacts([]);
+    setSpeechData(defaultSpeechData);
   };
 
   const renderMessage = ({ item }: { item: Message }) => (
@@ -634,7 +665,11 @@ const VirtualInterview = () => {
               <PerspectiveCamera makeDefault position={[0, 0.8, 4]} fov={50} />
               <ambientLight intensity={0.8} />
               <directionalLight position={[5, 5, 5]} />
-              <Model visemeData={visemeData} />
+              <Model
+                audio={exitPage.current ? "" : speechData.audio}
+                visemes={speechData.visemes}
+                setIsQuestionLoading={setIsQuestionLoading}
+              />
             </Canvas>
           </View>
         </Suspense>
@@ -694,7 +729,7 @@ const VirtualInterview = () => {
           </Text>
         }
         onConfirm={() => {
-          Speech.stop();
+          handleExitPage();
           setIsConfirmationVisible(false);
           setExit(false);
           router.push("/home");

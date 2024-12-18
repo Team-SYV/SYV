@@ -43,6 +43,9 @@ def handle_user_created(data: dict, supabase: Client):
 
     email_address = email_addresses[0]["email_address"]
 
+    public_metadata = data.get("unsafeMetadata", {})
+    private_metadata = data.get("safeMetadata", {})
+
     user = UserCreate(
         user_id=data.get("id", ""),
         first_name=data.get("first_name", ""),
@@ -60,11 +63,18 @@ def handle_user_created(data: dict, supabase: Client):
         'first_name': user.first_name,
         'last_name': user.last_name,
         'email': user.email,
-        'image': user.image
+        'image': user.image,
+        'public_metadata': json.dumps(public_metadata),  
+        'private_metadata': json.dumps(private_metadata),  
     }).execute()
 
 def handle_user_updated(data: dict, supabase: Client):
     user_id = data["id"]
+    unsafe_metadata = data.get("unsafe_metadata", {})
+    subscribed = unsafe_metadata.get("subscribed", False)
+    subscription = unsafe_metadata.get('subscription', None).upper()
+
+
     user_update = UserUpdate(
         first_name=data.get("first_name"),
         last_name=data.get("last_name"),
@@ -84,8 +94,11 @@ def handle_user_updated(data: dict, supabase: Client):
     if user_update.image:
         updated_data['image'] = user_update.image
 
-    supabase.table('users').update(updated_data).eq('user_id', user_id).execute()
+    updated_data['subscribed'] = subscribed
 
+    updated_data['subscription'] = subscription
+
+    supabase.table('users').update(updated_data).eq('user_id', user_id).execute()
 def handle_user_deleted(data: dict, supabase: Client):
     user_id = data["id"]
     supabase.table('users').delete().eq('user_id', user_id).execute()

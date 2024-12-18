@@ -14,7 +14,6 @@ def validate_token(auth_header: str) -> str:
     except (AttributeError, KeyError):
         raise HTTPException(status_code=404,detail="No authentication token provided")
     try:
-        print("token:",token)
         payload = jwt.decode(
             token,
             (CLERK_SIGNING_KEY),

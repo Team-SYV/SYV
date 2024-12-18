@@ -148,9 +148,16 @@ async def create_virtual_feedback(feedback_data: CreateVirtualFeedbackInput, req
 
 @router.post("/create/virtual/response/")
 async def generate_response(
+    request: Request,
     previous_question: str = Form(...), 
     previous_answer: str = Form(...)
 ):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+    validate_token(auth_header)
+
     try:
         feedback = generate_answer_feedback(previous_question, previous_answer)
         return {"feedback": feedback}
@@ -176,57 +183,56 @@ async def get_feedback_and_questions(interview_id: str, request: Request, supaba
 
     # Check if the user is authorized
     user_id = interview_response.data[0]['user_id']
-
     if user_id != validated_user_id:
         raise HTTPException(status_code=403, detail="You are not authorized to access this interview's records")
 
     # Retrieve feedback
     feedback_response = supabase.table('feedback').select('*').eq('interview_id', interview_id).execute()
-
     if not feedback_response.data:
         raise HTTPException(status_code=404, detail="No feedback found for the given interview ID")
 
     if hasattr(feedback_response, 'error') and feedback_response.error:
         raise HTTPException(status_code=500, detail="Failed to retrieve feedback")
 
-    feedback_data = feedback_response.data
-
-    # Retrieve questions
-    answer_ids = [feedback['answer_id'] for feedback in feedback_data]
+    # Retrieve answers for the feedback
+    answer_ids = [feedback['answer_id'] for feedback in feedback_response.data]
     answers_response = supabase.table('answer').select('answer_id, question_id').in_('answer_id', answer_ids).execute()
-
     if hasattr(answers_response, 'error') and answers_response.error:
         raise HTTPException(status_code=500, detail="Failed to retrieve answers")
 
     answers_data = {answer['answer_id']: answer['question_id'] for answer in answers_response.data}
 
+    # Retrieve questions associated with the answers
     question_ids = list(set(answers_data.values()))
-    questions_response = supabase.table('questions').select('question_id, question').in_('question_id', question_ids).execute()
-
+    questions_response = supabase.table('questions').select('question_id, question, created_at').in_('question_id', question_ids).execute()
     if hasattr(questions_response, 'error') and questions_response.error:
         raise HTTPException(status_code=500, detail="Failed to retrieve questions")
 
-    questions_data = {question['question_id']: question['question'] for question in questions_response.data}
+    # Prepare question data for fast lookup
+    questions_data = {question['question_id']: question for question in questions_response.data}
 
-    # Prepare the response
+    # Prepare feedback list with associated question text
     feedback_list = []
-    for feedback in feedback_data:
+    for feedback in feedback_response.data:
         question_id = answers_data.get(feedback['answer_id'])
-        question_text = questions_data.get(question_id)
-
-        feedback_list.append(
-            GetFeedbackResponse(
-                answer_id=feedback['answer_id'],
-                interview_id=feedback['interview_id'],
-                answer_relevance=feedback['answer_relevance'],
-                eye_contact=feedback['eye_contact'],
-                grammar=feedback['grammar'],
-                pace_of_speech=feedback.get('pace_of_speech'),
-                filler_words=feedback.get('filler_words'),
-                tips=feedback.get('tips'),
-                question=question_text
+        question_data = questions_data.get(question_id)
+        if question_data:
+            feedback_list.append(
+                GetFeedbackResponse(
+                    answer_id=feedback['answer_id'],
+                    interview_id=feedback['interview_id'],
+                    answer_relevance=feedback['answer_relevance'],
+                    eye_contact=feedback['eye_contact'],
+                    grammar=feedback['grammar'],
+                    pace_of_speech=feedback.get('pace_of_speech'),
+                    filler_words=feedback.get('filler_words'),
+                    tips=feedback.get('tips'),
+                    question=question_data['question']
+                )
             )
-        )
+
+    # Sort feedback based on created_at of questions
+    feedback_list.sort(key=lambda x: questions_data[answers_data[x.answer_id]]['created_at'])
 
     return feedback_list
 

@@ -31,9 +31,9 @@ const Ratings: React.FC<RatingsProps> = ({
 
   const weights = {
     relevance: 0.4,
-    grammar: 0.2,
+    grammar: 0.1,
     eyeContact: 0.2,
-    pace: 0.1,
+    pace: 0.2,
     fillerWords: 0.1,
   };
 

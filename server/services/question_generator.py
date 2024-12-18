@@ -65,7 +65,7 @@ def generate_answer_feedback(previous_question, previous_answer):
     Previous question: {previous_question}
     Previous answer: {previous_answer}
     
-    Please provide one short sentence starting with "You" that either gives positive praise or indicates if the answer is unclear. 
+    Please provide one very short sentence starting with "You" that either gives positive praise or indicates if the answer is unclear. 
     If the answer is unclear, suggest how they could answer and improve next time.
     Speak like we’re having coffee and you’re excited to share your knowledge.
     Dont include emojis.

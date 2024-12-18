@@ -91,7 +91,7 @@ const StepContent: React.FC<StepContentProps> = ({
           <InterviewTypeCard
             imageSource={require("@/assets/images/behavioral.png")}
             title="Behavioral"
-            description="Focuses on soft skills, interpersonal communication, problem-solving, and how you've handled past situations in the workplace."
+            description="Focuses on soft skills, interpersonal, problem-solving, and how you've handled past situations in the workplace."
             isSelected={formData.selectedInterviewType === "Behavioral"}
             onPress={() => {
               updateFormData("selectedInterviewType", "Behavioral");

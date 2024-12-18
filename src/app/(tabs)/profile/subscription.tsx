@@ -3,14 +3,27 @@ import React, { useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useRouter } from "expo-router";
+import { useUser } from "@clerk/clerk-expo";
 
 const Subscription = () => {
   const [selectedOption, setSelectedOption] = useState("monthly");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const {user} = useUser();
 
-  const handleSubscribe = () => {
+  const handleSubscribe = async() => {
     if (loading) return;
+
+    try {
+      await user.update({
+        unsafeMetadata: {
+          subscribed: true,
+          subscription: selectedOption,
+        }
+      });
+    } catch (error) {
+      console.log(error);
+    }
 
     setLoading(true);
 

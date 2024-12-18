@@ -19,11 +19,11 @@ const Feedback: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [buttonLoading, setButtonLoading] = useState(false);
   const [feedbackItem, setFeedbackItem] = useState({
-    answerRelevance: "",
-    grammar: "",
-    eyeContact: "",
-    paceOfSpeech: "",
-    fillerWords: "",
+    answerRelevance: " No feedback available",
+    grammar: " No feedback available",
+    eyeContact: "No feedback available",
+    paceOfSpeech: "No feedback available",
+    fillerWords: "No feedback available",
   });
   const [exit, setExit] = useState(true);
   const router = useRouter();

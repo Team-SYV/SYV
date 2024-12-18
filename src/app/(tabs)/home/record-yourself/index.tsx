@@ -221,7 +221,7 @@ const RecordYourself: React.FC = () => {
 
       const token = await getToken({template:"supabase"});
 
-      const transcription = await transcribeVideo(videoFile);
+      const transcription = await transcribeVideo(videoFile, token);
 
       if (transcription?.transcription) {
         const answerResponse = await createAnswer(

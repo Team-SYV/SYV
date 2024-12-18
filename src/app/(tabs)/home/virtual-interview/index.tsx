@@ -196,7 +196,7 @@ const VirtualInterview = () => {
       } catch (error) {
         console.error("Error during feedback creation:", error);
       } finally {
-        setTimeout(() => setIsModalVisible(true), 12000);
+        setTimeout(() => setIsModalVisible(true), 8000);
       }
     };
 

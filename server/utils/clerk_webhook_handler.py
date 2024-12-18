@@ -43,9 +43,6 @@ def handle_user_created(data: dict, supabase: Client):
 
     email_address = email_addresses[0]["email_address"]
 
-    public_metadata = data.get("unsafeMetadata", {})
-    private_metadata = data.get("safeMetadata", {})
-
     user = UserCreate(
         user_id=data.get("id", ""),
         first_name=data.get("first_name", ""),
@@ -64,8 +61,8 @@ def handle_user_created(data: dict, supabase: Client):
         'last_name': user.last_name,
         'email': user.email,
         'image': user.image,
-        'public_metadata': json.dumps(public_metadata),  
-        'private_metadata': json.dumps(private_metadata),  
+        'subscribed': False,  
+        'subscription': "NONE",  
     }).execute()
 
 def handle_user_updated(data: dict, supabase: Client):

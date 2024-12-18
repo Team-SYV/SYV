@@ -455,7 +455,7 @@ const VirtualInterview = () => {
         () => {
           handleEnd();
         },
-        speechData.length != 0 ? speechData.length + 2000 : 0
+        speechData.length != 0 ? speechData.length + 3000 : 0
       );
     } catch (error) {
       console.error("Error handling API flow:", error);

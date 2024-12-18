@@ -128,8 +128,8 @@ export function Model({
 
   // Updates the eye blink animation
   useFrame(() => {
-    lerpMorphTarget("eyeBlinkLeft", blink ? 1 : 0, 0.5);
-    lerpMorphTarget("eyeBlinkRight", blink ? 1 : 0, 0.5);
+    lerpMorphTarget("eyeBlinkLeft", blink ? 1 : 0, 0.8);
+    lerpMorphTarget("eyeBlinkRight", blink ? 1 : 0, 0.8);
   });
 
   // Schedule the next blink after a random interval

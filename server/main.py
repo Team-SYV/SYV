@@ -1,25 +1,18 @@
-import shutil
-from tempfile import NamedTemporaryFile
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile, status
+from fastapi import  FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from supabase import Client
-from api.webhooks.clerk import clerk_webhook_handler
-from models.feedback import GenerateFeedbackInput, GenerateVirtualFeedbackInput
-from utils.jwt import validate_token
-from services.eye_contact import process_video
-from services.transcribe_audio import transcribe_audio
-from services.feedback_generator import generate_feedback, generate_virtual_feedback
-from services.transcribe_video import extract_audio
-from services.question_generator import generate_answer_feedback, generate_interview_questions
-from services.pdf_reader import read_pdf
 from utils.supabase import get_supabase_client
-from api.routes.job_information import router as job_information_router
+
+from api.routes.webhooks import router as webhooks_router
 from api.routes.interview import router as interview_router
 from api.routes.question import router as question_router
 from api.routes.answer import router as answer_router
 from api.routes.feedback import router as feedback_router
 from api.routes.ratings import router as ratings_router
-from api.routes.visemes import router as vicemes_router
+from api.routes.transcription import router as transcription_router
+from api.routes.eye_contact import router as eye_contact_router
+from api.routes.text_to_speech import router as tts_router
 
 
 import os
@@ -43,246 +36,12 @@ app.add_middleware(
 def get_supabase() -> Client:
     return get_supabase_client()
 
-app.include_router(job_information_router, prefix="/api/job_information", tags=["job_information"])
+app.include_router(webhooks_router, prefix="/api/webhooks", tags=["webhook"])
 app.include_router(interview_router, prefix="/api/interview", tags=["interview"])
 app.include_router(question_router, prefix="/api/question", tags=["question"])
 app.include_router(answer_router, prefix="/api/answer", tags=["answer"])
 app.include_router(feedback_router, prefix="/api/feedback", tags=["feedback"])
 app.include_router(ratings_router, prefix="/api/ratings", tags=["ratings"])
-app.include_router(vicemes_router, prefix="/api/visemes", tags=["vicemes"])
-
-@app.post("/api/webhooks/", status_code=status.HTTP_204_NO_CONTENT)
-async def webhook_handler(request: Request, response: Response):
-    return await clerk_webhook_handler(request, response, supabase, webhook_secret)
-
-@app.post("/api/generate-questions/")
-async def generate_questions(
-    file: UploadFile = File(None),  
-    type: str = Form(None),
-    industry: str = Form(None),
-    experience_level: str = Form(None),
-    interview_type: str = Form(None),
-    job_description: str = Form(None),
-    company_name: str = Form(None),
-    job_role: str = Form(None),
-
-):    
-    resume_text = None
-    
-    if file:
-        try:
-            file_path = f"/tmp/{file.filename}"
-            with open(file_path, "wb") as buffer:
-                buffer.write(await file.read())
-
-            resume_text = read_pdf(file_path)
-
-        except Exception as e:
-            logging.error(f"Error reading file: {e}")
-            raise HTTPException(status_code=500, detail="Failed to process the uploaded file")
-
-    try:
-        questions = generate_interview_questions(
-            industry=industry,
-            type=type,
-            experience_level=experience_level,
-            interview_type=interview_type,
-            job_description=job_description,
-            company_name=company_name,
-            job_role=job_role,
-            resume_text=resume_text, 
-        )
-
-        return {"questions": questions}
-
-    except Exception as e:
-        logging.error(f"Error generating questions: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate questions")
-    
-@app.post("/api/transcribe-audio/")
-async def transcribe_audio_endpoint(file: UploadFile = File(...)):
-    try:
-        file_path = f"/tmp/{file.filename}"
-        with open(file_path, "wb") as buffer:
-            buffer.write(await file.read())
-
-        transcription = transcribe_audio(file_path)
-
-
-        return {"transcription": transcription}
-
-    except Exception as e:
-        logging.error(f"Error transcribing audio: {e}")
-        raise HTTPException(status_code=500, detail="Failed to transcribe the file")
-
-@app.post("/api/transcribe-video/")
-async def transcribe_video(file: UploadFile = File(...)):
-    """Receive a video, extract audio, and return transcription text."""
-    try:
-        with NamedTemporaryFile(suffix=".mp4", delete=False) as temp_video:
-            shutil.copyfileobj(file.file, temp_video)
-            temp_video.seek(0)
-
-            temp_audio =  extract_audio(temp_video.name)
-
-            transcription =  transcribe_audio(temp_audio.name)
-            eye_contact =  process_video(temp_video.name)
-
-            transcript = transcription['transcript']
-            wpm = transcription['words_per_minute']
-            eye_contact_percentage = eye_contact['eye_contact_percentage']
-
-
-            return {"transcription":transcript,"wpm": wpm, "eye_contact": eye_contact_percentage}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
-@app.post("/api/eye-contact/")
-async def eye_contact(file: UploadFile = File(...)):
-    """Receive a video, process it, and return the eye contact percentage."""
-    try:
-        with NamedTemporaryFile(suffix=".mp4", delete=False) as temp_video:
-            shutil.copyfileobj(file.file, temp_video)
-            temp_video.seek(0)
-
-            result = process_video(temp_video.name)
-            return {"eye_contact": result['eye_contact_percentage']}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing video: {str(e)}")
-
-@app.post("/api/generate-feedback/")
-async def generate_feedback_api(feedback_input: GenerateFeedbackInput, request: Request, supabase: Client = Depends(get_supabase)):
-    """Generate feedback based on a question and answer."""
-    
-    # Validate the token
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Authorization header is missing")
-
-    validated_user_id = validate_token(auth_header)
-
-    try:
-        # Check if the validated_user_id matches the user_id in the interview table
-        interview_response = supabase.table('interview').select('user_id').eq('interview_id', feedback_input.interview_id).execute()
-        if not interview_response.data:
-            raise HTTPException(status_code=404, detail="Interview not found")
-
-        if hasattr(interview_response, 'error') and interview_response.error:
-            raise HTTPException(status_code=500, detail="Failed to retrieve interview details")
-
-        user_id = interview_response.data[0]['user_id']
-
-        # Authorization check
-        if user_id != validated_user_id:
-            raise HTTPException(status_code=403, detail="You are not authorized to generate feedback for this interview")
-
-        # Generate feedback
-        question = feedback_input.question
-        answer = feedback_input.answer
-        wpm = feedback_input.wpm
-        eye_contact = feedback_input.eye_contact
-
-        feedback = generate_feedback(question, answer, wpm, eye_contact)
-
-        # Prepare feedback and ratings data
-        feedback_data = {
-            "grammar": feedback.get("grammar", ""),
-            "answer_relevance": feedback.get("relevance", ""),
-            "filler_words": feedback.get("filler", ""),
-            "pace_of_speech": feedback.get("pace_of_speech", ""),
-            "eye_contact": feedback.get("eye_contact", ""),
-            "tips": feedback.get("tips", ""),
-            "answer_id": feedback_input.answer_id,
-            "interview_id": feedback_input.interview_id
-        }
-
-        ratings_data = {
-            "grammar_rating": feedback.get("grammar_rating", 0),
-            "answer_relevance_rating": feedback.get("relevance_rating", 0),
-            "filler_words_rating": feedback.get("filler_rating", 0),
-            "pace_of_speech_rating": feedback.get("pace_of_speech_rating", 0),
-            "eye_contact_rating": feedback.get("eye_contact_rating", 0),
-        }
-
-        # Insert feedback into the database
-        response = supabase.table('feedback').insert(feedback_data).execute()
-        if hasattr(response, 'error') and response.error:
-            raise HTTPException(status_code=500, detail="Failed to create feedback")
-
-        return {"feedback_id": response.data[0]['feedback_id'], "ratings_data": ratings_data}
-
-    except Exception as e:
-        logging.error(f"Error generating feedback: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate feedback")
-    
-@app.post("/api/generate-virtual-feedback/")
-async def generate_virtual_feedback_api(input: GenerateVirtualFeedbackInput, request: Request, supabase: Client = Depends(get_supabase)):
-    """Generate virtual feedback based on multiple questions and answers."""
-    
-    # Validate the Authorization header
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Authorization header is missing")
-
-    validated_user_id = validate_token(auth_header)
-
-    try:
-        # Step 1: Validate that the user is authorized for the given interview_id
-        interview_response = supabase.table('interview').select('user_id').eq('interview_id', input.interview_id).execute()
-        if not interview_response.data:
-            raise HTTPException(status_code=404, detail="Interview not found")
-
-        if hasattr(interview_response, 'error') and interview_response.error:
-            raise HTTPException(status_code=500, detail="Failed to retrieve interview details")
-
-        user_id = interview_response.data[0]['user_id']
-
-        # Authorization check
-        if user_id != validated_user_id:
-            raise HTTPException(status_code=403, detail="You are not authorized")
-
-        # Step 2: Generate feedback
-        feedback = generate_virtual_feedback(input.questions, input.answers, input.wpm, input.eye_contact)
-
-        feedback_data = {
-            "grammar": feedback.get("grammar", ""),
-            "answer_relevance": feedback.get("relevance", ""),
-            "filler_words": feedback.get("filler", ""),
-            "pace_of_speech": feedback.get("pace_of_speech", ""),
-            "eye_contact": feedback.get("eye_contact", ""),
-            "tips": feedback.get("tips", ""),
-            "interview_id": input.interview_id
-        }
-
-        ratings_data = {
-            "grammar_rating": feedback.get("grammar_rating", 0),
-            "answer_relevance_rating": feedback.get("relevance_rating", 0),
-            "filler_words_rating": feedback.get("filler_rating", 0),
-            "pace_of_speech_rating": feedback.get("pace_of_speech_rating", 0),
-            "eye_contact_rating": feedback.get("eye_contact_rating", 0),
-        }
-
-        # Step 3: Insert feedback into the database
-        response = supabase.table('feedback').insert(feedback_data).execute()
-        if hasattr(response, 'error') and response.error:
-            raise HTTPException(status_code=500, detail="Failed to create feedback")
-
-        # Step 4: Return feedback ID and ratings data
-        return {"feedback_id": response.data[0]['feedback_id'], "ratings_data": ratings_data}
-
-    except Exception as e:
-        logging.error(f"Error generating virtual feedback: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate virtual feedback")
-@app.post("/api/generate-answer-feedback/")
-async def generate_answer_feedback_endpoint(
-    previous_question: str = Form(...), 
-    previous_answer: str = Form(...)
-):
-    try:
-        feedback = generate_answer_feedback(previous_question, previous_answer)
-        return {"feedback": feedback}
-    except Exception as e:
-        logging.error(f"Error generating answer feedback: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate answer feedback")
+app.include_router(transcription_router, prefix="/api/transcribe", tags=["transcription"])
+app.include_router(eye_contact_router, prefix="/api/eye_contact", tags=["eye_contact"])
+app.include_router(tts_router, prefix="/api/tts", tags=["tts"])

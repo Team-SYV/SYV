@@ -1,4 +1,5 @@
 export interface InterviewData {
-    job_information_id: string;
-    type: string;
-  }
+  type: "VIRTUAL" | "RECORD";
+  job_role: string;
+  company_name: string | null;
+}

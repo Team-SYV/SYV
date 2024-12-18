@@ -93,7 +93,7 @@ def generate_feedback(question, answer, wpm, eye_contact):
 
     return feedback_dict
 
-def generate_virtual_feedback(questions, answers, wpm, eye_contact):
+def generate_feedback_virtual(questions, answers, wpm, eye_contact):
     """
     Generate cumulative feedback for multiple questions and answers, incorporating mean ratings for WPM and eye contact.
     """

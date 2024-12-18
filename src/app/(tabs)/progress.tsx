@@ -5,7 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import { LineChart } from "react-native-gifted-charts";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useFocusEffect } from "@react-navigation/native";
-import { getRatingsByUserId } from "@/api";
+import { getProgress } from "@/api/ratings";
 
 const Progress = () => {
   const { user } = useUser();
@@ -30,12 +30,9 @@ const Progress = () => {
   const fetchRatings = async () => {
     setLoading(true);
     try {
-      const token = await getToken();
+      const token = await getToken({ template: "supabase" });
       const weekStartFormatted = currentWeekStart.format("YYYY-MM-DD");
-      const fetchedProgress = await getRatingsByUserId(
-        weekStartFormatted,
-        token
-      );
+      const fetchedProgress = await getProgress(weekStartFormatted, token);
       setRatingsData(fetchedProgress);
     } catch (error) {
       console.error("Error fetching data", error.message);

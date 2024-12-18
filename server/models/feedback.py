@@ -2,21 +2,25 @@ from pydantic import BaseModel
 from typing import Optional, List
 
 
-class GenerateFeedbackInput(BaseModel):
-    answer_id: Optional [str] = None 
-    interview_id: Optional [str] = None
+class CreateRecordFeedbackInput(BaseModel):
+    answer_id: str
+    interview_id: str
     answer: str
     question: str
-    wpm: float
+    pace_of_speech: float
     eye_contact: float
 
 
-class GenerateVirtualFeedbackInput(BaseModel):
-    interview_id: Optional[str] = None
+class CreateVirtualFeedbackInput(BaseModel):
+    interview_id: str
     answers: List[str]
     questions: List[str]
-    wpm: List[float]
+    pace_of_speech: List[float]
     eye_contact: List[float]
+
+class CreateFeedbackResponse(BaseModel):
+    feedback_id: str
+    ratings_data: dict
 
 
 class GetFeedbackResponse(BaseModel):
@@ -28,21 +32,12 @@ class GetFeedbackResponse(BaseModel):
     pace_of_speech: str
     filler_words: str
     tips:str
-
-class GetRecordFeedbackResponse(BaseModel):
-    answer_id: Optional [str] = None 
-    interview_id: Optional [str] = None
-    answer_relevance: str
-    eye_contact: str
-    grammar: str
-    pace_of_speech: str
-    filler_words: str
-    tips:str
-    question: str
+    question: Optional[str] = None
 
 
 class CreateFeedbackResponse(BaseModel):
     feedback_id: str
+    ratings_data: dict
 
 class GetFeedback(BaseModel):
     feedback_id: str

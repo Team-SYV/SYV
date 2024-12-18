@@ -63,7 +63,7 @@ def eye_contact(frame):
     return False  # No eye contact detected
 
 
-def process_video(video_path: str):
+def process_eye_contact(video_path: str):
     """
     Process the video to detect eye contact in each frame and calculate the percentage of eye contact frames.
     """

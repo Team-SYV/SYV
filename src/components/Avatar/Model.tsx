@@ -6,6 +6,12 @@ import { useFrame } from "@react-three/fiber";
 import { Audio } from "expo-av";
 import { visemesMapping } from "@/constants/vismesMapping";
 
+type Viseme = {
+  time: number;
+  type: string;
+  value: string;
+};
+
 type GLTFResult = GLTF & {
   nodes: {
     EyeLeft: THREE.SkinnedMesh;
@@ -29,23 +35,24 @@ type GLTFResult = GLTF & {
   scene: THREE.Scene;
 };
 
-type ModelProps = JSX.IntrinsicElements["group"] & {
-  isTalking?: boolean;
-  visemeData?: {
-    metadata: { soundFile: string; duration: number };
-    mouthCues: { start: number; end: number; value: string }[];
-  };
-};
-
-export function Model({ visemeData, ...props }: ModelProps) {
+export function Model({
+  audio,
+  visemes,
+  setIsQuestionLoading,
+}: {
+  audio: string;
+  visemes: Viseme[];
+  setIsQuestionLoading: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
   const [blink, setBlink] = useState(false);
-  const [currentViseme, setCurrentViseme] = useState<string | null>(null);
+  const [currentViseme, setCurrentViseme] = useState<Viseme | null>(null);
 
   const { nodes, materials, scene } = useGLTF(
     require("@/assets/models/Avatar.glb")
   ) as GLTFResult;
 
   const audioRef = useRef<Audio.Sound | null>(null);
+  const audioPlayingRef = useRef<boolean>(false);
 
   // Changes the influence of a specific morph target on a 3D model
   const lerpMorphTarget = (
@@ -72,94 +79,125 @@ export function Model({ visemeData, ...props }: ModelProps) {
     });
   };
 
+  const stopSpeak = async () => {
+    if (audioRef.current) {
+      await audioRef.current.stopAsync();
+      audioRef.current = null;
+      audioPlayingRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (!audio || audio === "") {
+      stopSpeak();
+    }
+  }, [audio]);
+
   // Loads and play an audio file
   useEffect(() => {
-    if (visemeData && visemeData.metadata.soundFile) {
-      const loadAudio = async () => {
-        const { sound } = await Audio.Sound.createAsync({
-          uri: `data:audio/wav;base64,${visemeData.metadata.soundFile}`,
-        });
-        audioRef.current = sound;
+    if (audioPlayingRef.current) return;
+    let isMounted = true;
+
+    const loadAudio = async () => {
+      setIsQuestionLoading(true);
+
+      const { sound } = await Audio.Sound.createAsync({
+        uri: `data:audio/mp3;base64,${audio}`,
+      });
+
+      if (!isMounted) {
+        sound.unloadAsync();
+        return;
+      }
+
+      audioRef.current = sound;
+
+      try {
         await sound.playAsync();
 
-        return () => {
-          sound.stopAsync();
-          sound.unloadAsync();
-          audioRef.current = null;
-        };
-      };
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded) {
+            if (status.didJustFinish) {
+              setIsQuestionLoading(false);
+            }
+          }
+        });
+      } catch (error) {
+        console.error("Error playing audio:", error);
+        setIsQuestionLoading(false);
+      }
+    };
 
+    if (audio) {
       loadAudio();
     }
-  }, [visemeData]);
 
-  // Update eye blink animation
+    // Cleanup on unmount
+    return () => {
+      isMounted = false;
+      if (audioRef.current) {
+        audioRef.current.stopAsync();
+        audioRef.current.unloadAsync();
+        audioRef.current = null;
+      }
+    };
+  }, [audio]);
+
+  // Updates the eye blink animation
   useFrame(() => {
-    lerpMorphTarget("eyeBlinkLeft", blink ? 1 : 0, 0.5);
-    lerpMorphTarget("eyeBlinkRight", blink ? 1 : 0, 0.5);
+    lerpMorphTarget("eyeBlinkLeft", blink ? 1 : 0, 0.7);
+    lerpMorphTarget("eyeBlinkRight", blink ? 1 : 0, 0.7);
   });
 
-  // Initiates a random blinking sequence
+  // Schedule the next blink after a random interval
   useEffect(() => {
     let blinkTimeout;
-    const nextBlink = () => {
-      blinkTimeout = setTimeout(() => {
-        setBlink(true);
-        setTimeout(() => {
-          setBlink(false);
-          nextBlink();
-        }, 200);
-      }, THREE.MathUtils.randInt(1000, 5000));
+    const startBlinking = () => {
+      setBlink(true);
+      setTimeout(() => setBlink(false), 200);
+
+      blinkTimeout = setTimeout(
+        startBlinking,
+        THREE.MathUtils.randInt(1000, 5000)
+      );
     };
-    nextBlink();
+    startBlinking();
     return () => clearTimeout(blinkTimeout);
   }, []);
 
-  // Matches the current audio playback time with mouth cues to set and animate the appropriate viseme.
+  // Matches the current audio playback time with mouth cues to set the appropriate viseme.
   useFrame(() => {
-    if (!visemeData || !visemeData.mouthCues.length || !audioRef.current)
-      return;
+    if (!visemes || !audioRef.current) return;
 
-    const elapsed = audioRef.current.getStatusAsync().then((status) => {
-      if (status.isLoaded) {
-        return status.positionMillis / 1000;
-      } else {
-        return 0;
-      }
-    });
+    audioRef.current.getStatusAsync().then((status) => {
+      if (!status.isLoaded) return;
 
-    elapsed.then((time) => {
-      const cue = visemeData.mouthCues.find(
-        (cue) => time >= cue.start && time <= cue.end
-      );
+      const elapsedTime = status.positionMillis;
 
-      if (cue && visemesMapping[cue.value]) {
-        setCurrentViseme(visemesMapping[cue.value]);
-      } else {
-        setCurrentViseme(null);
-      }
+      const current = visemes
+        .slice()
+        .reverse()
+        .find((viseme) => viseme.time <= elapsedTime);
 
-      // Apply viseme to head
-      if (currentViseme) {
-        lerpMorphTarget(currentViseme, 1, 0.2);
-      }
+      if (current) {
+        if (current.value !== currentViseme?.value) {
+          setCurrentViseme(current);
 
-      // Reset all other visemes to 0
-      Object.values(visemesMapping).forEach((viseme) => {
-        if (viseme !== currentViseme) {
-          lerpMorphTarget(viseme, 0, 0.1);
+          Object.keys(visemesMapping).forEach((key) =>
+            lerpMorphTarget(visemesMapping[key], 0, 0.5)
+          );
+
+          const targetViseme = visemesMapping[current.value];
+          if (targetViseme) {
+            lerpMorphTarget(targetViseme, 2, 0.2);
+          }
         }
-      });
+      }
     });
   });
 
   return (
-    <group
-      {...props}
-      dispose={null}
-      scale={[2.4, 2.4, 1]}
-      position={[0, -3, 2.8]}
-    >
+    <group dispose={null} scale={[2.4, 2.4, 1]} position={[0, -3, 2.8]}>
       <primitive object={nodes.Hips} />
       <skinnedMesh
         name="EyeLeft"

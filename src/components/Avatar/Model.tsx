@@ -38,9 +38,11 @@ type GLTFResult = GLTF & {
 export function Model({
   audio,
   visemes,
+  setIsQuestionLoading,
 }: {
   audio: string;
   visemes: Viseme[];
+  setIsQuestionLoading: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const [blink, setBlink] = useState(false);
   const [currentViseme, setCurrentViseme] = useState<Viseme | null>(null);
@@ -51,7 +53,6 @@ export function Model({
 
   const audioRef = useRef<Audio.Sound | null>(null);
   const audioPlayingRef = useRef<boolean>(false);
-  
 
   // Changes the influence of a specific morph target on a 3D model
   const lerpMorphTarget = (
@@ -81,8 +82,9 @@ export function Model({
   const stopSpeak = async () => {
     if (audioRef.current) {
       await audioRef.current.stopAsync();
-      audioRef.current = null; 
+      audioRef.current = null;
       audioPlayingRef.current = false;
+      setIsQuestionLoading(false);
     }
   };
 
@@ -98,6 +100,8 @@ export function Model({
     let isMounted = true;
 
     const loadAudio = async () => {
+      setIsQuestionLoading(true);
+
       const { sound } = await Audio.Sound.createAsync({
         uri: `data:audio/mp3;base64,${audio}`,
       });
@@ -108,7 +112,16 @@ export function Model({
       }
 
       audioRef.current = sound;
+
       await sound.playAsync();
+
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded) {
+          if (status.didJustFinish) {
+            setIsQuestionLoading(false);
+          }
+        }
+      });
     };
 
     if (audio) {
@@ -128,8 +141,8 @@ export function Model({
 
   // Updates the eye blink animation
   useFrame(() => {
-    lerpMorphTarget("eyeBlinkLeft", blink ? 1 : 0, 0.8);
-    lerpMorphTarget("eyeBlinkRight", blink ? 1 : 0, 0.8);
+    lerpMorphTarget("eyeBlinkLeft", blink ? 1 : 0, 0.7);
+    lerpMorphTarget("eyeBlinkRight", blink ? 1 : 0, 0.7);
   });
 
   // Schedule the next blink after a random interval
@@ -178,7 +191,6 @@ export function Model({
       }
     });
   });
-
 
   return (
     <group dispose={null} scale={[2.4, 2.4, 1]} position={[0, -3, 2.8]}>

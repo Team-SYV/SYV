@@ -34,13 +34,11 @@ import { SpeechData } from "@/types/speechData";
 
 const VirtualInterview = () => {
   const { user } = useUser();
-  const { interviewId } = useLocalSearchParams();
   const { getToken } = useAuth();
+  const { interviewId } = useLocalSearchParams();
 
   const flatListRef = useRef<FlatList>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-
-  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -53,6 +51,7 @@ const VirtualInterview = () => {
   const [questionIds, setQuestionIds] = useState([]);
   const [answers, setAnswers] = useState([]);
 
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isQuestionLoading, setIsQuestionLoading] = useState<boolean>(false);
   const isStartButtonDisabled = isQuestionLoading || answers.length >= 10;
 
@@ -201,7 +200,6 @@ const VirtualInterview = () => {
       }
     };
 
-    // Guard condition to ensure it runs once
     if (eyeContacts.length === 10 && !hasGeneratedFeedback.current) {
       hasGeneratedFeedback.current = true;
       handleFeedbackRatings();
@@ -670,6 +668,7 @@ const VirtualInterview = () => {
               <Model
                 audio={exitPage.current ? "" : speechData.audio}
                 visemes={speechData.visemes}
+                setIsQuestionLoading={setIsQuestionLoading}
               />
             </Canvas>
           </View>

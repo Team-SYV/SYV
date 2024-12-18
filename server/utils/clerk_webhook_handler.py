@@ -69,7 +69,7 @@ def handle_user_updated(data: dict, supabase: Client):
     user_id = data["id"]
     unsafe_metadata = data.get("unsafe_metadata", {})
     subscribed = unsafe_metadata.get("subscribed", False)
-    subscription = unsafe_metadata.get('subscription', None).upper()
+    subscription = unsafe_metadata.get('subscription', "None").upper()
 
 
     user_update = UserUpdate(

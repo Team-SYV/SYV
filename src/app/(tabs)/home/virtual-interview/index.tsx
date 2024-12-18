@@ -30,6 +30,7 @@ import { transcribeAudio } from "@/api/transcription";
 import { eyeContact } from "@/api/eyeContact";
 import { createAnswer } from "@/api/answer";
 import { createSpeech } from "@/api/text_to_speech";
+import { SpeechData } from "@/types/speechData";
 
 const VirtualInterview = () => {
   const { user } = useUser();
@@ -71,17 +72,7 @@ const VirtualInterview = () => {
   const hasGeneratedFeedback = useRef(false);
   const exitPage = useRef(false);
 
-  const [speechData, setSpeechData] = useState<{
-    audio: string;
-    visemes: [
-      {
-        time: number;
-        type: string;
-        value: string;
-      }
-    ];
-    length?: number;
-  }>({
+  const defaultSpeechData = (): SpeechData => ({
     audio: "",
     visemes: [
       {
@@ -92,6 +83,8 @@ const VirtualInterview = () => {
     ],
     length: 0,
   });
+
+  const [speechData, setSpeechData] = useState<SpeechData>(defaultSpeechData);
 
   // Requests camera and microphone permissions
   useEffect(() => {
@@ -488,6 +481,7 @@ const VirtualInterview = () => {
     });
 
     try {
+      setSpeechData(defaultSpeechData);
       const { recording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
@@ -543,17 +537,7 @@ const VirtualInterview = () => {
       setExit(false);
       setIsLoading(false);
       setIsModalVisible(false);
-      setSpeechData({
-        audio: "",
-        visemes: [
-          {
-            time: 0,
-            type: "",
-            value: "",
-          },
-        ],
-        length: 0,
-      });
+      setSpeechData(defaultSpeechData);
 
       router.push({
         pathname: `/home/virtual-interview/feedback?interviewId=${interviewId}`,
@@ -569,17 +553,7 @@ const VirtualInterview = () => {
     setMessages([]);
     setPaceOfSpeech([]);
     setEyeContacts([]);
-    setSpeechData({
-      audio: "",
-      visemes: [
-        {
-          time: 0,
-          type: "",
-          value: "",
-        },
-      ],
-      length: 0,
-    });
+    setSpeechData(defaultSpeechData);
   };
 
   const renderMessage = ({ item }: { item: Message }) => (

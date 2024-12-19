@@ -326,16 +326,44 @@ const VirtualInterview = () => {
     try {
       const token = await getToken({ template: "supabase" });
       const feedback = await generateResponse(form, token);
-      const viseme = await createSpeech(feedback, token);
-      setSpeechData(viseme);
 
-      setMessages((prevMessages) =>
-        prevMessages.map((message) =>
-          message.id === newBotMessage.id
-            ? { ...message, content: feedback, feedback: false }
-            : message
-        )
-      );
+      if (currentQuestionIndex < 9) {
+        const cleanedQuestion = questions[currentQuestionIndex + 1].replace(
+          /^\d+\.\s*/,
+          ""
+        );
+        const viseme = await createSpeech(
+          `${feedback}            ${cleanedQuestion}`,
+          token
+        );
+        setSpeechData(viseme);
+
+        setMessages((prevMessages) =>
+          prevMessages.map((message) =>
+            message.id === newBotMessage.id
+              ? { ...message, content: feedback, feedback: false }
+              : message
+          )
+        );
+      } else if (currentQuestionIndex === 9) {
+        setCurrentQuestionIndex(10);
+        const lastMessage =
+          "Thank you for your time and participation. This concludes your virtual interview.";
+
+        const viseme = await createSpeech(
+          `${feedback}     ${lastMessage}`,
+          token
+        );
+        setSpeechData(viseme);
+
+        setMessages((prevMessages) =>
+          prevMessages.map((message) =>
+            message.id === newBotMessage.id
+              ? { ...message, content: feedback, feedback: false }
+              : message
+          )
+        );
+      }
     } catch (error) {
       console.error("Error generating feedback or speech:", error);
     } finally {
@@ -396,12 +424,6 @@ const VirtualInterview = () => {
       if (isLastMessage) {
         const lastMessage =
           "Thank you for your time and participation. This concludes your virtual interview.";
-
-        const token = await getToken({ template: "supabase" });
-
-        const viseme = await createSpeech(lastMessage, token);
-        setSpeechData(viseme);
-
         setMessages((prevMessages) =>
           prevMessages.map((message) =>
             message.id === nextQuestionId
@@ -415,14 +437,6 @@ const VirtualInterview = () => {
         );
       } else {
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
-        const cleanedQuestion = questions[currentQuestionIndex + 1].replace(
-          /^\d+\.\s*/,
-          ""
-        );
-        const token = await getToken({ template: "supabase" });
-        const viseme = await createSpeech(cleanedQuestion, token);
-        setSpeechData(viseme);
-
         setMessages((prevMessages) =>
           prevMessages.map((message) =>
             message.id === nextQuestionId
@@ -451,12 +465,7 @@ const VirtualInterview = () => {
         await handleAnswer();
       }
       processEyeContact(videoUri);
-      setTimeout(
-        () => {
-          handleEnd();
-        },
-        speechData.length != 0 ? speechData.length + 3000 : 0
-      );
+      await handleEnd();
     } catch (error) {
       console.error("Error handling API flow:", error);
     }

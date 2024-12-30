@@ -126,11 +126,11 @@ const Progress = () => {
 
   return (
     <View className="flex-1 bg-white pt-12">
-      <View className="flex-row">
+      <View className="flex-row pb-1">
         <Carousel
           loop
           width={SCREENWIDTH}
-          height={46}
+          height={48}
           data={categories}
           scrollAnimationDuration={100}
           onSnapToItem={(index) => setSelectedCategory(categories[index])}
@@ -147,9 +147,9 @@ const Progress = () => {
                 alignItems: "center",
                 borderWidth: selectedCategory === item ? 2 : 1,
                 borderColor:
-                  selectedCategory === item ? "transparent" : "#E0E0E0",
+                  selectedCategory === item ? "transparent" : "#AFAFAF",
                 backgroundColor:
-                  selectedCategory === item ? "#00AACE" : "#f0f0f0",
+                  selectedCategory === item ? "#01B7DD" : "white",
                 borderRadius: 16,
                 padding: 10,
               }}

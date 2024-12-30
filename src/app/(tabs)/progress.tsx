@@ -126,7 +126,7 @@ const Progress = () => {
 
   return (
     <View className="flex-1 bg-white pt-12">
-      <View className="flex-row pb-1">
+      <View className="flex-row">
         <Carousel
           loop
           width={SCREENWIDTH}

@@ -5,12 +5,12 @@ import {
   TouchableOpacity,
   ScrollView,
   BackHandler,
+  ActivityIndicator,
 } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import ConfirmationModal from "@/components/Modal/ConfirmationModal";
 import Spinner from "react-native-loading-spinner-overlay";
-import { ActivityIndicator } from "react-native";
 import { useAuth } from "@clerk/clerk-expo";
 import { getFeedbackVirtual } from "@/api/feedback";
 
@@ -18,9 +18,13 @@ const Feedback: React.FC = () => {
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [buttonLoading, setButtonLoading] = useState(false);
+
+  const [isExpanded, setIsExpanded] = useState<Record<string, boolean>>({});
+  const [isClamped, setIsClamped] = useState<Record<string, boolean>>({});
+
   const [feedbackItem, setFeedbackItem] = useState({
-    answerRelevance: " No feedback available",
-    grammar: " No feedback available",
+    answerRelevance: "No feedback available",
+    grammar: "No feedback available",
     eyeContact: "No feedback available",
     paceOfSpeech: "No feedback available",
     fillerWords: "No feedback available",
@@ -28,13 +32,13 @@ const Feedback: React.FC = () => {
   const [exit, setExit] = useState(true);
   const router = useRouter();
   const { interviewId } = useLocalSearchParams();
-  const {getToken} = useAuth();
+  const { getToken } = useAuth();
 
   // Fetch feedback
   useEffect(() => {
     const fetch = async () => {
       try {
-        const token = await getToken({template:"supabase"});
+        const token = await getToken({ template: "supabase" });
         setLoading(true);
         const fetchedFeedback = await getFeedbackVirtual(interviewId, token);
         setFeedbackItem({
@@ -93,6 +97,51 @@ const Feedback: React.FC = () => {
     }, 1000);
   };
 
+  const toggleExpand = (key: string) => {
+    setIsExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleTextLayout = (key: string, event) => {
+    const { lines } = event.nativeEvent;
+    setIsClamped((prev) => ({
+      ...prev,
+      [key]: lines.length > 3,
+    }));
+  };
+
+  const formatFieldName = (field: string) => {
+    return field
+      .replace(/([A-Z])/g, " $1")
+      .replace(/^./, (str) => str.toUpperCase());
+  };
+
+  const renderExpandableSection = (
+    title: string,
+    content: string,
+    key: string
+  ) => (
+    <>
+      <Text className="font-medium text-[12px] mb-2">{title}</Text>
+      <View className="mb-4 border border-[#E3E3E3] rounded-md px-2 py-2">
+        <Text
+          className="text-sm font-light"
+          numberOfLines={isExpanded[key] ? undefined : 3}
+          onTextLayout={(event) => handleTextLayout(key, event)}
+        >
+          {content || "No feedback available"}
+        </Text>
+
+        {content && isClamped[key] && (
+          <TouchableOpacity onPress={() => toggleExpand(key)}>
+            <Text className="text-sm font-base text-[#0092B1] mt-1">
+              {isExpanded[key] ? "View less" : "View more"}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </>
+  );
+
   return (
     <View className="bg-white flex-1">
       <Stack.Screen
@@ -113,49 +162,9 @@ const Feedback: React.FC = () => {
           contentContainerStyle={{ paddingBottom: 20 }}
           className="p-4"
         >
-          {/* Render feedback items */}
-          <View>
-            <Text className="font-medium text-[12px] mb-2 ml-1">
-              Answer Relevance
-            </Text>
-            <Text className="mb-4 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedbackItem.answerRelevance}
-            </Text>
-          </View>
-
-          <View>
-            <Text className="font-medium text-[12px] mb-2 ml-1">Grammar</Text>
-            <Text className="mb-4 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedbackItem.grammar}
-            </Text>
-          </View>
-
-          <View>
-            <Text className="font-medium text-[12px] mb-2 ml-1">
-              Eye Contact
-            </Text>
-            <Text className="mb-4 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedbackItem.eyeContact}
-            </Text>
-          </View>
-
-          <View>
-            <Text className="font-medium text-[12px] mb-2 ml-1">
-              Pace of Speech
-            </Text>
-            <Text className="mb-4 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedbackItem.paceOfSpeech}
-            </Text>
-          </View>
-
-          <View>
-            <Text className="font-medium text-[12px] mb-2 ml-1">
-              Filler Words
-            </Text>
-            <Text className="mb-6 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-              {feedbackItem.fillerWords}
-            </Text>
-          </View>
+          {Object.entries(feedbackItem).map(([field, value]) =>
+            renderExpandableSection(formatFieldName(field), value, field)
+          )}
 
           <TouchableOpacity
             onPress={handleProceedToRatings}

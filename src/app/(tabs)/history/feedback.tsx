@@ -22,6 +22,9 @@ const Feedback: React.FC = () => {
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList<string>>(null);
 
+  const [isExpanded, setIsExpanded] = useState<Record<string, boolean>>({});
+  const [isClamped, setIsClamped] = useState<Record<string, boolean>>({});
+
   const [questions, setQuestions] = useState([]);
   const [feedbackItem, setFeedbackItem] = useState([]);
 
@@ -35,7 +38,7 @@ const Feedback: React.FC = () => {
     const fetch = async () => {
       try {
         setLoading(true);
-        const token = await getToken({template:"supabase"});
+        const token = await getToken({ template: "supabase" });
         const fetchedQuestions = await getQuestions(interviewId, token);
         setQuestions(fetchedQuestions.questions);
         const fetchedFeedback = await getFeedbackVirtual(interviewId, token);
@@ -52,13 +55,50 @@ const Feedback: React.FC = () => {
     }
   }, [interviewId]);
 
-  // Render each questions and feedback
+  const toggleExpand = (key: string) => {
+    setIsExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleTextLayout = (key: string, event) => {
+    const { lines } = event.nativeEvent;
+    setIsClamped((prev) => ({
+      ...prev,
+      [key]: lines.length > 3,
+    }));
+  };
+
+  const renderExpandableSection = (
+    title: string,
+    content: string,
+    key: string
+  ) => (
+    <>
+      <Text className="font-medium text-[12px] mb-2">{title}</Text>
+      <View className="mb-4 border border-[#E3E3E3] rounded-md px-2 py-2">
+        <Text
+          className="text-sm font-light"
+          numberOfLines={isExpanded[key] ? undefined : 3}
+          onTextLayout={(event) => handleTextLayout(key, event)}
+        >
+          {content || "No feedback available"}
+        </Text>
+
+        {content && isClamped[key] && (
+          <TouchableOpacity onPress={() => toggleExpand(key)}>
+            <Text className="text-sm font-base text-[#0092B1] mt-1">
+              {isExpanded[key] ? "View less" : "View more"}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </>
+  );
+
   const renderFeedbackItem = ({ index }: { item: string; index: number }) => {
     const feedback = feedbackItem[index] || {};
     const question = questions[index] || "No question available";
 
     const dynamicMargin = feedbackItem.length > 1 ? 14 : 0;
-
     return (
       <View style={[styles.itemContainer, { marginTop: dynamicMargin }]}>
         {feedbackItem.length > 1 && (
@@ -67,62 +107,51 @@ const Feedback: React.FC = () => {
               <Text className="font-semibold text-[13px]">
                 Question {index + 1}
               </Text>
-
               <Text className="text-sm text-[13px]">
                 {cleanQuestion(question)}
               </Text>
             </View>
           </View>
         )}
-
         <ScrollView className="mt-5">
           <View className="px-4">
-            <>
-              <Text className="font-medium text-[12px] mb-2">
-                Answer Relevance
-              </Text>
-              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-                {feedback.answer_relevance || "No feedback available"}
-              </Text>
-
-              <Text className="font-medium text-[12px] mb-2">Grammar</Text>
-              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-                {feedback.grammar || "No feedback available"}
-              </Text>
-
-              <Text className="font-medium text-[12px] mb-2">Eye Contact</Text>
-              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-                {feedback.eye_contact || "No feedback available"}
-              </Text>
-
-              <Text className="font-medium text-[12px] mb-2">
-                Pace of Speech
-              </Text>
-              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-                {feedback.pace_of_speech || "No feedback available"}
-              </Text>
-
-              <Text className="font-medium text-[12px] mb-2">Filler Words</Text>
-              <Text className="mb-3 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-                {feedback.filler_words || "No feedback available"}
-              </Text>
-
-              {feedbackItem.length > 1 && (
-                <>
-                  <Text className="font-medium text-[12px] mb-2">
-                    Tips & Ideal Answer
-                  </Text>
-                  <Text className="mb-6 text-sm font-light border border-[#E3E3E3] rounded-md px-2 py-2">
-                    {feedback.tips || "No feedback available"}
-                  </Text>
-                </>
+            {renderExpandableSection(
+              "Answer Relevance",
+              feedback.answer_relevance,
+              `answerRelevance-${index}`
+            )}
+            {renderExpandableSection(
+              "Grammar",
+              feedback.grammar,
+              `grammar-${index}`
+            )}
+            {renderExpandableSection(
+              "Eye Contact",
+              feedback.eye_contact,
+              `eyeContact-${index}`
+            )}
+            {renderExpandableSection(
+              "Pace of Speech",
+              feedback.pace_of_speech,
+              `paceOfSpeech-${index}`
+            )}
+            {renderExpandableSection(
+              "Filler Words",
+              feedback.filler_words,
+              `fillerWords-${index}`
+            )}
+            {feedbackItem.length > 1 &&
+              renderExpandableSection(
+                "Tips & Ideal Answer",
+                feedback.tips,
+                `tips-${index}`
               )}
-            </>
           </View>
         </ScrollView>
       </View>
     );
   };
+
   return (
     <View className="flex-1 bg-white">
       {loading ? (
@@ -145,6 +174,7 @@ const Feedback: React.FC = () => {
         />
       )}
 
+      {/* Pagination indicators */}
       {!loading && (
         <View className="absolute top-[5px] flex-row justify-center w-full">
           {feedbackItem.map((_, index) => {

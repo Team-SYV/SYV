@@ -734,7 +734,7 @@ const VirtualInterview = () => {
       <View
         className={`flex-row p-2 justify-center z-20 ${
           !isFullscreen
-            ? "shadow-md border-gray-300 border"
+            ? "shadow-md border-gray-300 border bg-white"
             : "absolute bottom-3 left-0 right-0 mx-auto"
         }`}
       >

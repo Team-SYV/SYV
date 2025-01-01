@@ -1,5 +1,4 @@
 import { useAuth, useUser } from "@clerk/clerk-expo";
-import * as Speech from "expo-speech";
 import React, { useEffect, useRef, useState, Suspense } from "react";
 import uuid from "react-native-uuid";
 import ConfirmationModal from "@/components/Modal/ConfirmationModal";
@@ -22,6 +21,7 @@ import {
   BackHandler,
   Alert,
   ImageBackground,
+  StatusBar,
 } from "react-native";
 import { getQuestions } from "@/api/question";
 import { createFeedbackVirtual, generateResponse } from "@/api/feedback";
@@ -31,7 +31,8 @@ import { eyeContact } from "@/api/eyeContact";
 import { createAnswer } from "@/api/answer";
 import { createSpeech } from "@/api/text_to_speech";
 import { SpeechData } from "@/types/speechData";
-import { is } from "@react-three/fiber/dist/declarations/src/core/utils";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import AntDesign from "@expo/vector-icons/AntDesign";
 
 const VirtualInterview = () => {
   const { user } = useUser();
@@ -69,6 +70,7 @@ const VirtualInterview = () => {
     boolean | null
   >(null);
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const hasFetchedQuestions = useRef(false);
   const hasGeneratedFeedback = useRef(false);
   const exitPage = useRef(false);
@@ -642,10 +644,16 @@ const VirtualInterview = () => {
     </View>
   );
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
   return (
     <View className="flex-1 justify-between bg-white">
+      <StatusBar hidden={true} />
       <Stack.Screen
         options={{
+          headerShown: !isFullscreen,
           headerLeft: () => (
             <TouchableOpacity onPress={handleBackButtonPress}>
               <Ionicons name="arrow-back" size={24} color="#2a2a2a" />
@@ -656,7 +664,11 @@ const VirtualInterview = () => {
 
       <ImageBackground
         source={require("@/assets/images/background.png")}
-        className="w-[96%] h-56 rounded-xl mx-auto my-2 overflow-hidden"
+        className={`${
+          isFullscreen
+            ? "w-[100%] h-[100%] absolute top-0 left-0 z-10"
+            : "w-[96%] h-56 rounded-xl my-2"
+        } mx-auto overflow-hidden`}
       >
         <Suspense fallback={null}>
           <View className="absolute bottom-0 right-0 left-0 top-0">
@@ -674,7 +686,11 @@ const VirtualInterview = () => {
                 };
               }}
             >
-              <PerspectiveCamera makeDefault position={[0, 0.8, 4]} fov={50} />
+              <PerspectiveCamera
+                makeDefault
+                position={[0, 0.8, 4]}
+                fov={isFullscreen ? 73 : 50}
+              />
               <ambientLight intensity={0.8} />
               <directionalLight position={[5, 5, 5]} />
               <Model
@@ -685,16 +701,45 @@ const VirtualInterview = () => {
             </Canvas>
           </View>
         </Suspense>
+
+        {isFullscreen && (
+          <View className="absolute top-5 right-2 rounded-full bg-white">
+            <TouchableOpacity onPress={toggleFullscreen}>
+              <AntDesign
+                name="closecircle"
+                size={38}
+                color="#A92703"
+                className="bg-white rounded-full"
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {!isFullscreen && (
+          <View className="absolute bottom-3 right-3">
+            <TouchableOpacity onPress={toggleFullscreen}>
+              <MaterialIcons name="fullscreen" size={28} color="#4B4B4B" />
+            </TouchableOpacity>
+          </View>
+        )}
       </ImageBackground>
 
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item.id}
-      />
+      {!isFullscreen && (
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item.id}
+        />
+      )}
 
-      <View className="flex-row p-2 bg-white shadow-md justify-center border-gray-300 border">
+      <View
+        className={`flex-row p-2 justify-center z-20 ${
+          !isFullscreen
+            ? "shadow-md border-gray-300 border"
+            : "absolute bottom-3 left-0 right-0 mx-auto"
+        }`}
+      >
         {isRecording ? (
           <TouchableOpacity className="p-3" onPress={stopRecording}>
             <Image

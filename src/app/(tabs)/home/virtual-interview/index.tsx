@@ -702,7 +702,7 @@ const VirtualInterview = () => {
 
         {isFullscreen && (
           <View className="absolute top-5 right-2 rounded-full bg-white">
-            <TouchableOpacity onPress={toggleFullscreen}>
+            <TouchableOpacity onPress={toggleFullscreen} activeOpacity={0.8}>
               <AntDesign
                 name="closecircle"
                 size={38}

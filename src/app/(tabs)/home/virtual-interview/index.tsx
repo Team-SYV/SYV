@@ -31,6 +31,7 @@ import { eyeContact } from "@/api/eyeContact";
 import { createAnswer } from "@/api/answer";
 import { createSpeech } from "@/api/text_to_speech";
 import { SpeechData } from "@/types/speechData";
+import { is } from "@react-three/fiber/dist/declarations/src/core/utils";
 
 const VirtualInterview = () => {
   const { user } = useUser();
@@ -42,6 +43,7 @@ const VirtualInterview = () => {
 
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isLastQuestion, setIsLastQuestion] = useState(false); 
   const [exit, setExit] = useState(true);
 
   const cameraRef = useRef(null);
@@ -202,6 +204,7 @@ const VirtualInterview = () => {
 
     if (eyeContacts.length === 10 && !hasGeneratedFeedback.current) {
       hasGeneratedFeedback.current = true;
+      setIsLastQuestion(true);
       handleFeedbackRatings();
     }
   }, [eyeContacts, answers, paceOfSpeech, questions, interviewId, getToken]);
@@ -725,7 +728,7 @@ const VirtualInterview = () => {
         isVisible={isModalVisible}
         onNext={handleNext}
         onClose={() => setIsModalVisible(false)}
-        isLastQuestion={currentQuestionIndex === questions.length - 1}
+        isLastQuestion={isLastQuestion}
         isLoading={isLoading}
       />
       <ConfirmationModal

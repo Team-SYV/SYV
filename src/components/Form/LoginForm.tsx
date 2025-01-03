@@ -7,7 +7,10 @@ import CustomFormField from "../FormField/CustomFormField";
 import { Link } from "expo-router";
 import Toast from "react-native-toast-message";
 import CustomButton from "../Button/CustomButton";
-import { validateEmail, validatePassword } from "@/utils/validators/validateLogin";
+import {
+  validateEmail,
+  validatePassword,
+} from "@/utils/validators/validateLogin";
 
 const LoginForm = () => {
   const { signIn, setActive, isLoaded } = useSignIn();
@@ -93,7 +96,7 @@ const LoginForm = () => {
         placeholder="Email"
         value={emailAddress}
         onChangeText={(text) => handleInputChange(text, "email")}
-        otherStyles="mt-4 mb-1 bg-white rounded-xl"
+        otherStyles="mt-6 mb-1 bg-white rounded-xl"
         keyboardType="email-address"
         autoCapitalize="none"
       />
@@ -106,7 +109,7 @@ const LoginForm = () => {
         placeholder="Password"
         value={password}
         onChangeText={(text) => handleInputChange(text, "password")}
-        otherStyles="mt-4 mb-1 bg-white rounded-xl"
+        otherStyles="mt-6 mb-1 bg-white rounded-xl"
       />
 
       <View className="flex-row items-center justify-between mt-1 mb-1">
@@ -124,7 +127,7 @@ const LoginForm = () => {
       <CustomButton
         title="Sign In"
         onPress={onSignInPress}
-        containerStyles="bg-[#00AACE] h-[50px] w-full rounded-2xl mt-6"
+        containerStyles="bg-[#00AACE] h-[50px] w-full rounded-2xl mt-8"
         textStyles="text-white text-[16px] font-semibold"
         isLoading={loading}
       />

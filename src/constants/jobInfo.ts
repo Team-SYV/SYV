@@ -13,7 +13,7 @@ export const industry = [
   { key: "ET", value: "Education" },
   { key: "RS", value: "Retail Services" },
   { key: "HT", value: "Hospitality / Tourism" },
-  { key: "HS", value: "Health Science" },
+  { key: "HS", value: "Health" },
 ].sort((a, b) => a.value.localeCompare(b.value));
 
 export const jobRole = {
@@ -75,12 +75,13 @@ export const jobRole = {
     { key: "travel_consultant", value: "Travel Consultant" },
     { key: "waitress", value: "Waitress" },
   ],
-  "Health Science": [
+  "Health": [
+    { key: "dentist", value: "Dentist" },
     { key: "doctor", value: "Doctor" },
     { key: "health_educator", value: "Health Educator" },
     { key: "hospitalist", value: "Hospitalist" },
     { key: "laboratory_assistant", value: "Laboratory Assistant" },
-    { key: "mental_health_counselor", value: "Mental Health Counselor" },
+    { key: "medical_technologist", value: "Medical Technologist" },
     { key: "nurse", value: "Nurse" },
     { key: "orthodontist", value: "Orthodontist" },
     { key: "pharmacist", value: "Pharmacist" },

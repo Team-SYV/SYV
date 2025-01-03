@@ -67,6 +67,9 @@ const Feedback: React.FC = () => {
     }));
   };
 
+  const baseURL = process.env.EXPO_PUBLIC_BASE_URL;
+  console.log(baseURL)
+
   const renderExpandableSection = (
     title: string,
     content: string,
@@ -115,6 +118,11 @@ const Feedback: React.FC = () => {
         )}
         <ScrollView className="mt-5">
           <View className="px-4">
+            {renderExpandableSection(
+              "Answer ",
+              feedback.answer,
+              `answer-${index}`
+            )}
             {renderExpandableSection(
               "Answer Relevance",
               feedback.answer_relevance,

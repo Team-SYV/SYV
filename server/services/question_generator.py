@@ -12,34 +12,35 @@ def generate_interview_questions(type, industry, experience_level, interview_typ
     if (type == "RECORD"):
 
         prompt = f"""
-            You are a hiring manager in the {industry} conducting an interview for a {job_role} position{'' if company_name is None else ' at ' + company_name}.
+            You are a hiring manager in the {industry} industry conducting an interview for a {job_role} position{'' if company_name is None else ' at ' + company_name}.
 
             The details of the interview are as follows:
-            Interview type is {interview_type}, and the candidate's experience level is {experience_level}.
-            Job description: {'' if job_description is None else job_description}.
-            Resume details: {'' if resume_text is None else resume_text}.
+            - Interview type: {interview_type}
+            - Candidate's experience level: {experience_level}.
+            - Job description: { '' if job_description is None else job_description }
+            - Resume details: { '' if resume_text is None else resume_text }
 
             Please generate **5 interview questions**.
-            Ensure the first question is an introductory one, such as 'Tell me about yourself and a brief background,' 
-            Please ensure they are simple, short, straightforward, and easy to understand.
-           
+            1. Start with an introductory question, such as 'Tell me about yourself and a brief background,' 
+            2. Ensure the questions are simple, short, and easy to understand.
         """
 
     elif(type == "VIRTUAL"):
 
         prompt = f"""
-            You are a hiring manager in the {industry} conducting an interview for a {job_role} position{'' if company_name is None else ' at ' + company_name}.
+            You are a hiring manager in the {industry} industry conducting an interview for a {job_role} position{'' if company_name is None else ' at ' + company_name}.
 
-            The details of the interview are as follows:
-            Interview type is {interview_type}, and the candidate's experience level is {experience_level}.
-            Job description: {'' if job_description is None else job_description}.
-            Resume details: {'' if resume_text is None else resume_text}.
+             The details of the interview are as follows:
+            - Interview type: {interview_type}
+            - Candidate's experience level: {experience_level}.
+            - Job description: { '' if job_description is None else job_description }
+            - Resume details: { '' if resume_text is None else resume_text }
 
             Please generate **10 interview questions**.
-            Ensure the first question is an introductory one, such as 'Tell me about yourself and a brief background,' 
-            Please ensure they are simple, short, straightforward, and easy to understand.
-            Speak like we’re having coffee and your are asking me this questions.
-            """
+            1. Start with an introductory question, such as 'Tell me about yourself and a brief background,' 
+            2. Ensure the questions are simple, short, and easy to understand.
+            3. Make the tone conversational and friendly.
+        """
               
     completion = client.chat.completions.create(
         model="gpt-3.5-turbo",
@@ -65,10 +66,9 @@ def generate_answer_feedback(previous_question, previous_answer):
     Previous question: {previous_question}
     Previous answer: {previous_answer}
     
-    Please provide one very short sentence starting with "You" that either gives positive praise or indicates if the answer is unclear. 
-    If the answer is unclear, suggest how they could answer and improve next time.
-    Speak like we’re having coffee and you’re excited to share your knowledge.
-    Dont include emojis.
+    Please provide a one short sentence starting with "You" that either gives positive praise or indicates if the answer is unclear. 
+    If it's unclear or lacking, suggest an example answer.
+    Keep it simple and easy to understand.
     """
 
     completion = client.chat.completions.create(
@@ -77,7 +77,7 @@ def generate_answer_feedback(previous_question, previous_answer):
             {"role": "system", "content": "You are an experienced hiring manager in giving feedback."},
             {"role": "user", "content": prompt}
         ],
-        max_tokens=50
+        max_tokens=200
     )
 
     response_text = completion.choices[0].message.content.strip()

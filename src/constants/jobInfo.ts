@@ -9,7 +9,7 @@ export const steps = [
 ];
 
 export const industry = [
-  { key: "SI", value: "Software Industry" },
+  { key: "SI", value: "Software" },
   { key: "ET", value: "Education" },
   { key: "RS", value: "Retail Services" },
   { key: "HT", value: "Hospitality / Tourism" },
@@ -17,7 +17,7 @@ export const industry = [
 ].sort((a, b) => a.value.localeCompare(b.value));
 
 export const jobRole = {
-  "Software Industry": [
+  "Software": [
     { key: "ai", value: "AI Engineer" },
     { key: "backend_developer", value: "Backend Developer" },
     { key: "business_analyst", value: "Business Analyst" },

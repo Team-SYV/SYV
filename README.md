@@ -55,7 +55,7 @@ To get a local copy up and running follow these simple example steps.
 2. Navigate to the project directory:
 
     ```bash
-    cd savy-app 
+    cd Savy
     ```
 
 3. Install the dependencies:

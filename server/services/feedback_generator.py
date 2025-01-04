@@ -22,32 +22,34 @@ logging.basicConfig(
 def generate_feedback(question, answer, wpm, eye_contact):
     prompt = f"""
 
-        Imagine like you are my teacher and you will provide me a detailed feedback about my job interview performance.
+        Imagine you are an instructor providing feedback on my interview performance. 
+        
+        Evaluate the following based on the given input:
+        - **Question**: {question}
+        - **Answer**: {answer}
+        - **Words Per Minute (WPM)**: {wpm}
+        - **Eye Contact Percentage**: {eye_contact}%
 
-        Please provide concise and detailed feedback on the following aspects:
-        1. Grammar: Start feedback with "Your" and evaluate the grammatical accuracy of the answer: "{answer}", noting any errors related to grammar (e.g., subject-verb agreement, tense consistency, sentence structure), and suggest a corrected version.
-        2. Relevance: Start feedback with "Your" and assess how directly and comprehensively the answer: {answer} addresses the question: "{question}". If it does not address the question, suggest a more appropriate response."
-        3. Filler Words: Start feedback with "Your" and identify any excessive use of filler words and pauses (like "um," "uh," "like," etc.), and comment on how they may impact the response’s clarity and user's confidence.
-        4. Pace of Speech: Start feedback with 'Your' and evaluate the pace of speech based on the words per minute ({wpm} WPM). Suggest adjustments if needed to enhance comprehension and impact."
-        5. Eye Contact: Start feedback with "Your" and assess eye contact effectiveness, given the eye contact percentage of ({eye_contact}%), and discuss its effect on overall engagement and user's confidence with the interviewer.
-        6. Tips: Provide an ideal response to the question: "{question}" based on the given answer: "{answer}". If the given answer is incorrect or no answer is provided, suggest an ideal response that directly addresses the question in a clear and effective manner, written as though you were the one answering it.
+        **Provide a thorough and detailed feedback on:**
+        1. **Grammar**: Start with "Your" and evaluate grammatical accuracy, focusing on errors like subject-verb agreement, sentence structure, tense consistency, and article usage. Provide specific corrections for errors and suggest improved versions of the sentences. Rate this aspect out of 5.
+        2. **Relevance**: Start with "Your" and assess how well the answer addresses the question. Suggest a better response if necessary. Rate out of 5.
+        3. **Filler Words**: Start with "Your" and note excessive use of fillers (e.g., "um," "uh"). Suggest ways to reduce them. Rate out of 5.
+        4. **Pace of Speech**: Start with "Your" and evaluate pace based on {wpm} WPM. Comment if it's too fast, slow, or appropriate.
+        5. **Eye Contact**: Start with "Your" and evaluate eye contact effectiveness ({eye_contact}%). Suggest improvements if necessary.
+        6. **Tips**: Provide an ideal response to the question based on the given answer. If the given answer is incorrect, lacking, or no answer is provided, suggest an ideal response that directly addresses the question as though you were the one answering it.
 
-        Make it 80% professional and 20% conversational. 
-
-        Additionally, rate each of them out of 5.
-
-        Please format your response in the following JSON structure:
+        **Output Format** (in JSON):
         {{
-            "grammar": "<your feedback on grammar>",
-            "relevance": "<your feedback on answer relevance>",
-            "filler": "<your feedback on filler words>",
-            "pace_of_speech": "<your feedback on the pace>",
-            "eye_contact": "<your feedback on eye contact percentage>",
-            "tips": "<your given tips and ideal answer>",
-            "grammar_rating": "<your rating on grammar, should be a number>", 
-            "relevance_rating": "<your rating on answer relevance, should be a number>",
-            "filler_rating": "<your rating on filler words, should be a number>",
-            "pace_of_speech_rating": { get_wpm_rating(wpm)},
+            "grammar": "<feedback>",
+            "relevance": "<feedback>",
+            "filler": "<feedback>",
+            "pace_of_speech": "<feedback>",
+            "eye_contact": "<feedback>",
+            "tips": "<tips feedback>",
+            "grammar_rating": <1-5>,
+            "relevance_rating": <1-5>,
+            "filler_rating": <1-5>,
+            "pace_of_speech_rating": {get_wpm_rating(wpm)},
             "eye_contact_rating": {get_eye_contact_rating(eye_contact)}
         }}
     """
@@ -70,7 +72,7 @@ def generate_feedback(question, answer, wpm, eye_contact):
     if feedback_cleaned.lower().startswith("json"):
         feedback_cleaned = feedback_cleaned[4:].strip()
 
-    logging.info(f"Feedback: {feedback_cleaned}")
+    # logging.info(f"Feedback: {feedback_cleaned}")
 
     try:
         feedback_dict = json.loads(feedback_cleaned)
@@ -94,9 +96,7 @@ def generate_feedback(question, answer, wpm, eye_contact):
     return feedback_dict
 
 def generate_feedback_virtual(questions, answers, wpm, eye_contact):
-    """
-    Generate cumulative feedback for multiple questions and answers, incorporating mean ratings for WPM and eye contact.
-    """
+    
     # Input validation
     if not (len(questions) == len(answers) == len(wpm) == len(eye_contact)):
         raise ValueError("The number of questions, answers, WPM, and eye contact values must match.")
@@ -121,18 +121,15 @@ def generate_feedback_virtual(questions, answers, wpm, eye_contact):
 
     # Construct the prompt
     prompt = """
-        Imagine like you are my teacher and you will provide me a detailed feedback about my job interview performance.
+        Imagine you are my instructor providing feedback on my interview performance.  
         
-        Based on the interviewee's answers to the following questions, provide detailed and cumulative feedback on their overall performance, focusing on:
-        1. Grammar: Start feedback with "Your" and evaluate the grammatical accuracy of the response, noting any errors related to grammar (e.g., subject-verb agreement, tense consistency, sentence structure) and suggesting a corrected version.
-        2. Relevance: Start feedback with "Your" and assess how directly and comprehensively the answer addresses the question". If it does not address the question, suggest a more appropriate response."
-        3. Filler Words: Start feedback with "Your" and identify any excessive use of filler words or pauses (like "um," "uh," "like," etc.), and comment on how they may impact the response’s clarity and user's confidence.
-        4. Pace of Speech: Start feedback with "Your" and evaluate the pace based on the words per minute ({wpm} WPM) and suggest if adjustments are needed for better comprehension or impact.
-        5. Eye Contact: Start feedback with "Your" and assess eye contact effectiveness, given the eye contact percentage ({eye_contact}%), and discuss its effect on the overall engagement and user's confidence with the interviewer.
+        Based on the interviewee's answers to the following questions, provide detailed feedback on their overall performance, focusing on:
+        1. **Grammar**: Start with "Your" and evaluate grammatical accuracy, focusing on errors like subject-verb agreement, sentence structure, tense consistency, and article usage. Provide specific corrections for errors and suggest improved versions of the sentences. Rate this aspect out of 5.
+        2. **Relevance**: Start with "Your" and assess how well the answer addresses the question. Suggest a better response if necessary. Rate out of 5.
+        3. **Filler Words**: Start with "Your" and note excessive use of fillers (e.g., "um," "uh"). Suggest ways to reduce them. Rate out of 5.
+        4. **Pace of Speech**: Start with "Your" and evaluate pace based on {wpm} WPM. Comment if it's too fast, slow, or appropriate.
+        5. **Eye Contact**: Start with "Your" and evaluate eye contact effectiveness ({eye_contact}%). Suggest improvements if necessary.
         
-        Make it 80% professional and 20% conversational. 
-
-        Here are the questions and answers:
     """
 
     for feedback in individual_feedback:
@@ -169,7 +166,7 @@ def generate_feedback_virtual(questions, answers, wpm, eye_contact):
                 {"role": "system", "content": "You are an expert interview reviewer."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=1000  # Adjust for token limits
+            max_tokens=1000  
         )
         feedback = completion.choices[0].message.content
     except Exception as e:

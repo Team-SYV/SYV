@@ -196,11 +196,11 @@ async def get_feedback_and_questions(interview_id: str, request: Request, supaba
 
     # Retrieve answers for the feedback
     answer_ids = [feedback['answer_id'] for feedback in feedback_response.data]
-    answers_response = supabase.table('answer').select('answer_id, question_id').in_('answer_id', answer_ids).execute()
+    answers_response = supabase.table('answer').select('answer_id, question_id, answer').in_('answer_id', answer_ids).execute()
     if hasattr(answers_response, 'error') and answers_response.error:
         raise HTTPException(status_code=500, detail="Failed to retrieve answers")
 
-    answers_data = {answer['answer_id']: answer['question_id'] for answer in answers_response.data}
+    answers_data = {answer['answer_id']: answer for answer in answers_response.data}
 
     # Retrieve questions associated with the answers
     question_ids = list(set(answers_data.values()))
@@ -227,7 +227,8 @@ async def get_feedback_and_questions(interview_id: str, request: Request, supaba
                     pace_of_speech=feedback.get('pace_of_speech'),
                     filler_words=feedback.get('filler_words'),
                     tips=feedback.get('tips'),
-                    question=question_data['question']
+                    question=question_data['question'],
+                    answer=answers_data['answer']
                 )
             )
 
@@ -268,6 +269,15 @@ async def get_feedback(interview_id: str, request: Request, supabase: Client = D
 
     if hasattr(feedback_response, 'error') and feedback_response.error:
         raise HTTPException(status_code=500, detail="Failed to retrieve feedback")
+    
+    # Retrieve answers for the feedback
+    answer_ids = [feedback['answer_id'] for feedback in feedback_response.data]
+    answers_response = supabase.table('answer').select('answer_id, answer').in_('answer_id', answer_ids).execute()
+    if hasattr(answers_response, 'error') and answers_response.error:
+        raise HTTPException(status_code=500, detail="Failed to retrieve answers")
+
+    answers_data = {answer['answer_id']: answer['answer'] for answer in answers_response.data}
+
 
     feedback_list = [
         GetFeedbackResponse(
@@ -279,6 +289,7 @@ async def get_feedback(interview_id: str, request: Request, supabase: Client = D
             pace_of_speech=feedback.get('pace_of_speech'),
             filler_words=feedback.get('filler_words'),
             tips=feedback.get('tips'),
+            answer=answers_data.get(feedback['answer_id']),
         )
         for feedback in feedback_response.data
     ]

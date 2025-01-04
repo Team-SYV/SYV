@@ -1,8 +1,7 @@
 
-## Savy - Job Interview Simulation Mobile App
+# Savy - Job Interview Simulation Mobile App
 
-### Description
-Savy is an AI-powered job interview simulation mobile application designed to help job seekers practice and prepare for interviews.
+ Savy is an AI-powered job interview simulation mobile application designed to help job seekers practice and prepare for interviews.
 
 ## 🛠️ Built with
 
@@ -35,8 +34,7 @@ Savy is an AI-powered job interview simulation mobile application designed to he
 
 * [AWS Amazon Polly](https://aws.amazon.com/free/machine-learning/?gclid=CjwKCAiA1eO7BhATEiwAm0Ee-FC2buAiyMTseXCKbblihHIcGL5m5oAIJ3oUxV7DEs1xIMLAMNwGMhoCdO0QAvD_BwE&trk=79f6e5e1-b2ed-414e-8aeb-2c258885fa60&sc_channel=ps&ef_id=CjwKCAiA1eO7BhATEiwAm0Ee-FC2buAiyMTseXCKbblihHIcGL5m5oAIJ3oUxV7DEs1xIMLAMNwGMhoCdO0QAvD_BwE:G:s&s_kwcid=AL!4422!3!531174387034!e!!g!!aws%20tts!11543056237!112002963269) for text-to-speech functionality
 
-* [Jest Testing](https://docs.expo.dev/develop/unit-testing/) for running unit tests
-
+* [Jest](https://docs.expo.dev/develop/unit-testing/) for running unit tests
 
 * [Prettier](https://prettier.io/docs/en/) for code formatting
 
@@ -50,24 +48,23 @@ To get a local copy up and running follow these simple example steps.
 
 1. Clone the repository:
 
-   ```bash
-   git clone https://github.com/Team-SYV/SYV.git
-   ```
+    ```bash
+    git clone https://github.com/Team-SYV/SYV.git
+    ```
 
 2. Navigate to the project directory:
 
-  ```bash
-   cd savy-app 
-   ```
+    ```bash
+    cd savy-app 
+    ```
 
 3. Install the dependencies:
 
-  ```bash
-  npm install   # If you use npm
-     or
-  yarn install  # If you use yarn
-  ```
-
+    ```bash
+    npm install   # If you use npm
+        or
+    yarn install  # If you use yarn
+    ```
 
 4. Set up the environment variables by creating a .env file in the root directory and adding the necessary keys for services like Clerk, OpenAI, Supabase, and AWS.
 

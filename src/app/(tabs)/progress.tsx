@@ -1,27 +1,44 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  Dimensions,
+} from "react-native";
 import dayjs from "dayjs";
 import { Feather } from "@expo/vector-icons";
 import { LineChart } from "react-native-gifted-charts";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useFocusEffect } from "@react-navigation/native";
 import { getProgress } from "@/api/ratings";
+import Carousel from "react-native-reanimated-carousel";
+
+const SCREENWIDTH = Dimensions.get("window").width;
 
 const Progress = () => {
   const { user } = useUser();
   const { getToken } = useAuth();
+
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("answerRelevance");
+  const categories = [
+    "answerRelevance",
+    "grammar",
+    "eyeContact",
+    "paceOfSpeech",
+    "fillerWords",
+  ];
 
   const [currentWeekStart, setCurrentWeekStart] = useState(
     dayjs().startOf("week")
   );
 
-  const [ratingsData, setRatingsData] = useState({});
   const weekStart = currentWeekStart.format("MMMM D");
   const weekEnd = currentWeekStart.add(6, "day").format("MMMM D, YYYY");
   const currentWeekKey = currentWeekStart.format("YYYY-MM-DD");
 
+  const [ratingsData, setRatingsData] = useState({});
   const weeklyRatings = ratingsData[currentWeekKey] || {};
   const categoryRatings = weeklyRatings[selectedCategory] || [];
   const today = dayjs();
@@ -108,39 +125,48 @@ const Progress = () => {
       .replace(/^./, (str) => str.toUpperCase());
 
   return (
-    <View className="flex-1 bg-white pt-12 px-2">
-      <View className="flex-row justify-evenly mb-5 mx-auto max-w-[84%]">
-        {[
-          "answerRelevance",
-          "grammar",
-          "eyeContact",
-          "paceOfSpeech",
-          "fillerWords",
-        ].map((category) => (
-          <TouchableOpacity
-            key={category}
-            onPress={() => setSelectedCategory(category)}
-            className={`p-3 rounded-2xl ${
-              selectedCategory === category
-                ? "bg-[#00AACE] z-10"
-                : "bg-[#f0f0f0]"
-            }`}
-            style={{
-              borderWidth: selectedCategory === category ? 2 : 1,
-              borderColor:
-                selectedCategory === category ? "transparent" : "#E0E0E0",
-            }}
-            activeOpacity={0.9}
-          >
-            <Text
-              className={`${
-                selectedCategory === category ? "text-white" : "text-black"
-              } font-medium text-[10px]`}
+    <View className="flex-1 bg-white pt-12">
+      <View className="flex-row">
+        <Carousel
+          loop
+          width={SCREENWIDTH}
+          height={48}
+          data={categories}
+          scrollAnimationDuration={100}
+          onSnapToItem={(index) => setSelectedCategory(categories[index])}
+          mode="parallax"
+          modeConfig={{
+            parallaxScrollingScale: 0.9,
+            parallaxScrollingOffset: 50,
+          }}
+          renderItem={({ item }) => (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+                borderWidth: selectedCategory === item ? 2 : 1,
+                borderColor:
+                  selectedCategory === item ? "transparent" : "#AFAFAF",
+                backgroundColor:
+                  selectedCategory === item ? "#01B7DD" : "white",
+                borderRadius: 16,
+                padding: 10,
+              }}
             >
-              {formatCategoryName(category)}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={{
+                  textAlign: "center",
+                  fontSize: 15,
+                  color: selectedCategory === item ? "white" : "black",
+                  fontWeight: "500",
+                }}
+              >
+                {formatCategoryName(item)}
+              </Text>
+            </View>
+          )}
+        />
       </View>
 
       <View className="flex-row justify-between items-center mb-6 px-3 mt-6">

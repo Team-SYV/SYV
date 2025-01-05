@@ -203,7 +203,7 @@ async def get_feedback_and_questions(interview_id: str, request: Request, supaba
     answers_data = {answer['answer_id']: answer for answer in answers_response.data}
 
     # Retrieve questions associated with the answers
-    question_ids = list(set(answers_data.values()))
+    question_ids = list(set(answer['question_id'] for answer in answers_data.values()))
     questions_response = supabase.table('questions').select('question_id, question, created_at').in_('question_id', question_ids).execute()
     if hasattr(questions_response, 'error') and questions_response.error:
         raise HTTPException(status_code=500, detail="Failed to retrieve questions")
@@ -214,26 +214,40 @@ async def get_feedback_and_questions(interview_id: str, request: Request, supaba
     # Prepare feedback list with associated question text
     feedback_list = []
     for feedback in feedback_response.data:
-        question_id = answers_data.get(feedback['answer_id'])
-        question_data = questions_data.get(question_id)
-        if question_data:
-            feedback_list.append(
-                GetFeedbackResponse(
-                    answer_id=feedback['answer_id'],
-                    interview_id=feedback['interview_id'],
-                    answer_relevance=feedback['answer_relevance'],
-                    eye_contact=feedback['eye_contact'],
-                    grammar=feedback['grammar'],
-                    pace_of_speech=feedback.get('pace_of_speech'),
-                    filler_words=feedback.get('filler_words'),
-                    tips=feedback.get('tips'),
-                    question=question_data['question'],
-                    answer=answers_data['answer']
-                )
-            )
+    # Get the answer associated with the feedback
+        answer = answers_data.get(feedback['answer_id'])
+        if not answer:
+            continue  # Skip if no answer is found
 
-    # Sort feedback based on created_at of questions
-    feedback_list.sort(key=lambda x: questions_data[answers_data[x.answer_id]]['created_at'])
+        # Extract the question_id from the answer
+        question_id = answer.get('question_id')
+        if not question_id:
+            continue  # Skip if no question_id is found
+
+        # Get the question data
+        question_data = questions_data.get(question_id)
+        if not question_data:
+            continue  # Skip if no question data is found
+
+        # Add to the feedback list
+        feedback_list.append(
+            GetFeedbackResponse(
+                answer_id=feedback['answer_id'],
+                interview_id=feedback['interview_id'],
+                answer_relevance=feedback['answer_relevance'],
+                eye_contact=feedback['eye_contact'],
+                grammar=feedback['grammar'],
+                pace_of_speech=feedback.get('pace_of_speech'),
+                filler_words=feedback.get('filler_words'),
+                tips=feedback.get('tips'),
+                question=question_data['question'],
+                answer=answer['answer']  # Use the `answer` field from the answer dictionary
+            )
+        )
+
+    # Sort feedback based on `created_at` in questions_data
+    feedback_list.sort(key=lambda x: questions_data[answers_data[x.answer_id]['question_id']]['created_at'])
+
 
     return feedback_list
 

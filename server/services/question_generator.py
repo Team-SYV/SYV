@@ -47,6 +47,7 @@ def generate_answer_feedback(previous_question, previous_answer):
     
     Please provide a one short sentence starting with "You" that either gives positive praise or indicates if the answer is unclear. 
     If it's unclear or lacking, suggest an example answer.
+    Do not ask another question or seek clarification.
     Keep it simple and easy to understand.
     """
 

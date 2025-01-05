@@ -36,7 +36,7 @@ def generate_interview_questions(type, industry, experience_level, interview_typ
             - Job description: { '' if job_description is None else job_description }
             - Resume details: { '' if resume_text is None else resume_text }
 
-            Please generate **10 interview questions**.
+            Please generate **5 interview questions**.
             1. Start with an introductory question, such as 'Tell me about yourself and a brief background,' 
             2. Ensure the questions are simple, short, and easy to understand.
             3. Make the tone conversational and friendly.

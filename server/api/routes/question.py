@@ -16,7 +16,6 @@ async def create_questions(
     request: Request,
     interview_id: str = Form(...),
     file: UploadFile = File(None),  
-    type: str = Form(None),
     industry: str = Form(None),
     experience_level: str = Form(None),
     interview_type: str = Form(None),
@@ -55,7 +54,6 @@ async def create_questions(
     try:
         questions = generate_interview_questions(
             industry=industry,
-            type=type,
             experience_level=experience_level,
             interview_type=interview_type,
             job_description=job_description,

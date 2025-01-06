@@ -167,7 +167,6 @@ const JobInformation: React.FC<JobInformationProps> = ({
       const token = await getToken({template:"supabase"});
 
       const jobData = {
-        type: interviewType,
         industry: formData.selectedIndustry,
         job_role: formData.selectedJobRole,
         interview_type: formData.selectedInterviewType,
@@ -222,7 +221,6 @@ const JobInformation: React.FC<JobInformationProps> = ({
 
       const questionFormData = new FormData();
 
-      questionFormData .append("type", interviewType);
       questionFormData .append("industry", formData.selectedIndustry);
       questionFormData .append("experience_level", formData.selectedExperienceLevel);
       questionFormData .append("interview_type", formData.selectedInterviewType);

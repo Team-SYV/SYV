@@ -39,13 +39,6 @@ const ProfileLayout = () => {
       />
 
       <Stack.Screen
-        name="subscription"
-        options={{
-          headerTitle: () => "",
-          headerBackVisible: false,
-        }}
-      />
-      <Stack.Screen
         name="success-page"
         options={{
           headerTitle: () => "",

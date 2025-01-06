@@ -18,7 +18,7 @@ import { getQuestions } from "@/api/question";
 import { createRatings } from "@/api/ratings";
 import { transcribeVideo } from "@/api/transcription";
 import { createAnswer } from "@/api/answer";
-import { createFeedbackRecord } from "@/api/feedback";
+import { createFeedback } from "@/api/feedback";
 
 const RecordYourself: React.FC = () => {
   const router = useRouter();
@@ -179,10 +179,10 @@ const RecordYourself: React.FC = () => {
         const endTime = Date.now();
         const videoDuration = (endTime - startTime) / 1000;
 
-        if (videoDuration < 5) {
+        if (videoDuration < 3) {
           Alert.alert(
             "Recording Too Short",
-            "Please record for at least 5 seconds."
+            "Please record for at least 3 seconds."
           );
         } else {
           setRecordedVideos((prev) => [...prev, recordedVideo.uri]);
@@ -233,7 +233,7 @@ const RecordYourself: React.FC = () => {
         );
 
         if (answerResponse?.answer_id) {
-          const feedbackResponse = await createFeedbackRecord(
+          const feedbackResponse = await createFeedback(
             {
               answer_id: answerResponse.answer_id,
               interview_id: interviewId,

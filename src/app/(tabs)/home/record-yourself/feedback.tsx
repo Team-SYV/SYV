@@ -20,7 +20,7 @@ import {
 import Ratings from "@/components/Rating/Ratings";
 import { RatingsData } from "@/types/ratingsData";
 import { useAuth } from "@clerk/clerk-expo";
-import { getFeedbackRecord } from "@/api/feedback";
+import { getFeedback } from "@/api/feedback";
 import { getRatings } from "@/api/ratings";
 import { cleanQuestion } from "@/utils/cleanQuestion";
 
@@ -97,7 +97,8 @@ const Feedback: React.FC = () => {
         const token = await getToken({ template: "supabase" });
         setLoading(true);
 
-        const fetchedFeedback = await getFeedbackRecord(interviewId, token);
+        const fetchedFeedback = await getFeedback(interviewId, token);
+        console.log(fetchedFeedback);
         setFeedbackItem(fetchedFeedback);
         const fetchedRatings = await getRatings(interviewId, token);
         setRatings(fetchedRatings);
@@ -212,6 +213,11 @@ const Feedback: React.FC = () => {
 
         <ScrollView className="mt-5">
           <View className="px-4">
+          {renderExpandableSection(
+              "Answer",
+              feedback.answer,
+              `answer-${index}`
+            )}
             {renderExpandableSection(
               "Answer Relevance",
               feedback.answer_relevance,

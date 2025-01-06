@@ -97,8 +97,6 @@ const FileUpload: React.FC<FileuploadProps> = ({
         type: "application/pdf",
       } as unknown as Blob);
 
-
-      questionFormData.append("type", parsedJobData.type);
       questionFormData.append("industry", parsedJobData.industry);
       questionFormData.append("experience_level", parsedJobData.experience_level);
       questionFormData.append("interview_type", parsedJobData.interview_type);

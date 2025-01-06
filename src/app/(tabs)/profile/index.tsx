@@ -7,6 +7,8 @@ import SubscribeButton from "@/components/Button/SubscribeButton";
 
 const Profile = () => {
   const { user } = useUser();
+  const isSubscribed = (user.unsafeMetadata.subscribed as boolean) || false;
+  const subscription =  (user.unsafeMetadata.subscription as string) || "NONE";
 
   return (
     <View className="flex-1 bg-white">
@@ -33,7 +35,7 @@ const Profile = () => {
         </View>
       </View>
 
-      <SubscribeButton />
+      <SubscribeButton subscribed={isSubscribed}/>
       <EditProfileButton />
       <Logout />
     </View>

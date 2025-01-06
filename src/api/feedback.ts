@@ -1,17 +1,17 @@
-import { FeedbackDataRecord, FeedbackDataVirtual } from "@/types/feedbackData";
+import { FeedbackData } from "@/types/feedbackData";
 import axios from "axios";
 
 const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL,
 });
 
-export const createFeedbackRecord = async (
-  feedbackData: FeedbackDataRecord,
+export const createFeedback = async (
+  feedbackData: FeedbackData,
   token: string
 ) => {
   try {
     const response = await api.post(
-      "/api/feedback/create/record/",
+      "/api/feedback/create/",
       feedbackData,
       {
         headers: {
@@ -28,28 +28,6 @@ export const createFeedbackRecord = async (
   }
 };
 
-export const createFeedbackVirtual = async (
-  feedbackData: FeedbackDataVirtual,
-  token: string
-) => {
-  try {
-    const response = await api.post(
-      "/api/feedback/create/virtual/",
-      feedbackData,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error(
-      error.response?.data?.detail || "Failed to generate feedback"
-    );
-  }
-};
 
 export const generateResponse = async (formData: FormData, token: string) => {
   try {
@@ -74,12 +52,13 @@ export const generateResponse = async (formData: FormData, token: string) => {
   }
 };
 
-export const getFeedbackRecord = async (
+
+export const getFeedback = async (
   interviewId: string | string[],
   token: string
 ) => {
   try {
-    const response = await api.get(`/api/feedback/get/record/${interviewId}/`, {
+    const response = await api.get(`/api/feedback/get/${interviewId}/`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -91,23 +70,3 @@ export const getFeedbackRecord = async (
     );
   }
 };
-
-export const getFeedbackVirtual = async (
-  interviewId: string | string[],
-  token: string
-) => {
-  try {
-    const response = await api.get(`/api/feedback/get/virtual/${interviewId}/`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    throw new Error(
-      error.response?.data?.detail || "Failed to retrieve feedback"
-    );
-  }
-};
-
-

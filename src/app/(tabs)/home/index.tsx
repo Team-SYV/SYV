@@ -1,11 +1,17 @@
 import { View, Text, Image } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import Slider from "@/components/Card/Slider";
 import Card from "@/components/Card/Card";
 import { useRouter } from "expo-router";
+import { useUser } from "@clerk/clerk-expo";
+import SubscriptionModal from "@/components/Modal/SubscriptionModal";
 
 const Home = () => {
   const router = useRouter();
+  const { user } = useUser();
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const isSubscribed = user.unsafeMetadata.subcribed || false;
 
   return (
     <View className="p-4 bg-white min-h-full">
@@ -31,7 +37,9 @@ const Home = () => {
           text="Talk with Virtual Interviewer"
           textClassName="text-[12px]"
           onPress={() =>
-            router.push("/(tabs)/home/virtual-interview/job-information")
+            isSubscribed
+              ? router.push("/(tabs)/home/virtual-interview/job-information")
+              : setModalVisible(true)
           }
         />
       </View>
@@ -50,7 +58,12 @@ const Home = () => {
       </Text>
 
       <Slider />
+      <SubscriptionModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+      />
     </View>
+    
   );
 };
 

@@ -1,53 +1,106 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { Video, ResizeMode } from "expo-av";
+import { router, Stack, useLocalSearchParams } from "expo-router";
+import ConfirmationModal from "@/components/Modal/ConfirmationModal";
+import AntDesign from "@expo/vector-icons/AntDesign";
 import {
   View,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  ScrollView,
   BackHandler,
+  Dimensions,
+  Animated,
+  FlatList,
+  ScrollView,
   ActivityIndicator,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from "react-native";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import ConfirmationModal from "@/components/Modal/ConfirmationModal";
-import Spinner from "react-native-loading-spinner-overlay";
+import Ratings from "@/components/Rating/Ratings";
+import { RatingsData } from "@/types/ratingsData";
 import { useAuth } from "@clerk/clerk-expo";
-import { getFeedbackVirtual } from "@/api/feedback";
+import { getFeedback} from "@/api/feedback";
+import { getRatings } from "@/api/ratings";
+import { cleanQuestion } from "@/utils/cleanQuestion";
+
+const { width, height } = Dimensions.get("window");
 
 const Feedback: React.FC = () => {
-  const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [buttonLoading, setButtonLoading] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const flatListRef = useRef<FlatList<string>>(null);
+  const [contentOffset, setContentOffset] = useState(0);
 
   const [isExpanded, setIsExpanded] = useState<Record<string, boolean>>({});
   const [isClamped, setIsClamped] = useState<Record<string, boolean>>({});
 
-  const [feedbackItem, setFeedbackItem] = useState({
-    answerRelevance: "No feedback available",
-    grammar: "No feedback available",
-    eyeContact: "No feedback available",
-    paceOfSpeech: "No feedback available",
-    fillerWords: "No feedback available",
-  });
-  const [exit, setExit] = useState(true);
-  const router = useRouter();
-  const { interviewId } = useLocalSearchParams();
+  const [feedbackItem, setFeedbackItem] = useState([]);
+  const [ratings, setRatings] = useState<RatingsData>();
+
+  const [loading, setLoading] = useState(true);
+  const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
+  const [isOnPage, setIsOnPage] = useState(true);
+
+  const { videoURIs, interviewId } = useLocalSearchParams();
+  const parsedVideos: string[] =
+    typeof videoURIs === "string" ? (JSON.parse(videoURIs) as string[]) : [];
+  const videosWithRatings = [...parsedVideos, "ratings"];
   const { getToken } = useAuth();
 
-  // Fetch feedback
+  // Android back button
+  useEffect(() => {
+    const backAction = () => {
+      if (isFullScreen) {
+        setIsFullScreen(false);
+        return true;
+      }
+
+      if (isOnPage) {
+        setIsConfirmationVisible(true);
+        return true;
+      }
+
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [isFullScreen, isOnPage]);
+
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollX.setValue(event.nativeEvent.contentOffset.x);
+    setContentOffset(event.nativeEvent.contentOffset.x);
+  };
+
+  // Handle full-screen exit
+  const handleExitFullScreen = () => {
+    setIsFullScreen(false);
+
+    setTimeout(() => {
+      flatListRef.current?.scrollToOffset({
+        offset: contentOffset,
+        animated: true,
+      });
+    }, 5);
+  };
+
+  // Fetch questions, feedback and ratings
   useEffect(() => {
     const fetch = async () => {
       try {
         const token = await getToken({ template: "supabase" });
         setLoading(true);
-        const fetchedFeedback = await getFeedbackVirtual(interviewId, token);
-        setFeedbackItem({
-          answerRelevance: fetchedFeedback[0].answer_relevance,
-          grammar: fetchedFeedback[0].grammar,
-          eyeContact: fetchedFeedback[0].eye_contact,
-          paceOfSpeech: fetchedFeedback[0].pace_of_speech,
-          fillerWords: fetchedFeedback[0].filler_words,
-        });
+
+        const fetchedFeedback = await getFeedback(interviewId, token);
+        setFeedbackItem(fetchedFeedback);
+        const fetchedRatings = await getRatings(interviewId, token);
+        setRatings(fetchedRatings);
       } catch (error) {
         console.error("Error fetching data", error.message);
       } finally {
@@ -60,43 +113,6 @@ const Feedback: React.FC = () => {
     }
   }, [interviewId]);
 
-  // Handle Android back button with confirmation modal
-  const handleBackButtonPress = () => {
-    if (exit) {
-      setIsConfirmationVisible(true);
-      return true;
-    }
-    return false;
-  };
-
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      handleBackButtonPress
-    );
-
-    return () => {
-      backHandler.remove();
-    };
-  }, [isConfirmationVisible, exit]);
-
-  // Handle back navigation to home or leave page
-  const handleLeavePage = () => {
-    setIsConfirmationVisible(false);
-    setExit(false);
-    router.push("/home");
-  };
-
-  // Route to ratings
-  const handleProceedToRatings = () => {
-    setButtonLoading(true);
-    setExit(false);
-    setTimeout(() => {
-      setButtonLoading(false);
-      router.push(`/home/virtual-interview/ratings?interviewId=${interviewId}`);
-    }, 1000);
-  };
-
   const toggleExpand = (key: string) => {
     setIsExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -107,12 +123,6 @@ const Feedback: React.FC = () => {
       ...prev,
       [key]: lines.length > 3,
     }));
-  };
-
-  const formatFieldName = (field: string) => {
-    return field
-      .replace(/([A-Z])/g, " $1")
-      .replace(/^./, (str) => str.toUpperCase());
   };
 
   const renderExpandableSection = (
@@ -142,11 +152,115 @@ const Feedback: React.FC = () => {
     </>
   );
 
+  // Render each video and its corresponding question and feedback
+  const renderFeedbackItem = ({
+    item,
+    index,
+  }: {
+    item: string;
+    index: number;
+  }) => {
+    if (item === "ratings") {
+      return (
+        <View style={styles.itemContainer}>
+          {ratings ? (
+            <Ratings
+              relevance={ratings[0].answer_relevance}
+              grammar={ratings[0].grammar}
+              eyeContact={ratings[0].eye_contact}
+              pace={ratings[0].pace_of_speech}
+              fillerWords={ratings[0].filler_words}
+              setIsOnPage={setIsOnPage}
+            />
+          ) : (
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator size="large" color="#00AACE" />
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    const feedback = feedbackItem[index] || {};
+
+    return (
+      <View style={styles.itemContainer}>
+        <View className="flex-row items-center px-4 mt-4">
+          <View style={styles.questionContainer}>
+            <Text className="font-semibold text-[13px]">
+              Question {index + 1}
+            </Text>
+
+            <Text className="text-sm text-[13px]">
+              {cleanQuestion(feedback.question)}
+            </Text>
+          </View>
+          <View style={styles.videoContainer}>
+            <TouchableOpacity
+              onPress={() => {
+                setSelectedVideo(item);
+                setIsFullScreen(true);
+              }}
+              className="rounded-md bg-[#00AACE] py-[8px] px-3 mt-2"
+            >
+              <Text className="text-white font-medium text-[12px] text-center">
+                View Video
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <ScrollView className="mt-5">
+          <View className="px-4">
+          {renderExpandableSection(
+              "Answer",
+              feedback.answer,
+              `answer-${index}`
+            )}
+            {renderExpandableSection(
+              "Answer Relevance",
+              feedback.answer_relevance,
+              `answerRelevance-${index}`
+            )}
+            {renderExpandableSection(
+              "Grammar",
+              feedback.grammar,
+              `grammar-${index}`
+            )}
+            {renderExpandableSection(
+              "Eye Contact",
+              feedback.eye_contact,
+              `eyeContact-${index}`
+            )}
+            {renderExpandableSection(
+              "Pace of Speech",
+              feedback.pace_of_speech,
+              `paceOfSpeech-${index}`
+            )}
+            {renderExpandableSection(
+              "Filler Words",
+              feedback.filler_words,
+              `fillerWords-${index}`
+            )}
+            {feedbackItem.length > 1 &&
+              renderExpandableSection(
+                "Tips & Ideal Answer",
+                feedback.tips,
+                `tips-${index}`
+              )}
+          </View>
+        </ScrollView>
+      </View>
+    );
+  };
   return (
-    <View className="bg-white flex-1">
+    <View className="flex-1 bg-white">
       <Stack.Screen
         options={{
-          headerStyle: { backgroundColor: "white" },
+          headerShown: !isFullScreen,
+          headerStyle: {
+            backgroundColor: "white",
+          },
           headerLeft: () => (
             <TouchableOpacity onPress={() => setIsConfirmationVisible(true)}>
               <AntDesign name="arrowleft" size={24} color="#2a2a2a" />
@@ -155,31 +269,73 @@ const Feedback: React.FC = () => {
         }}
       />
 
-      <Spinner visible={loading} color="#00AACE" />
-
-      {!loading && (
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 20 }}
-          className="p-4"
-        >
-          {Object.entries(feedbackItem).map(([field, value]) =>
-            renderExpandableSection(formatFieldName(field), value, field)
-          )}
-
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#00AACE" />
+        </View>
+      ) : isFullScreen ? (
+        <View style={styles.fullScreenVideoContainer}>
           <TouchableOpacity
-            onPress={handleProceedToRatings}
-            className="bg-[#00AACE] h-14 rounded-xl mb-3 justify-center items-center"
-            disabled={buttonLoading}
+            onPress={() => handleExitFullScreen()}
+            className="absolute right-4 top-14 z-10"
           >
-            {buttonLoading ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Text className="text-center text-white text-[15px] font-medium">
-                Proceed
-              </Text>
-            )}
+            <AntDesign name="closecircle" size={33} color="#A92703" />
           </TouchableOpacity>
-        </ScrollView>
+
+          <Video
+            source={{ uri: selectedVideo }}
+            style={styles.fullScreenVideo}
+            useNativeControls
+            resizeMode={ResizeMode.COVER}
+            shouldPlay
+            isLooping={false}
+          />
+        </View>
+      ) : (
+        <Animated.FlatList
+          ref={flatListRef}
+          data={videosWithRatings}
+          keyExtractor={(item) => item}
+          renderItem={renderFeedbackItem}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={onScroll}
+        />
+      )}
+
+      {!isFullScreen && !loading && (
+        <View className="absolute top-[5px] flex-row justify-center w-full">
+          {videosWithRatings.map((_, index) => {
+            const inputRange = [
+              (index - 1) * width,
+              index * width,
+              (index + 1) * width,
+            ];
+
+            const opacity = scrollX.interpolate({
+              inputRange,
+              outputRange: [0.3, 1, 0.3],
+              extrapolate: "clamp",
+            });
+
+            return (
+              <TouchableOpacity
+                key={index}
+                onPress={() =>
+                  flatListRef.current?.scrollToIndex({ index, animated: true })
+                }
+              >
+                <Animated.View
+                  style={{
+                    opacity,
+                  }}
+                  className="w-[22px] h-[9px] rounded-full bg-[#00AACE] mx-[4px]"
+                />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       )}
 
       <ConfirmationModal
@@ -191,7 +347,11 @@ const Feedback: React.FC = () => {
             Are you sure you want to leave?
           </Text>
         }
-        onConfirm={handleLeavePage}
+        onConfirm={() => {
+          setIsConfirmationVisible(false);
+          setIsOnPage(false);
+          router.push("/home");
+        }}
         onClose={() => setIsConfirmationVisible(false)}
       />
     </View>
@@ -199,3 +359,31 @@ const Feedback: React.FC = () => {
 };
 
 export default Feedback;
+
+const styles = StyleSheet.create({
+  itemContainer: {
+    width,
+    marginTop: 14,
+  },
+  questionContainer: {
+    width: "70%",
+  },
+  videoContainer: {
+    width: "30%",
+    paddingLeft: 10,
+  },
+  fullScreenVideoContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullScreenVideo: {
+    width,
+    height,
+  },
+});

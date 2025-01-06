@@ -18,7 +18,7 @@ import { getQuestions } from "@/api/question";
 import { createRatings } from "@/api/ratings";
 import { transcribeVideo } from "@/api/transcription";
 import { createAnswer } from "@/api/answer";
-import { createFeedbackRecord } from "@/api/feedback";
+import { createFeedback } from "@/api/feedback";
 
 const RecordYourself: React.FC = () => {
   const router = useRouter();
@@ -233,7 +233,7 @@ const RecordYourself: React.FC = () => {
         );
 
         if (answerResponse?.answer_id) {
-          const feedbackResponse = await createFeedbackRecord(
+          const feedbackResponse = await createFeedback(
             {
               answer_id: answerResponse.answer_id,
               interview_id: interviewId,

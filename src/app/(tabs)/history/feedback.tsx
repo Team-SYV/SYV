@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useAuth } from "@clerk/clerk-expo";
 import { getQuestions } from "@/api/question";
-import { getFeedbackVirtual } from "@/api/feedback";
+import { getFeedback } from "@/api/feedback";
 import { cleanQuestion } from "@/utils/cleanQuestion";
 
 const { width } = Dimensions.get("window");
@@ -41,7 +41,7 @@ const Feedback: React.FC = () => {
         const token = await getToken({ template: "supabase" });
         const fetchedQuestions = await getQuestions(interviewId, token);
         setQuestions(fetchedQuestions.questions);
-        const fetchedFeedback = await getFeedbackVirtual(interviewId, token);
+        const fetchedFeedback = await getFeedback(interviewId, token);
         setFeedbackItem(fetchedFeedback);
       } catch (error) {
         console.error("Error fetching data", error.message);

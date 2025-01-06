@@ -11,7 +11,7 @@ const Home = () => {
   const { user } = useUser();
 
   const [modalVisible, setModalVisible] = useState(false);
-  const isSubscribed = user.unsafeMetadata.subcribed || false;
+  const isSubscribed = user.unsafeMetadata.subscribed || false;
 
   return (
     <View className="p-4 bg-white min-h-full">

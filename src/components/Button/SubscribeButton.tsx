@@ -4,7 +4,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import GetPro from "./GetPro";
 import SubscriptionModal from "../Modal/SubscriptionModal";
 
-const SubscribeButton = () => {
+const SubscribeButton = ({ subscribed }: { subscribed: boolean }) => {
   const [modalVisible, setModalVisible] = useState(false);
 
   return (
@@ -12,7 +12,7 @@ const SubscribeButton = () => {
       <View className="mx-6 mt-5">
         <Pressable
           className="flex-row items-center justify-between px-2 py-2 border border-gray-200 rounded-lg"
-          onPress={() => setModalVisible(true)} 
+          onPress={() => setModalVisible(true)}
         >
           <View className="flex-row items-center">
             <MaterialIcons
@@ -22,14 +22,15 @@ const SubscribeButton = () => {
             />
             <Text className="text-[13px]">Subscribe to pro plan</Text>
           </View>
-          <GetPro />
+          <GetPro subscribed={subscribed} />
         </Pressable>
       </View>
-
-      <SubscriptionModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-      />
+      {!subscribed && (
+        <SubscriptionModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+        />
+      )}
     </>
   );
 };

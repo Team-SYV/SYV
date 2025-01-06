@@ -3,9 +3,13 @@ import React from "react";
 import Slider from "@/components/Card/Slider";
 import Card from "@/components/Card/Card";
 import { useRouter } from "expo-router";
+import { useUser } from "@clerk/clerk-expo";
 
 const Home = () => {
   const router = useRouter();
+  const { user } = useUser();
+
+  const isSubscribed = user.unsafeMetadata.subcribed || false;
 
   return (
     <View className="p-4 bg-white min-h-full">
@@ -31,7 +35,9 @@ const Home = () => {
           text="Talk with Virtual Interviewer"
           textClassName="text-[12px]"
           onPress={() =>
-            router.push("/(tabs)/home/virtual-interview/job-information")
+            isSubscribed
+              ? router.push("/(tabs)/home/virtual-interview/job-information")
+              : router.push("/(tabs)/profile/subscription")
           }
         />
       </View>

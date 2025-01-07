@@ -3,7 +3,7 @@ import React from "react";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { LinearGradient } from "expo-linear-gradient";
 
-const GetPro = () => {
+const GetPro = ({ subscribed }: { subscribed: boolean }) => {
   return (
     <LinearGradient
       colors={["#fbbf24", "#f59e0b"]}
@@ -12,8 +12,12 @@ const GetPro = () => {
       style={{ borderRadius: 8 }}
     >
       <View className="flex-row items-center py-2 px-2">
-        <Text className="text-white text-sm"> Get Pro </Text>
-        <AntDesign name="right" size={12} color="white" />
+        {subscribed ? (
+          <Text className="text-white text-sm"> Subscribed </Text>
+        ) : (
+          <Text className="text-white text-sm"> Get Pro </Text>
+        )}
+        {!subscribed && <AntDesign name="right" size={12} color="white" />}
       </View>
     </LinearGradient>
   );

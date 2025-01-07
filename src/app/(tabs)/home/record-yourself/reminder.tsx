@@ -79,7 +79,7 @@ const Reminder = () => {
 
         <Text className="mt-5 px-4 text-[13px]">
           <Text className="font-semibold text-[#23626d] ">Please Note: </Text>
-          Only recordings of 5 seconds or more can be analyzed.
+          Only recordings of 3 seconds or more can be analyzed.
         </Text>
       </View>
 

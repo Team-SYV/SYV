@@ -17,8 +17,8 @@ def initialize_models():
 
 def eye_contact(frame):
     """
-    Detect if the person is making eye contact in the given video frame.
-    Returns True if eye contact is detected, otherwise False.
+    Detect if the person is looking in the direction of the screen (relaxed eye contact).
+    Returns True if the relaxed gaze alignment is detected, otherwise False.
     """
     initialize_models()
 
@@ -28,7 +28,7 @@ def eye_contact(frame):
     # Detect faces in the grayscale image
     faces = detector(gray)
 
-    # If no faces are detected, return False for no eye contact
+    # If no faces are detected, return False for no relaxed eye contact
     if len(faces) == 0:
         return False
 
@@ -52,16 +52,19 @@ def eye_contact(frame):
         face_center_x = (face.left() + face.right()) // 2
         face_center_y = (face.top() + face.bottom()) // 2
 
+        # Simulate looking at the screen by offsetting the face center horizontally
+        screen_offset_x = 50 
+        screen_center_x = face_center_x + screen_offset_x
+
         # Relaxed alignment thresholds
-        horizontal_alignment = np.abs(eyes_center[0] - face_center_x) < 150
-        vertical_alignment = np.abs(eyes_center[1] - face_center_y) < 150
+        horizontal_alignment = np.abs(eyes_center[0] - screen_center_x) < 200
+        vertical_alignment = np.abs(eyes_center[1] - face_center_y) < 200
 
-        # If both horizontal and vertical alignment are satisfied, return True (eye contact)
+        # If both horizontal and vertical alignment are satisfied, return True (relaxed gaze)
         if horizontal_alignment and vertical_alignment:
-            return True  # Eye contact detected
+            return True  
 
-    return False  # No eye contact detected
-
+    return False  
 
 def process_eye_contact(video_path: str):
     """

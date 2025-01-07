@@ -78,7 +78,7 @@ const Reminder = () => {
         <View className="flex-row items-center mt-4 px-4">
           <AntDesign name="checkcircleo" size={15} color="black" />
           <Text className="ml-2 text-sm">
-            The interview will consist of 10 questions in total.
+            The interview will consist of 5 questions in total.
           </Text>
         </View>
 

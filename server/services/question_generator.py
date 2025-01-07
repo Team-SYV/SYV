@@ -7,11 +7,8 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-def generate_interview_questions(type, industry, experience_level, interview_type, job_description, company_name, job_role, resume_text=None):
-    prompt = ""
-    if (type == "RECORD"):
-
-        prompt = f"""
+def generate_interview_questions( industry, experience_level, interview_type, job_description, company_name, job_role, resume_text=None):
+    prompt = f"""
             You are a hiring manager in the {industry} industry conducting an interview for a {job_role} position{'' if company_name is None else ' at ' + company_name}.
 
             The details of the interview are as follows:
@@ -24,24 +21,6 @@ def generate_interview_questions(type, industry, experience_level, interview_typ
             1. Start with an introductory question, such as 'Tell me about yourself and a brief background,' 
             2. Ensure the questions are simple, short, and easy to understand.
         """
-
-    elif(type == "VIRTUAL"):
-
-        prompt = f"""
-            You are a hiring manager in the {industry} industry conducting an interview for a {job_role} position{'' if company_name is None else ' at ' + company_name}.
-
-             The details of the interview are as follows:
-            - Interview type: {interview_type}
-            - Candidate's experience level: {experience_level}.
-            - Job description: { '' if job_description is None else job_description }
-            - Resume details: { '' if resume_text is None else resume_text }
-
-            Please generate **10 interview questions**.
-            1. Start with an introductory question, such as 'Tell me about yourself and a brief background,' 
-            2. Ensure the questions are simple, short, and easy to understand.
-            3. Make the tone conversational and friendly.
-        """
-              
     completion = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -68,6 +47,7 @@ def generate_answer_feedback(previous_question, previous_answer):
     
     Please provide a one short sentence starting with "You" that either gives positive praise or indicates if the answer is unclear. 
     If it's unclear or lacking, suggest an example answer.
+    Do not ask another question or seek clarification.
     Keep it simple and easy to understand.
     """
 

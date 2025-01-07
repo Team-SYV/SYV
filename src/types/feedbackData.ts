@@ -1,4 +1,4 @@
-export interface FeedbackDataRecord {
+export interface FeedbackData{
     answer_id: string;
     interview_id: string | string[];
     answer: string;
@@ -6,12 +6,3 @@ export interface FeedbackDataRecord {
     pace_of_speech: number;
     eye_contact: number;
   }
-  
-  export interface FeedbackDataVirtual {
-    interview_id: string | string [];
-    answers: string[];
-    questions: string[];
-    pace_of_speech: number[];
-    eye_contact: number[];
-  }
-  

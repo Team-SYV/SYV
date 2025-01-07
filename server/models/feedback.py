@@ -33,6 +33,7 @@ class GetFeedbackResponse(BaseModel):
     filler_words: str
     tips:str
     question: Optional[str] = None
+    answer: Optional[str] = None
 
 
 class CreateFeedbackResponse(BaseModel):

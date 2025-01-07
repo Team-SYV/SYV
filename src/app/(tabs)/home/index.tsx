@@ -1,5 +1,5 @@
 import { View, Text, Image } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Slider from "@/components/Card/Slider";
 import Card from "@/components/Card/Card";
 import { useRouter } from "expo-router";
@@ -11,7 +11,14 @@ const Home = () => {
   const { user } = useUser();
 
   const [modalVisible, setModalVisible] = useState(false);
-  const isSubscribed = user.unsafeMetadata.subscribed || false;
+  const isSubscribed = useRef(false);
+
+  useEffect(() => {
+    isSubscribed.current = !!user.unsafeMetadata.subscribed;
+    if (isSubscribed.current) {
+      setModalVisible(false);
+    }
+  }, [user]);
 
   return (
     <View className="p-4 bg-white min-h-full">
@@ -37,7 +44,7 @@ const Home = () => {
           text="Talk with Virtual Interviewer"
           textClassName="text-[12px]"
           onPress={() =>
-            isSubscribed
+            isSubscribed.current
               ? router.push("/(tabs)/home/virtual-interview/job-information")
               : setModalVisible(true)
           }
@@ -63,7 +70,6 @@ const Home = () => {
         onClose={() => setModalVisible(false)}
       />
     </View>
-    
   );
 };
 

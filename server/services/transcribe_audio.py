@@ -22,8 +22,9 @@ def transcribe_audio(audio_file_path):
     except TypeError:
         full_text = transcription.text
         total_duration = transcription.segments[-1].end if transcription.segments else 0
-        word_count = len(full_text.split())
-        wpm = (word_count / total_duration) * 60 if total_duration > 0 else 0
+
+    word_count = len(full_text.split())
+    wpm = (word_count / total_duration) * 60 if total_duration > 0 else 0
 
     # Check if transcription is "you", "You", or empty string and return "No answer provided"
     if full_text.strip().lower() in ["you", ""]:

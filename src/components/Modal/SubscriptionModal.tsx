@@ -26,6 +26,7 @@ const SubscriptionModal = ({ visible, onClose }) => {
         unsafeMetadata: {
           subscribed: true,
           subscription: selectedOption,
+          
         },
       });
     } catch (error) {

@@ -3,9 +3,10 @@ export const steps = [
   { title: "Upload your Resume (.pdf)" },
   { title: "Select an Industry" },
   { title: "Select a Job Role" },
+  { title: "Company Name" },
   { title: "Interview Type" },
   { title: "Experience Level" },
-  { title: "Company Name" },
+ 
 ];
 
 export const industry = [

@@ -58,7 +58,7 @@ const VirtualInterview = () => {
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isQuestionLoading, setIsQuestionLoading] = useState<boolean>(false);
-  const isStartButtonDisabled = isQuestionLoading || answers.length >= 5;
+  const isStartButtonDisabled = useRef(isQuestionLoading || answers.length >= 6);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [paceOfSpeech, setPaceOfSpeech] = useState([]);
@@ -77,6 +77,7 @@ const VirtualInterview = () => {
   const hasGeneratedFeedback = useRef(false);
   const exitPage = useRef(false);
   const isSatisfied = useRef(false);
+  const isFinished = useRef(false);
 
   const counter = useRef(0);
 
@@ -214,7 +215,9 @@ const VirtualInterview = () => {
     if (
       answers.length === answerIds.length &&
       answerIds.length === 5 &&
-      !hasGeneratedFeedback.current
+      !hasGeneratedFeedback.current &&
+      isFinished.current &&
+      eyeContacts.length >= 5
     ) {
       hasGeneratedFeedback.current = true;
       setIsLastQuestion(true);
@@ -420,7 +423,7 @@ const VirtualInterview = () => {
   };
 
   const handleNextQuestion = async (nextIndex: number, token: string) => {
-    if (nextIndex < 5) {
+    if (nextIndex < 6) {
       setMessages((prevMessages) => [
         ...prevMessages,
         {
@@ -430,7 +433,7 @@ const VirtualInterview = () => {
           feedback: false,
         },
       ]);
-    } else if (nextIndex === 4) {
+    } else if (nextIndex === 5) {
       const lastMessage =
         "Thank you for your time and participation. This concludes your virtual interview.";
       const viseme = await createSpeech(lastMessage, token);
@@ -445,6 +448,8 @@ const VirtualInterview = () => {
           feedback: false,
         },
       ]);
+      isFinished.current = true;
+      isStartButtonDisabled.current = true;
     }
   };
 
@@ -498,6 +503,9 @@ const VirtualInterview = () => {
               : message
           )
         );
+        isFinished.current = true;
+        isStartButtonDisabled.current = true;
+
       } else {
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
         setMessages((prevMessages) =>
@@ -817,7 +825,7 @@ const VirtualInterview = () => {
           <TouchableOpacity
             className="p-3"
             onPress={startRecording}
-            disabled={isStartButtonDisabled}
+            disabled={isStartButtonDisabled.current}
           >
             <Image
               source={require("@/assets/icons/mic.png")}

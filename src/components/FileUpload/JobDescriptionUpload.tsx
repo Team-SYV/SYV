@@ -23,16 +23,11 @@ const JobDescriptionUpload: React.FC<JobDescriptionUploadProps> = ({
     }
   }, [selectedFile]);
 
-  // Logic for file selection and passing the file back to parent
-  const handleFileSelect = (file) => {
-    onFileSelect(file);
-  };
-
-  // Select a file
+// Select a file
   const handleFilePick = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ["application/pdf"],
+        type: ["application/pdf", "image/*"], 
       });
 
       if (result.canceled) {
@@ -86,7 +81,7 @@ const JobDescriptionUpload: React.FC<JobDescriptionUploadProps> = ({
             {fileName ? "Change File" : "Tap to Upload File"}
           </Text>
           <Text className="text-center text-[11px]">
-            *Supported format: .png .jpg. .jpeg .pdf
+            *Supported formats: .png, .jpg, .jpeg, .pdf
           </Text>
         </TouchableOpacity>
 

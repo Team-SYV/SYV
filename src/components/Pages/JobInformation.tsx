@@ -27,6 +27,7 @@ import StepContent from "@/components/StepContent/StepContent";
 import { useAuth } from "@clerk/clerk-expo";
 import { createInterview } from "@/api/interview";
 import { createQuestions } from "@/api/question";
+import { transcribeImage, transcribePDF } from "@/api/transcription";
 
 type JobInformationProps = {
   interviewType: "VIRTUAL" | "RECORD";
@@ -38,12 +39,13 @@ const JobInformation: React.FC<JobInformationProps> = ({
   path,
 }) => {
   const [formData, setFormData] = useState<JobInfo>({
+    selectedJobDescription: null,
+    selectedResume: null,
     selectedIndustry: null,
     selectedJobRole: null,
+    selectedCompany: null,
     selectedInterviewType: null,
     selectedExperienceLevel: null,
-    companyName: null,
-    jobDescription: null,
   });
 
   const router = useRouter();
@@ -54,6 +56,112 @@ const JobInformation: React.FC<JobInformationProps> = ({
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
+  const [jobDescription, setJobDescription] = useState("");
+  const [transcribed, setTranscribed] = useState(false);
+  const [resumeTranscribed, setResumeTranscribed] = useState(false);
+
+  useEffect(() => {
+    const transcribeJobDescription = async () => {
+      if (!formData.selectedJobDescription || transcribed) {
+        // Don't run if already transcribed
+        return;
+      }
+
+      const token = await getToken({ template: "supabase" });
+      const fileExtension = formData.selectedJobDescription.name
+        .split(".")
+        .pop()
+        ?.toLowerCase();
+
+      if (fileExtension === "pdf") {
+        const formDataObj = new FormData();
+        formDataObj.append("file", {
+          uri: formData.selectedJobDescription.uri,
+          name: formData.selectedJobDescription.name,
+          type: "application/pdf",
+        } as unknown as Blob);
+
+        const jobDescriptionResponse = await transcribePDF(formDataObj, token);
+
+        setJobDescription(jobDescriptionResponse.job_description);
+        console.log(jobDescriptionResponse.job_description);
+        setFormData((prevState) => ({
+          ...prevState,
+          selectedIndustry: jobDescriptionResponse.industry,
+          selectedJobRole: jobDescriptionResponse.job_role,
+          selectedCompany: jobDescriptionResponse.company_name,
+          selectedExperienceLevel: jobDescriptionResponse.experience_level,
+        }));
+
+        setTranscribed(true);
+      } else {
+        const formDataObj = new FormData();
+        formDataObj.append("file", {
+          uri: formData.selectedJobDescription.uri,
+          name: formData.selectedJobDescription.name,
+          type: "image/jpeg",
+        } as unknown as Blob);
+
+        const jobDescriptionResponse = await transcribeImage(
+          formDataObj,
+          token
+        );
+
+        setJobDescription(jobDescriptionResponse.job_description);
+        const jobDetails = JSON.parse(jobDescriptionResponse.job_details);
+
+        jobDetails.job_description = jobDetails.job_description
+          .replace(/\\u2018|\\u2019/g, "'")
+          .replace(/\s+/g, " ")
+          .trim();
+
+        setFormData((prevState) => ({
+          ...prevState,
+          selectedIndustry: jobDetails.industry,
+          selectedJobRole: jobDetails.job_role,
+          selectedCompany: jobDetails.selected_company,
+          selectedExperienceLevel: jobDetails.selected_experience_level,
+        }));
+
+        setTranscribed(true);
+      }
+    };
+    transcribeJobDescription();
+  }, [formData.selectedJobDescription, transcribed]);
+
+  useEffect(() => {
+    const transcribeResume = async () => {
+      if (!formData.selectedResume || resumeTranscribed) {
+        return;
+      }
+
+      const token = await getToken({ template: "supabase" });
+      const formDataObj = new FormData();
+
+      formDataObj.append("file", {
+        uri: formData.selectedResume.uri,
+        name: formData.selectedResume.name,
+        type: "application/pdf",
+      } as unknown as Blob);
+
+      const resumeResponse = await transcribePDF(formDataObj, token);
+
+      
+
+      setFormData((prevState) => ({
+        ...prevState,
+        selectedResume: {
+          uri: formData.selectedResume.uri,
+          name: formData.selectedResume.name,
+          type: "application/pdf",
+        }
+      }))
+
+      console.log(resumeResponse);
+      setResumeTranscribed(true);
+    };
+    transcribeResume();
+  }, [formData.selectedJobDescription, transcribed]);
 
   // Handles the android back button
   useEffect(() => {
@@ -72,7 +180,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
   // Move to next step and shows error message
   const handleNextStep = useCallback(async () => {
     if (activeStep === steps.length - 1) {
-      await handleSkip();
+      await handleSubmit();
     }
 
     if (!validateStep(activeStep, formData)) {
@@ -164,21 +272,22 @@ const JobInformation: React.FC<JobInformationProps> = ({
   const handleInterview = async () => {
     try {
       setLoading(true);
-      const token = await getToken({template:"supabase"});
+      const token = await getToken({ template: "supabase" });
 
       const jobData = {
+        job_description: formData.selectedJobDescription,
+        resume: formData.selectedResume,
         industry: formData.selectedIndustry,
         job_role: formData.selectedJobRole,
+        company_name: formData.selectedCompany,
         interview_type: formData.selectedInterviewType,
         experience_level: formData.selectedExperienceLevel,
-        company_name: formData.companyName || "None",
-        job_description: formData.jobDescription || "None",
       };
 
       const interviewData = {
         type: interviewType,
         job_role: formData.selectedJobRole,
-        company_name: formData.companyName || "None",
+        company_name: formData.selectedCompany,
       };
 
       const interviewResponse = await createInterview(interviewData, token);
@@ -190,44 +299,34 @@ const JobInformation: React.FC<JobInformationProps> = ({
     }
   };
 
-  // Creates job information
   const handleSubmit = async () => {
     try {
       const response = await handleInterview();
 
-      if ("jobData" in response && "interviewId" in response) {
-        router.push({
-          pathname: `/(tabs)/home/${path}/file-upload`,
-          params: {
-            jobData: JSON.stringify(response.jobData),
-            interviewId: response.interviewId,
-          },
-        });
-      }
-    } catch (error) {
-      console.error("Error creating job description:", error.message);
-    } finally {
-      setHasChanges(false);
-      setLoading(false);
-    }
-  };
 
-  // When file upload is skipped
-  const handleSkip = async () => {
-    try {
-      const response = await handleInterview();
-
-      const token = await getToken({template:"supabase"});
-
+      const token = await getToken({ template: "supabase" });
       const questionFormData = new FormData();
+      
+      const resumeBlob = {
+        uri: formData.selectedResume.uri,
+        name: formData.selectedResume.name,
+        type: "application/pdf",
+      } as unknown as Blob;
 
-      questionFormData .append("industry", formData.selectedIndustry);
-      questionFormData .append("experience_level", formData.selectedExperienceLevel);
-      questionFormData .append("interview_type", formData.selectedInterviewType);
-      questionFormData .append("job_description", formData.jobDescription || "");
-      questionFormData .append("company_name", formData.companyName || "");
-      questionFormData .append("job_role", formData.selectedJobRole);
-      questionFormData .append("interview_id", response.interviewId);
+      
+
+      questionFormData.append("file", resumeBlob);
+      questionFormData.append("job_description", jobDescription);
+      questionFormData.append("industry", formData.selectedIndustry);
+      questionFormData.append("job_role", formData.selectedJobRole);
+      questionFormData.append("company_name", formData.selectedCompany);
+      questionFormData.append(
+        "experience_level",
+        formData.selectedExperienceLevel
+      );
+      questionFormData.append("interview_type", formData.selectedInterviewType);
+
+      questionFormData.append("interview_id", response.interviewId);
 
       await createQuestions(questionFormData, token);
 
@@ -284,8 +383,6 @@ const JobInformation: React.FC<JobInformationProps> = ({
                       formData={formData}
                       updateFormData={updateFormData}
                       handleNextStep={handleNextStep}
-                      handleSubmit={handleSubmit}
-                      handleSkip={handleSkip}
                     />
                   </>
                 )}

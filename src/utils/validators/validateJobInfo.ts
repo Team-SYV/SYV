@@ -2,7 +2,7 @@ export const validateStep = (step: number, formData: any) => {
   switch (step) {
     case 0:
       return formData.selectedJobDescription !== null;
-    case 2:
+    case 1:
       return formData.selectedResume !== null;
     case 2:
       return formData.selectedIndustry !== null;

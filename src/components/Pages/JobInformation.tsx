@@ -57,9 +57,15 @@ const JobInformation: React.FC<JobInformationProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
   const [jobDescription, setJobDescription] = useState("");
+  const [transcribed, setTranscribed] = useState(false);
 
   useEffect(() => {
     const transcribeJobDescription = async () => {
+      if (!formData.selectedJobDescription || transcribed) {
+        // Don't run if already transcribed
+        return;
+      }
+
       const token = await getToken({ template: "supabase" });
       const fileExtension = formData.selectedJobDescription.name
         .split(".")
@@ -85,6 +91,8 @@ const JobInformation: React.FC<JobInformationProps> = ({
           selectedCompany: jobDescriptionResponse.company_name,
           selectedExperienceLevel: jobDescriptionResponse.experience_level,
         }));
+
+        setTranscribed(true);
       } else {
         const formDataObj = new FormData();
         formDataObj.append("file", {
@@ -99,17 +107,26 @@ const JobInformation: React.FC<JobInformationProps> = ({
         );
 
         setJobDescription(jobDescriptionResponse.job_description);
+        const jobDetails = JSON.parse(jobDescriptionResponse.job_details);
+
+        jobDetails.job_description = jobDetails.job_description
+          .replace(/\\u2018|\\u2019/g, "'")
+          .replace(/\s+/g, " ")
+          .trim();
+
         setFormData((prevState) => ({
           ...prevState,
-          selectedIndustry: jobDescriptionResponse.industry,
-          selectedJobRole: jobDescriptionResponse.job_role,
-          selectedCompany: jobDescriptionResponse.company_name,
-          selectedExperienceLevel: jobDescriptionResponse.experience_level,
+          selectedIndustry: jobDetails.industry,
+          selectedJobRole: jobDetails.job_role,
+          selectedCompany: jobDetails.selected_company,
+          selectedExperienceLevel: jobDetails.selected_experience_level,
         }));
+
+        setTranscribed(true);
       }
     };
-      transcribeJobDescription();
-  }, [formData]);
+    transcribeJobDescription();
+  }, [formData.selectedJobDescription, transcribed]);
 
   // Handles the android back button
   useEffect(() => {

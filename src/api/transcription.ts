@@ -4,7 +4,7 @@ const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_BASE_URL,
 });
 
-export const transcribeAudio = async ( audioFile: File, token: string) => {
+export const transcribeAudio = async (audioFile: File, token: string) => {
   try {
     const formData = new FormData();
     formData.append("file", audioFile);
@@ -25,7 +25,7 @@ export const transcribeAudio = async ( audioFile: File, token: string) => {
   }
 };
 
-export const transcribeVideo = async ( videoFile: File, token: string) => {
+export const transcribeVideo = async (videoFile: File, token: string) => {
   try {
     const formData = new FormData();
     formData.append("file", videoFile);
@@ -40,5 +40,33 @@ export const transcribeVideo = async ( videoFile: File, token: string) => {
     return response.data;
   } catch (error) {
     throw new Error(error, error.response);
+  }
+};
+
+export const transcribeImage = async (formData: FormData, token: string) => {
+  try {
+    const response = await api.post("/api/transcribe/image/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error, error.response);
+  }
+};
+
+export const transcribePDF = async (formData: FormData, token: string) => {
+  try {
+    const response = await api.post("/api/transcribe/pdf/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data.job_details;
+  } catch (error) {
+    throw new Error(error || error.message || error.response);
   }
 };

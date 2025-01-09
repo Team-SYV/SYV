@@ -27,6 +27,7 @@ import StepContent from "@/components/StepContent/StepContent";
 import { useAuth } from "@clerk/clerk-expo";
 import { createInterview } from "@/api/interview";
 import { createQuestions } from "@/api/question";
+import { transcribeImage, transcribePDF } from "@/api/transcription";
 
 type JobInformationProps = {
   interviewType: "VIRTUAL" | "RECORD";
@@ -55,8 +56,65 @@ const JobInformation: React.FC<JobInformationProps> = ({
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
-  
-  
+  const [jobDescription, setJobDescription] = useState("");
+
+  useEffect(() => {
+    const transcribeJobDescription = async () => {
+      if (formData.selectedJobDescription) {
+        const token = await getToken({ template: "supabase" });
+        const fileExtension = formData.selectedJobDescription.name
+          .split(".")
+          .pop()
+          ?.toLowerCase();
+
+        if (fileExtension === "pdf") {
+          const formDataObj = new FormData();
+          formDataObj.append("file", {
+            uri: formData.selectedJobDescription.uri,
+            name: formData.selectedJobDescription.name,
+            type: "application/pdf",
+          } as unknown as Blob);
+
+          const jobDescriptionResponse = await transcribePDF(
+            formDataObj,
+            token
+          );
+          setJobDescription(jobDescriptionResponse.job_description);
+          setFormData((prevState) => ({
+            ...prevState,
+            selectedIndustry: jobDescriptionResponse.industry,
+            selectedJobRole: jobDescriptionResponse.job_role,
+            selectedCompany: jobDescriptionResponse.company_name,
+            selectedExperienceLevel: jobDescriptionResponse.experience_level,
+          }));
+          
+        } else {
+          const formDataObj = new FormData();
+          formDataObj.append("file", {
+            uri: formData.selectedJobDescription.uri,
+            name: formData.selectedJobDescription.name,
+            type: "image/jpeg",
+          } as unknown as Blob);
+
+          const jobDescriptionResponse = await transcribeImage(
+            formDataObj,
+            token
+          );
+
+          setJobDescription(jobDescriptionResponse.job_description);
+          setFormData((prevState) => ({
+            ...prevState,
+            selectedIndustry: jobDescriptionResponse.industry,
+            selectedJobRole: jobDescriptionResponse.job_role,
+            selectedCompany: jobDescriptionResponse.company_name,
+            selectedExperienceLevel: jobDescriptionResponse.experience_level,
+          }));
+        }
+      }
+    };
+    transcribeJobDescription();
+  }, [formData]);
+
   // Handles the android back button
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
@@ -177,8 +235,6 @@ const JobInformation: React.FC<JobInformationProps> = ({
         interview_type: formData.selectedInterviewType,
         experience_level: formData.selectedExperienceLevel,
       };
-
-      console.log(jobData);
 
       const interviewData = {
         type: interviewType,

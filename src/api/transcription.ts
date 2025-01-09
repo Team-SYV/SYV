@@ -70,3 +70,28 @@ export const transcribePDF = async (formData: FormData, token: string) => {
     throw new Error(error || error.message || error.response);
   }
 };
+
+export const validate = async (
+  jobDescription: string,
+  resume: string,
+  token
+) => {
+  const formData = new FormData();
+  formData.append("job_description", jobDescription);
+  formData.append("resume", resume);
+  try {
+    const response = await api.post(
+      "/api/transcribe/validate/",
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data.result;
+  } catch (error) {
+    throw new Error(error || error.message || error.response);
+  }
+};
+

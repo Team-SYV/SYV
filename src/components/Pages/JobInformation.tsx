@@ -58,6 +58,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
   const [isModalVisible, setModalVisible] = useState(false);
   const [jobDescription, setJobDescription] = useState("");
   const [transcribed, setTranscribed] = useState(false);
+  const [resumeTranscribed, setResumeTranscribed] = useState(false);
 
   useEffect(() => {
     const transcribeJobDescription = async () => {
@@ -82,8 +83,8 @@ const JobInformation: React.FC<JobInformationProps> = ({
 
         const jobDescriptionResponse = await transcribePDF(formDataObj, token);
 
-        console.log(jobDescriptionResponse);
         setJobDescription(jobDescriptionResponse.job_description);
+        console.log(jobDescriptionResponse.job_description);
         setFormData((prevState) => ({
           ...prevState,
           selectedIndustry: jobDescriptionResponse.industry,
@@ -126,6 +127,40 @@ const JobInformation: React.FC<JobInformationProps> = ({
       }
     };
     transcribeJobDescription();
+  }, [formData.selectedJobDescription, transcribed]);
+
+  useEffect(() => {
+    const transcribeResume = async () => {
+      if (!formData.selectedResume || resumeTranscribed) {
+        return;
+      }
+
+      const token = await getToken({ template: "supabase" });
+      const formDataObj = new FormData();
+
+      formDataObj.append("file", {
+        uri: formData.selectedResume.uri,
+        name: formData.selectedResume.name,
+        type: "application/pdf",
+      } as unknown as Blob);
+
+      const resumeResponse = await transcribePDF(formDataObj, token);
+
+      
+
+      setFormData((prevState) => ({
+        ...prevState,
+        selectedResume: {
+          uri: formData.selectedResume.uri,
+          name: formData.selectedResume.name,
+          type: "application/pdf",
+        }
+      }))
+
+      console.log(resumeResponse);
+      setResumeTranscribed(true);
+    };
+    transcribeResume();
   }, [formData.selectedJobDescription, transcribed]);
 
   // Handles the android back button
@@ -268,10 +303,20 @@ const JobInformation: React.FC<JobInformationProps> = ({
     try {
       const response = await handleInterview();
 
+
       const token = await getToken({ template: "supabase" });
-
       const questionFormData = new FormData();
+      
+      const resumeBlob = {
+        uri: formData.selectedResume.uri,
+        name: formData.selectedResume.name,
+        type: "application/pdf",
+      } as unknown as Blob;
 
+      
+
+      questionFormData.append("file", resumeBlob);
+      questionFormData.append("job_description", jobDescription);
       questionFormData.append("industry", formData.selectedIndustry);
       questionFormData.append("job_role", formData.selectedJobRole);
       questionFormData.append("company_name", formData.selectedCompany);

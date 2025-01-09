@@ -39,7 +39,7 @@ def generate_interview_questions( industry, experience_level, interview_type, jo
 
     return questions
 
-def generate_follow_up(previous_question, previous_answer,next_question, type):
+def generate_follow_up(previous_question, previous_answer, next_question, type):
     prompt = ""
     if(type == "0"):
         prompt = f"""
@@ -47,7 +47,7 @@ def generate_follow_up(previous_question, previous_answer,next_question, type):
         Previous answer: {previous_answer}
         
         Respond with:
-        1. A follow-up question based on the context provided.
+        1. "A short praise or statement if the answer is unclear, followed by a follow-up question based on the answer provided.
         """
     elif(type == "1"):
         prompt = f"""
@@ -55,7 +55,7 @@ def generate_follow_up(previous_question, previous_answer,next_question, type):
         Previous answer: {previous_answer}
         
         Respond with:
-        1. A short acknowledgement of the answer and say that we are moving on to the next question.
+          1. A short praise or statement if the answer is unclear and say that we are moving on to the next question.
         """
     else:
         prompt = f"""
@@ -64,7 +64,6 @@ def generate_follow_up(previous_question, previous_answer,next_question, type):
 
         Respond with:
         1. A short acknowledgement of the answer.        
-     
         """
 
     completion = client.chat.completions.create(

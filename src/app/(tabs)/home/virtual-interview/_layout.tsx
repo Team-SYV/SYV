@@ -68,18 +68,6 @@ const VILayout = () => {
           headerBackVisible: false,
         }}
       />
-
-      <Stack.Screen
-        name="ratings"
-        options={{
-          headerTitle: () => (
-            <Text className="text-center text-[15px] font-semibold text-[#2a2a2a]">
-              Ratings
-            </Text>
-          ),
-          headerBackVisible: false,
-        }}
-      />
     </Stack>
   );
 };

@@ -58,7 +58,7 @@ const VirtualInterview = () => {
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isQuestionLoading, setIsQuestionLoading] = useState<boolean>(false);
-  const isStartButtonDisabled = useRef(isQuestionLoading || answers.length >= 6);
+  const isStartButtonDisabled = isQuestionLoading || answers.length >= 5;
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [paceOfSpeech, setPaceOfSpeech] = useState([]);
@@ -449,7 +449,6 @@ const VirtualInterview = () => {
         },
       ]);
       isFinished.current = true;
-      isStartButtonDisabled.current = true;
     }
   };
 
@@ -504,8 +503,6 @@ const VirtualInterview = () => {
           )
         );
         isFinished.current = true;
-        isStartButtonDisabled.current = true;
-
       } else {
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
         setMessages((prevMessages) =>
@@ -825,7 +822,7 @@ const VirtualInterview = () => {
           <TouchableOpacity
             className="p-3"
             onPress={startRecording}
-            disabled={isStartButtonDisabled.current}
+            disabled={isStartButtonDisabled}
           >
             <Image
               source={require("@/assets/icons/mic.png")}

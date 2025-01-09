@@ -1,20 +1,32 @@
 import { Text, View, TouchableOpacity, Alert } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as DocumentPicker from "expo-document-picker";
 import { Ionicons } from "@expo/vector-icons";
 import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
 import ProgressBar from "react-native-progress/Bar";
 
 type JobDescriptionUploadProps = {
-  onFileSelect: (file: { name: string } | null) => void;
+  onFileSelect;
+  selectedFile;
 };
 
 const JobDescriptionUpload: React.FC<JobDescriptionUploadProps> = ({
   onFileSelect,
+  selectedFile,
 }) => {
-  const [selectedFile, setSelectedFile] = useState(null);
   const [fileName, setFileName] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  useEffect(() => {
+    if (selectedFile) {
+      setFileName(selectedFile.name);
+    }
+  }, [selectedFile]);
+
+  // Logic for file selection and passing the file back to parent
+  const handleFileSelect = (file) => {
+    onFileSelect(file);
+  };
 
   // Select a file
   const handleFilePick = async () => {
@@ -28,7 +40,6 @@ const JobDescriptionUpload: React.FC<JobDescriptionUploadProps> = ({
           Alert.alert("File Selection", "You did not select any file.");
         }
       } else if (result.assets && result.assets.length > 0) {
-        setSelectedFile(result.assets[0]);
         setFileName(result.assets[0].name);
         onFileSelect(result.assets[0]);
 
@@ -51,7 +62,6 @@ const JobDescriptionUpload: React.FC<JobDescriptionUploadProps> = ({
 
   // Remove a file
   const handleRemoveFile = () => {
-    setSelectedFile(null);
     setFileName("");
     setUploadProgress(0);
     onFileSelect(null);

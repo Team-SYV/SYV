@@ -27,18 +27,20 @@ const StepContent: React.FC<StepContentProps> = ({
     case 0:
       return (
         <JobDescriptionUpload
-          onFileSelect={(file) => {
-            updateFormData("selectedJobDescription", file ? file.name : null);
-          }}
+          onFileSelect={(file) =>
+            updateFormData("selectedJobDescription", file)
+          }
+          selectedFile={formData.selectedJobDescription}
         />
       );
 
     case 1:
       return (
         <ResumeUpload
-          onFileSelect={(file) => {
-            updateFormData("selectedResume", file ? file.name : null);
-          }}
+          onFileSelect={(file) =>
+            updateFormData("selectedJobDescription", file)
+          }
+          selectedFile={formData.selectedJobDescription}
         />
       );
 

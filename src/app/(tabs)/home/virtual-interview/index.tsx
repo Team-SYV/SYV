@@ -58,7 +58,7 @@ const VirtualInterview = () => {
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isQuestionLoading, setIsQuestionLoading] = useState<boolean>(false);
-  const isStartButtonDisabled = isQuestionLoading || answers.length >= 5;
+  const isStartButtonDisabled = isQuestionLoading || answers.length >= 6;
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [paceOfSpeech, setPaceOfSpeech] = useState([]);
@@ -224,6 +224,30 @@ const VirtualInterview = () => {
       handleFeedbackRatings();
     }
   }, [eyeContacts, answers, paceOfSpeech, questions, interviewId, getToken]);
+
+  useEffect(() => {
+    const handleLastMessage = async () => {
+      const token = await getToken({ template: "supabase" });
+      const lastMessage =
+        "Thank you for your time and participation. This concludes your virtual interview.";
+      const viseme = await createSpeech(lastMessage, token);
+      setSpeechData(viseme);
+
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          id: uuid.v4(),
+          role: Role.Bot,
+          content: lastMessage,
+          feedback: false,
+        },
+      ]);
+      isFinished.current = true;
+    };
+    if (messages.length === 34) {
+      handleLastMessage();
+    }
+  }, [messages]);
 
   // Scroll to the bottom whenever messages update
   useEffect(() => {
@@ -423,7 +447,7 @@ const VirtualInterview = () => {
   };
 
   const handleNextQuestion = async (nextIndex: number, token: string) => {
-    if (nextIndex < 6) {
+    if (nextIndex < 5) {
       setMessages((prevMessages) => [
         ...prevMessages,
         {
@@ -433,22 +457,6 @@ const VirtualInterview = () => {
           feedback: false,
         },
       ]);
-    } else if (nextIndex === 5) {
-      const lastMessage =
-        "Thank you for your time and participation. This concludes your virtual interview.";
-      const viseme = await createSpeech(lastMessage, token);
-      setSpeechData(viseme);
-
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: uuid.v4(),
-          role: Role.Bot,
-          content: lastMessage,
-          feedback: false,
-        },
-      ]);
-      isFinished.current = true;
     }
   };
 
@@ -488,22 +496,7 @@ const VirtualInterview = () => {
 
     setIsQuestionLoading(true);
     try {
-      if (isLastMessage) {
-        const lastMessage =
-          "Thank you for your time and participation. This concludes your virtual interview.";
-        setMessages((prevMessages) =>
-          prevMessages.map((message) =>
-            message.id === nextQuestionId
-              ? {
-                  ...message,
-                  content: lastMessage,
-                  question: false,
-                }
-              : message
-          )
-        );
-        isFinished.current = true;
-      } else {
+      if (!isLastMessage) {
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
         setMessages((prevMessages) =>
           prevMessages.map((message) =>

@@ -4,7 +4,7 @@ import pytesseract
 
 from utils.clean_text import clean_text
 
-async def image_reader(file_path: str) -> str:
+def image_reader(file_path: str) -> str:
     try:
         # Open the image using PIL
         image = Image.open(file_path)

@@ -39,22 +39,37 @@ def generate_interview_questions( industry, experience_level, interview_type, jo
 
     return questions
 
-def generate_answer_feedback(previous_question, previous_answer):
-    prompt = f"""
+def generate_follow_up(previous_question, previous_answer, next_question, type):
+    prompt = ""
+    if(type == "0"):
+        prompt = f"""
+        Previous question: {previous_question}
+        Previous answer: {previous_answer}
+        
+        Respond with:
+        1. "A short praise or statement if the answer is unclear, followed by a follow-up question based on the answer provided.
+        """
+    elif(type == "1"):
+        prompt = f"""
+        Previous question: {previous_question}
+        Previous answer: {previous_answer}
+        
+        Respond with:
+          1. A short praise or statement if the answer is unclear and say that we are moving on to the next question.
+        """
+    else:
+        prompt = f"""
+        Previous question: {previous_question}
+        Previous answer: {previous_answer}
 
-    Previous question: {previous_question}
-    Previous answer: {previous_answer}
-    
-    Please provide a one short sentence starting with "You" that either gives positive praise or indicates if the answer is unclear. 
-    If it's unclear or lacking, suggest an example answer.
-    Do not ask another question or seek clarification.
-    Keep it simple and easy to understand.
-    """
+        Respond with:
+        1. A short acknowledgement of the answer.        
+        """
 
     completion = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
-            {"role": "system", "content": "You are an experienced hiring manager in giving feedback."},
+            {"role": "system", "content": "You are an experienced hiring manager skilled at evaluating responses and crafting follow-up questions."},
             {"role": "user", "content": prompt}
         ],
         max_tokens=200
@@ -62,5 +77,9 @@ def generate_answer_feedback(previous_question, previous_answer):
 
     response_text = completion.choices[0].message.content.strip()
 
-    return response_text
-
+    try:
+        lines = response_text.split("\n")
+        follow_up_question = lines[0].replace("Follow-up question: ", "").strip()
+        return follow_up_question
+    except (IndexError, ValueError):
+        return "Could you clarify further?"

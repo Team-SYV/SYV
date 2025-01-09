@@ -56,19 +56,7 @@ const RecordYourselfLayout = () => {
           headerBackVisible: false,
         }}
       />
-
-      <Stack.Screen
-        name="file-upload"
-        options={{
-          headerTitle: () => (
-            <Text className="text-center text-[15px] font-semibold text-[#2a2a2a]">
-              File Upload
-            </Text>
-          ),
-          headerBackVisible: false,
-        }}
-      />
-
+      
       <Stack.Screen
         name="feedback"
         options={{

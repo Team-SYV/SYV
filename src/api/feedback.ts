@@ -42,7 +42,7 @@ export const generateResponse = async (formData: FormData, token: string) => {
       }
     );
 
-    return response.data.feedback;
+    return response.data.follow_up_question;
   } catch (error) {
     console.error("Error response from server:", error.response);
     
@@ -51,7 +51,6 @@ export const generateResponse = async (formData: FormData, token: string) => {
     );
   }
 };
-
 
 export const getFeedback = async (
   interviewId: string | string[],

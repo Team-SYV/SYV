@@ -1,8 +1,8 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Form, HTTPException, Depends, Request
 from supabase import Client
 from models.feedback import CreateRecordFeedbackInput, CreateVirtualFeedbackInput, GetFeedbackResponse, CreateFeedbackResponse
-from services.question_generator import generate_answer_feedback
+from services.question_generator import generate_follow_up
 from services.feedback_generator import generate_feedback, generate_feedback_virtual
 from utils.jwt import validate_token
 from utils.supabase import get_supabase_client
@@ -89,7 +89,9 @@ async def create_record_feedback(feedback_data: CreateRecordFeedbackInput, reque
 async def generate_response(
     request: Request,
     previous_question: str = Form(...), 
-    previous_answer: str = Form(...)
+    previous_answer: str = Form(...),
+    next_question: Optional[str] = Form(None),    
+    type: str = Form(...),
 ):
     auth_header = request.headers.get("Authorization")
     if not auth_header:
@@ -98,11 +100,11 @@ async def generate_response(
     validate_token(auth_header)
 
     try:
-        feedback = generate_answer_feedback(previous_question, previous_answer)
-        return {"feedback": feedback}
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to generate answer feedback")
-    
+        follow_up_question = generate_follow_up(previous_question, previous_answer, next_question, type)
+        return {
+            "follow_up_question": follow_up_question        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate response: {str(e)}")    
 
 @router.get("/get/{interview_id}/", response_model=List[GetFeedbackResponse])
 async def get_feedback(interview_id: str, request: Request, supabase: Client = Depends(get_supabase)):

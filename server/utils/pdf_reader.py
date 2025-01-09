@@ -1,6 +1,8 @@
 from pypdf import PdfReader
 from fastapi import HTTPException
 
+from utils.clean_text import clean_text 
+
 async def pdf_reader(file):
     try:
         file_path = f"/tmp/{file.filename}"
@@ -24,5 +26,5 @@ def read_pdf(file_path: str) -> str:
         text = page.extract_text()
         all_text += text
 
-    return all_text
+    return clean_text(all_text)
 

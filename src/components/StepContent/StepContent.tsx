@@ -1,47 +1,20 @@
 import React, { useEffect, useState } from "react";
-import CustomButton from "../Button/CustomButton";
-import { View, Text } from "react-native";
-import { useRouter } from "expo-router";
-import Spinner from "react-native-loading-spinner-overlay";
+import { View } from "react-native";
 import Dropdown from "../Dropdown/Dropdown";
 import { experienceLevel, industry, jobRole } from "@/constants/jobInfo";
 import InterviewTypeCard from "../Card/InterviewTypeCard";
 import CompanyFormField from "../FormField/CompanyFormField";
-import JobDescriptionTextArea from "../TextArea/JobDescriptionTextArea";
 import { StepContentProps } from "@/types/stepContent";
+import JobDescriptionUpload from "../FileUpload/JobDescriptionUpload";
+import ResumeUpload from "../FileUpload/ResumeUpload";
 
 const StepContent: React.FC<StepContentProps> = ({
   activeStep,
   formData,
   updateFormData,
   handleNextStep,
-  handleSubmit,
-  handleSkip,
 }) => {
   const [shouldProceed, setShouldProceed] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  // Proceed button
-  const onProceed = async () => {
-    try {
-      setLoading(true);
-      await handleSubmit();
-      setLoading(false);
-    } catch (err) {
-      setLoading(false);
-    }
-  };
-
-  // Skip button
-  const onSkip = async () => {
-    try {
-      setLoading(true);
-      await handleSkip();
-      setLoading(false);
-    } catch (err) {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (shouldProceed) {
@@ -52,6 +25,24 @@ const StepContent: React.FC<StepContentProps> = ({
 
   switch (activeStep) {
     case 0:
+      return (
+        <JobDescriptionUpload
+          onFileSelect={(file) =>
+            updateFormData("selectedJobDescription", file)
+          }
+          selectedFile={formData.selectedJobDescription}
+        />
+      );
+
+    case 1:
+      return (
+        <ResumeUpload
+          onFileSelect={(file) => updateFormData("selectedResume", file)}
+          selectedFile={formData.selectedResume}
+        />
+      );
+
+    case 2:
       return (
         <Dropdown
           placeholder="Industry"
@@ -67,7 +58,7 @@ const StepContent: React.FC<StepContentProps> = ({
           }}
         />
       );
-    case 1:
+    case 3:
       return (
         formData.selectedIndustry && (
           <Dropdown
@@ -85,7 +76,17 @@ const StepContent: React.FC<StepContentProps> = ({
           />
         )
       );
-    case 2:
+    case 4:
+      return (
+        <CompanyFormField
+          title="Company Name"
+          placeholder="Company Name"
+          value={formData.selectedCompany}
+          onChangeText={(text) => updateFormData("selectedCompany", text)}
+          otherStyles="ml-12 mb-1"
+        />
+      );
+    case 5:
       return (
         <View className="flex-row items-center justify-center">
           <InterviewTypeCard
@@ -110,7 +111,7 @@ const StepContent: React.FC<StepContentProps> = ({
           />
         </View>
       );
-    case 3:
+    case 6:
       return (
         <Dropdown
           placeholder="Experience Level"
@@ -120,56 +121,9 @@ const StepContent: React.FC<StepContentProps> = ({
             value: formData.selectedExperienceLevel || "",
           }}
           onSelect={(value) => {
-            updateFormData("selectedExperienceLevel", value, () => {
-              setShouldProceed(true);
-            });
+            updateFormData("selectedExperienceLevel", value, () => {});
           }}
         />
-      );
-    case 4:
-      return (
-        <CompanyFormField
-          title="Company Name"
-          placeholder="Company Name"
-          value={formData.companyName}
-          onChangeText={(text) => updateFormData("companyName", text)}
-          otherStyles="ml-12 mb-1"
-        />
-      );
-    case 5:
-      return (
-        <JobDescriptionTextArea
-          value={formData.jobDescription}
-          onChangeText={(text) => updateFormData("jobDescription", text)}
-          placeholder="Fill in your job description"
-          textInputStyles="ml-12"
-        />
-      );
-    case 6:
-      return (
-        <View>
-          <Spinner visible={loading} color="#00AACE" />
-          <Text className="ml-11 mr-6 text-base">
-            Do you wish to customize your interview based on your resume by
-            uploading a file? If not, please skip.
-          </Text>
-          <View className="flex-row items-center justify-center px-6 mt-4 ml-7">
-            <CustomButton
-              title="Skip"
-              onPress={onSkip}
-              containerStyles="bg-gray-100 border border-gray-200 h-12 rounded-xl mb-4 mx-2 w-1/2"
-              textStyles="text-gray-600 text-[14px] font-semibold text-base"
-              disabled={loading}
-            />
-            <CustomButton
-              title="Proceed"
-              onPress={onProceed}
-              containerStyles="bg-[#00AACE] h-12 rounded-xl mb-4 w-1/2 mx-2"
-              textStyles="text-white text-[14px] font-semibold text-base"
-              disabled={loading}
-            />
-          </View>
-        </View>
       );
     default:
       return null;

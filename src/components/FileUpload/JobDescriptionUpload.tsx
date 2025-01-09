@@ -85,8 +85,8 @@ const JobDescriptionUpload: React.FC<JobDescriptionUploadProps> = ({
           <Text className="text-[14px] text-center font-medium mb-2">
             {fileName ? "Change File" : "Tap to Upload File"}
           </Text>
-          <Text className="text-center text-[12px]">
-            *Supported format: .pdf
+          <Text className="text-center text-[11px]">
+            *Supported format: .png .jpg. .jpeg .pdf
           </Text>
         </TouchableOpacity>
 

@@ -28,10 +28,10 @@ const Ratings = () => {
   };
 
   const weights = {
-    relevance: 0.4,
+    relevance: 0.6,
     grammar: 0.1,
-    eyeContact: 0.2,
-    pace: 0.2,
+    eyeContact: 0.1,
+    pace: 0.1,
     fillerWords: 0.1,
   };
 

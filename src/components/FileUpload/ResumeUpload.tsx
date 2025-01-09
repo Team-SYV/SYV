@@ -23,11 +23,6 @@ const ResumeUpload: React.FC<ResumeUploadProps> = ({
     }
   }, [selectedFile]);
 
-  // Logic for file selection and passing the file back to parent
-  const handleFileSelect = (file) => {
-    onFileSelect(file);
-  };
-
   // Select a file
   const handleFilePick = async () => {
     try {

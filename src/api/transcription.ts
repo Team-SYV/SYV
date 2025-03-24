@@ -45,7 +45,7 @@ export const transcribeVideo = async (videoFile: File, token: string) => {
 
 export const transcribeImage = async (formData: FormData, token: string) => {
   try {
-    const response = await api.post("/api/transcribe/image/", formData, {
+    const response = await api.post("/image/", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${token}`,
@@ -53,7 +53,12 @@ export const transcribeImage = async (formData: FormData, token: string) => {
     });
     return response.data;
   } catch (error) {
-    throw new Error(error, error.response);
+    console.error("Error in transcribeImage:", error);
+
+    const message =
+      error.response?.data?.detail || "An error occurred during transcription";
+
+    throw new Error(message);
   }
 };
 
@@ -80,18 +85,13 @@ export const validate = async (
   formData.append("job_description", jobDescription);
   formData.append("resume", resume);
   try {
-    const response = await api.post(
-      "/api/transcribe/validate/",
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await api.post("/api/transcribe/validate/", formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data.result;
   } catch (error) {
     throw new Error(error || error.message || error.response);
   }
 };
-

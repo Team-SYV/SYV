@@ -1,5 +1,7 @@
+import asyncio
 import shutil
 from tempfile import NamedTemporaryFile
+import tempfile
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from supabase import Client
 
@@ -73,7 +75,6 @@ async def transcribe_video(request: Request, file: UploadFile = File(...)):
 
 @router.post("/image/")
 async def transcribe_image(request: Request, file: UploadFile = File(...)):
-
     auth_header = request.headers.get("Authorization")
     if not auth_header:
         raise HTTPException(status_code=401, detail="Authorization header is missing")
@@ -81,19 +82,18 @@ async def transcribe_image(request: Request, file: UploadFile = File(...)):
     validate_token(auth_header)
 
     try:
-        # Save the uploaded image to a temporary location
-        file_path = f"/tmp/{file.filename}"
-        with open(file_path, "wb") as buffer:
-            buffer.write(await file.read())
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_file:
+            temp_file.write(await file.read())
+            temp_file_path = temp_file.name  
 
-        # Ensure this function is awaited properly
-        transcription =  image_reader(file_path)
-        job_details =  extract_job_details(transcription)
+        transcription = await asyncio.to_thread(image_reader, temp_file_path)
+
+        job_details = extract_job_details(transcription)
 
         return {"job_details": job_details}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"""Failed to transcribe the image {e}""")
+        raise HTTPException(status_code=500, detail=f"Failed to transcribe the image: {e}")
 
 
 @router.post("/pdf/")

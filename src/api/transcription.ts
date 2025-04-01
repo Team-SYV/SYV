@@ -39,7 +39,7 @@ export const transcribeVideo = async (videoFile: File, token: string) => {
 
     return response.data;
   } catch (error) {
-    throw new Error(error, error.response);
+    throw new Error(error);
   }
 };
 
@@ -53,7 +53,7 @@ export const transcribeImage = async (formData: FormData, token: string) => {
     });
     return response.data;
   } catch (error) {
-    throw new Error(error, error.response);
+    throw new Error(error);
   }
 };
 

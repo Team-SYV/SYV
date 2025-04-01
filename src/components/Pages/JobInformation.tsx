@@ -107,7 +107,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
           token
         );
 
-        setJobDescription(jobDescriptionResponse.job_description);
+        setJobDescription(jobDescriptionResponse.job_details);
         const jobDetails = JSON.parse(jobDescriptionResponse.job_details);
 
         jobDetails.job_description = jobDetails.job_description

@@ -161,7 +161,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
       setResumeTranscribed(true);
     };
     transcribeResume();
-  }, [formData.selectedJobDescription, transcribed]);
+  }, [formData.selectedResume, resumeTranscribed]);
 
   // Handles the android back button
   useEffect(() => {

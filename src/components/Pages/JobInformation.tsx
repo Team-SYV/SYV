@@ -27,7 +27,7 @@ import StepContent from "@/components/StepContent/StepContent";
 import { useAuth } from "@clerk/clerk-expo";
 import { createInterview } from "@/api/interview";
 import { createQuestions } from "@/api/question";
-import { transcribeImage, transcribePDF } from "@/api/transcription";
+import { transcribeImage, transcribePDF, transcribeResume, validate } from "@/api/transcription";
 
 type JobInformationProps = {
   interviewType: "VIRTUAL" | "RECORD";
@@ -57,6 +57,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
   const [jobDescription, setJobDescription] = useState("");
+  const [resume, setResume] = useState("");
   const [transcribed, setTranscribed] = useState(false);
   const [resumeTranscribed, setResumeTranscribed] = useState(false);
 
@@ -83,8 +84,14 @@ const JobInformation: React.FC<JobInformationProps> = ({
 
         const jobDescriptionResponse = await transcribePDF(formDataObj, token);
 
-        setJobDescription(jobDescriptionResponse.job_description);
-        console.log(jobDescriptionResponse.job_description);
+        setJobDescription(jobDescriptionResponse.job_details);
+        const jobDetails = JSON.parse(jobDescriptionResponse.job_details);
+
+        jobDetails.job_description = jobDetails.job_description
+          .replace(/\\u2018|\\u2019/g, "'")
+          .replace(/\s+/g, " ")
+          .trim();
+
         setFormData((prevState) => ({
           ...prevState,
           selectedIndustry: jobDescriptionResponse.industry,
@@ -130,7 +137,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
   }, [formData.selectedJobDescription, transcribed]);
 
   useEffect(() => {
-    const transcribeResume = async () => {
+    const scrapeResume = async () => {
       if (!formData.selectedResume || resumeTranscribed) {
         return;
       }
@@ -144,10 +151,9 @@ const JobInformation: React.FC<JobInformationProps> = ({
         type: "application/pdf",
       } as unknown as Blob);
 
-      const resumeResponse = await transcribePDF(formDataObj, token);
-
-      
-
+      const resumeResponse = await transcribeResume(formDataObj, token);
+      setResume(resumeResponse.resume);
+    
       setFormData((prevState) => ({
         ...prevState,
         selectedResume: {
@@ -157,10 +163,9 @@ const JobInformation: React.FC<JobInformationProps> = ({
         }
       }))
 
-      console.log(resumeResponse);
       setResumeTranscribed(true);
     };
-    transcribeResume();
+    scrapeResume();
   }, [formData.selectedResume, resumeTranscribed]);
 
   // Handles the android back button
@@ -301,10 +306,20 @@ const JobInformation: React.FC<JobInformationProps> = ({
 
   const handleSubmit = async () => {
     try {
+      const token = await getToken({ template: "supabase" });
+
+      const valid = await validate(jobDescription, resume, token)
+      if(!valid){
+        Toast.show({
+          type: "error",
+          text1: "Your resume is not fit for the job description.",
+          position: "bottom",
+          bottomOffset: 85,
+        });
+        return;
+      }
       const response = await handleInterview();
 
-
-      const token = await getToken({ template: "supabase" });
       const questionFormData = new FormData();
       
       const resumeBlob = {

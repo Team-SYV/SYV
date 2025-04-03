@@ -65,12 +65,25 @@ export const transcribePDF = async (formData: FormData, token: string) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data.job_details;
+    return response.data;
   } catch (error) {
     throw new Error(error || error.message || error.response);
   }
 };
 
+export const transcribeResume = async (formData: FormData, token: string) => {
+  try {
+    const response = await api.post("/api/transcribe//", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error || error.message || error.response);
+  }
+};
 export const validate = async (
   jobDescription: string,
   resume: string,

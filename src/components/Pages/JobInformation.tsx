@@ -27,7 +27,12 @@ import StepContent from "@/components/StepContent/StepContent";
 import { useAuth } from "@clerk/clerk-expo";
 import { createInterview } from "@/api/interview";
 import { createQuestions } from "@/api/question";
-import { transcribeImage, transcribePDF, transcribeResume, validate } from "@/api/transcription";
+import {
+  transcribeImage,
+  transcribePDF,
+  transcribeResume,
+  validate,
+} from "@/api/transcription";
 
 type JobInformationProps = {
   interviewType: "VIRTUAL" | "RECORD";
@@ -153,15 +158,15 @@ const JobInformation: React.FC<JobInformationProps> = ({
 
       const resumeResponse = await transcribeResume(formDataObj, token);
       setResume(resumeResponse.resume);
-    
+
       setFormData((prevState) => ({
         ...prevState,
         selectedResume: {
           uri: formData.selectedResume.uri,
           name: formData.selectedResume.name,
           type: "application/pdf",
-        }
-      }))
+        },
+      }));
 
       setResumeTranscribed(true);
     };
@@ -307,9 +312,8 @@ const JobInformation: React.FC<JobInformationProps> = ({
   const handleSubmit = async () => {
     try {
       const token = await getToken({ template: "supabase" });
-
-      const valid = await validate(jobDescription, resume, token)
-      if(!valid){
+      const valid = await validate(jobDescription, resume, token);
+      if (!valid) {
         Toast.show({
           type: "error",
           text1: "Your resume is not fit for the job description.",
@@ -317,42 +321,44 @@ const JobInformation: React.FC<JobInformationProps> = ({
           bottomOffset: 85,
         });
         return;
+      } else {
+        const response = await handleInterview();
+
+        const questionFormData = new FormData();
+
+        const resumeBlob = {
+          uri: formData.selectedResume.uri,
+          name: formData.selectedResume.name,
+          type: "application/pdf",
+        } as unknown as Blob;
+
+        questionFormData.append("file", resumeBlob);
+        questionFormData.append("job_description", jobDescription);
+        questionFormData.append("industry", formData.selectedIndustry);
+        questionFormData.append("job_role", formData.selectedJobRole);
+        questionFormData.append("company_name", formData.selectedCompany);
+        questionFormData.append(
+          "experience_level",
+          formData.selectedExperienceLevel
+        );
+        questionFormData.append(
+          "interview_type",
+          formData.selectedInterviewType
+        );
+
+        questionFormData.append("interview_id", response.interviewId);
+
+        await createQuestions(questionFormData, token);
+
+        router.push({
+          pathname: `/(tabs)/home/${path}/reminder`,
+          params: {
+            interviewId: response.interviewId,
+          },
+        });
       }
-      const response = await handleInterview();
-
-      const questionFormData = new FormData();
-      
-      const resumeBlob = {
-        uri: formData.selectedResume.uri,
-        name: formData.selectedResume.name,
-        type: "application/pdf",
-      } as unknown as Blob;
-
-      
-
-      questionFormData.append("file", resumeBlob);
-      questionFormData.append("job_description", jobDescription);
-      questionFormData.append("industry", formData.selectedIndustry);
-      questionFormData.append("job_role", formData.selectedJobRole);
-      questionFormData.append("company_name", formData.selectedCompany);
-      questionFormData.append(
-        "experience_level",
-        formData.selectedExperienceLevel
-      );
-      questionFormData.append("interview_type", formData.selectedInterviewType);
-
-      questionFormData.append("interview_id", response.interviewId);
-
-      await createQuestions(questionFormData, token);
-
-      router.push({
-        pathname: `/(tabs)/home/${path}/reminder`,
-        params: {
-          interviewId: response.interviewId,
-        },
-      });
     } catch (error) {
-      console.error("Error skipping file upload", error);
+      console.error("Error skipping file upload", error.message);
     } finally {
       setHasChanges(false);
       setLoading(false);

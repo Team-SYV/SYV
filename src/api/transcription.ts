@@ -73,7 +73,7 @@ export const transcribePDF = async (formData: FormData, token: string) => {
 
 export const transcribeResume = async (formData: FormData, token: string) => {
   try {
-    const response = await api.post("/api/transcribe//", formData, {
+    const response = await api.post("/api/transcribe/resume/", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${token}`,
@@ -87,24 +87,20 @@ export const transcribeResume = async (formData: FormData, token: string) => {
 export const validate = async (
   jobDescription: string,
   resume: string,
-  token
+  token: string
 ) => {
   const formData = new FormData();
   formData.append("job_description", jobDescription);
   formData.append("resume", resume);
   try {
-    const response = await api.post(
-      "/api/transcribe/validate/",
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await api.post("/api/transcribe/validate/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data.result;
   } catch (error) {
     throw new Error(error || error.message || error.response);
   }
 };
-

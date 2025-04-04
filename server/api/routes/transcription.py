@@ -81,44 +81,59 @@ async def transcribe_image(request: Request, file: UploadFile = File(...)):
     validate_token(auth_header)
 
     try:
-        # Save the uploaded image to a temporary location
-        file_path = f"/tmp/{file.filename}"
-        with open(file_path, "wb") as buffer:
-            buffer.write(await file.read())
+        with NamedTemporaryFile(suffix=".png", delete=False) as temp_image:
+            shutil.copyfileobj(file.file, temp_image)
+            temp_image.seek(0)
 
-        # Ensure this function is awaited properly
-        transcription =  image_reader(file_path)
+        transcription =  image_reader(temp_image.name)
         job_details =  extract_job_details(transcription)
 
         return {"job_details": job_details}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"""Failed to transcribe the image {e}""")
-
-
+    
 @router.post("/pdf/")
 async def transcribe_pdf(request: Request, file: UploadFile = File(...)):
-
     auth_header = request.headers.get("Authorization")
     if not auth_header:
         raise HTTPException(status_code=401, detail="Authorization header is missing")
 
     validate_token(auth_header)
-    
-    try:
-        file_path = f"/tmp/{file.filename}"
-        with open(file_path, "wb") as buffer:
-            buffer.write(await file.read())
 
-        transcription = read_pdf(file_path)
-        job_details =  extract_job_details(transcription)
+    try:
+        with NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+            shutil.copyfileobj(file.file, temp_pdf)
+            temp_pdf.seek(0)
+
+        transcription = read_pdf(temp_pdf.name)
+        job_details = extract_job_details(transcription)
 
         return {"job_details": job_details}
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"""Failed to transcribe the pdf {e}""")
 
-    except Exception as e :
-        raise HTTPException(status_code=500, detail=f"""Failed to transcribe the PDF, {e}""")
-    
+@router.post("/resume/")
+async def transcribe_resume(request: Request, file: UploadFile = File(...)):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+    validate_token(auth_header)
+
+    try:
+        with NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
+            shutil.copyfileobj(file.file, temp_pdf)
+            temp_pdf.seek(0)
+
+        transcription = read_pdf(temp_pdf.name)
+
+        return {"resume": transcription}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"""Failed to transcribe the pdf {e}""")
+
 @router.post("/validate/")
 async def validate_files(request: Request, job_description: str = Form(...), resume: str = Form(...) ):
     auth_header = request.headers.get("Authorization")
@@ -133,6 +148,3 @@ async def validate_files(request: Request, job_description: str = Form(...), res
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to validate the files, {e}")
     
-   
-        
-       

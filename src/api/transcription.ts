@@ -39,7 +39,7 @@ export const transcribeVideo = async (videoFile: File, token: string) => {
 
     return response.data;
   } catch (error) {
-    throw new Error(error, error.response);
+    throw new Error(error);
   }
 };
 
@@ -53,7 +53,7 @@ export const transcribeImage = async (formData: FormData, token: string) => {
     });
     return response.data;
   } catch (error) {
-    throw new Error(error, error.response);
+    throw new Error(error);
   }
 };
 
@@ -65,33 +65,42 @@ export const transcribePDF = async (formData: FormData, token: string) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data.job_details;
+    return response.data;
   } catch (error) {
     throw new Error(error || error.message || error.response);
   }
 };
 
+export const transcribeResume = async (formData: FormData, token: string) => {
+  try {
+    const response = await api.post("/api/transcribe/resume/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(error || error.message || error.response);
+  }
+};
 export const validate = async (
   jobDescription: string,
   resume: string,
-  token
+  token: string
 ) => {
   const formData = new FormData();
   formData.append("job_description", jobDescription);
   formData.append("resume", resume);
   try {
-    const response = await api.post(
-      "/api/transcribe/validate/",
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await api.post("/api/transcribe/validate/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data.result;
   } catch (error) {
     throw new Error(error || error.message || error.response);
   }
 };
-

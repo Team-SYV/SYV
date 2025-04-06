@@ -89,20 +89,15 @@ const JobInformation: React.FC<JobInformationProps> = ({
 
         const jobDescriptionResponse = await transcribePDF(formDataObj, token);
 
-        setJobDescription(jobDescriptionResponse.job_details);
-        const jobDetails = JSON.parse(jobDescriptionResponse.job_details);
-
-        jobDetails.job_description = jobDetails.job_description
-          .replace(/\\u2018|\\u2019/g, "'")
-          .replace(/\s+/g, " ")
-          .trim();
+        setJobDescription(jobDescriptionResponse);
+        const jobDetails = JSON.parse(jobDescriptionResponse);
 
         setFormData((prevState) => ({
           ...prevState,
-          selectedIndustry: jobDescriptionResponse.industry,
-          selectedJobRole: jobDescriptionResponse.job_role,
-          selectedCompany: jobDescriptionResponse.company_name,
-          selectedExperienceLevel: jobDescriptionResponse.experience_level,
+          selectedIndustry: jobDetails.industry,
+          selectedJobRole: jobDetails.job_role,
+          selectedCompany: jobDetails.selected_company,
+          selectedExperienceLevel: jobDetails.selected_experience_level,
         }));
 
         setTranscribed(true);

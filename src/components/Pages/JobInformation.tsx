@@ -93,16 +93,16 @@ const JobInformation: React.FC<JobInformationProps> = ({
         const jobDetails = JSON.parse(jobDescriptionResponse.job_details);
 
         jobDetails.job_description = jobDetails.job_description
-          .replace(/\\u2018|\\u2019/g, "'")
-          .replace(/\s+/g, " ")
-          .trim();
-
+        .replace(/\\u2018|\\u2019/g, "'")
+        .replace(/\s+/g, " ")
+        .trim();
+        
         setFormData((prevState) => ({
           ...prevState,
-          selectedIndustry: jobDescriptionResponse.industry,
-          selectedJobRole: jobDescriptionResponse.job_role,
-          selectedCompany: jobDescriptionResponse.company_name,
-          selectedExperienceLevel: jobDescriptionResponse.experience_level,
+          selectedIndustry: jobDetails.industry,
+          selectedJobRole: jobDetails.job_role,
+          selectedCompany: jobDetails.selected_company,
+          selectedExperienceLevel: jobDetails.selected_experience_level,
         }));
 
         setTranscribed(true);

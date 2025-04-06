@@ -67,8 +67,6 @@ const JobInformation: React.FC<JobInformationProps> = ({
   const [resumeTranscribed, setResumeTranscribed] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
-
     const transcribeJobDescription = async () => {
       if (!formData.selectedJobDescription || transcribed) {
         // Don't run if already transcribed
@@ -142,14 +140,9 @@ const JobInformation: React.FC<JobInformationProps> = ({
     };
     transcribeJobDescription();
 
-    return () => {
-      isMounted = false;
-    };
   }, [formData.selectedJobDescription, transcribed]);
 
   useEffect(() => {
-    let isMounted = true;
-
     const scrapeResume = async () => {
       if (!formData.selectedResume || resumeTranscribed) {
         return;
@@ -177,10 +170,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
       }));
 
       setResumeTranscribed(true);
-
-      return () => {
-        isMounted = false;
-      };
+     
     };
     scrapeResume();
   }, [formData.selectedResume, resumeTranscribed]);

@@ -99,10 +99,10 @@ const JobInformation: React.FC<JobInformationProps> = ({
 
         setFormData((prevState) => ({
           ...prevState,
-          selectedIndustry: jobDescriptionResponse.industry,
-          selectedJobRole: jobDescriptionResponse.job_role,
-          selectedCompany: jobDescriptionResponse.company_name,
-          selectedExperienceLevel: jobDescriptionResponse.experience_level,
+          selectedIndustry: jobDetails.industry,
+          selectedJobRole: jobDetails.job_role,
+          selectedCompany: jobDetails.selected_company,
+          selectedExperienceLevel: jobDetails.selected_experience_level,
         }));
 
         setTranscribed(true);
@@ -139,6 +139,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
       }
     };
     transcribeJobDescription();
+
   }, [formData.selectedJobDescription, transcribed]);
 
   useEffect(() => {
@@ -169,6 +170,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
       }));
 
       setResumeTranscribed(true);
+     
     };
     scrapeResume();
   }, [formData.selectedResume, resumeTranscribed]);
@@ -243,6 +245,15 @@ const JobInformation: React.FC<JobInformationProps> = ({
           ...newState,
           selectedJobRole: null,
         };
+      }
+
+      if (key === "selectedJobDescription") {
+        setTranscribed(false);
+        setJobDescription("");
+      }
+      if (key === "selectedResume") {
+        setResumeTranscribed(false);
+        setResume("");
       }
 
       if (callback) {

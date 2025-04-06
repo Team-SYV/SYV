@@ -89,9 +89,14 @@ const JobInformation: React.FC<JobInformationProps> = ({
 
         const jobDescriptionResponse = await transcribePDF(formDataObj, token);
 
-        setJobDescription(jobDescriptionResponse);
-        const jobDetails = JSON.parse(jobDescriptionResponse);
+        setJobDescription(jobDescriptionResponse.job_details);
+        const jobDetails = JSON.parse(jobDescriptionResponse.job_details);
 
+        jobDetails.job_description = jobDetails.job_description
+        .replace(/\\u2018|\\u2019/g, "'")
+        .replace(/\s+/g, " ")
+        .trim();
+        
         setFormData((prevState) => ({
           ...prevState,
           selectedIndustry: jobDetails.industry,

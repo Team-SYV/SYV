@@ -1,11 +1,11 @@
 export const steps = [
+  { title: "Upload Job Description" },
+  { title: "Upload your Resume" },
   { title: "Select an Industry" },
   { title: "Select a Job Role" },
+  { title: "Company Name" },
   { title: "Interview Type" },
   { title: "Experience Level" },
-  { title: "Company Name" },
-  { title: "Job Description" },
-  { title: "Customize" },
 ];
 
 export const industry = [

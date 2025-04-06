@@ -126,7 +126,7 @@ def generate_feedback_virtual(questions, answers, wpm, eye_contact):
         Based on the interviewee's answers to the following questions, provide detailed feedback on their overall performance, focusing on:
         1. **Grammar**: Start with "Your" and evaluate grammatical accuracy, focusing on errors like subject-verb agreement, sentence structure, tense consistency, and article usage. Provide specific corrections for errors and suggest improved versions of the sentences. Rate this aspect out of 5.
         2. **Relevance**: Start with "Your" and assess how well the answer addresses the question. Suggest a better response if necessary. Rate out of 5.
-        3. **Filler Words**: Start with "Your" and note excessive use of fillers (e.g., "um," "uh"). Suggest ways to reduce them. Rate out of 5.
+        3. **Filler Words**: Start with "Your" and note excessive use of fillers (e.g., "um," "uh"). Suggest ways to reduce them. Rate out of 5 where 5 has no use of fillers and 1 is excessive use of fillers.
         4. **Pace of Speech**: Start with "Your" and evaluate pace based on {wpm} WPM. Comment if it's too fast, slow, or appropriate.
         5. **Eye Contact**: Start with "Your" and evaluate eye contact effectiveness ({eye_contact}%). Suggest improvements if necessary.
         

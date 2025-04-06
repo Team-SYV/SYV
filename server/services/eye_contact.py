@@ -55,10 +55,12 @@ def eye_contact(frame):
         # Simulate looking at the screen by offsetting the face center horizontally
         screen_offset_x = 50 
         screen_center_x = face_center_x + screen_offset_x
+        eye_center_x = (left_eye_center[0] + right_eye_center[0]) / 2
+        eye_center_y = (left_eye_center[1] + right_eye_center[1]) / 2
 
         # Relaxed alignment thresholds
-        horizontal_alignment = np.abs(eyes_center[0] - screen_center_x) < 200
-        vertical_alignment = np.abs(eyes_center[1] - face_center_y) < 200
+        horizontal_alignment = np.abs(eye_center_x - screen_center_x) < (face.width() * 0.3)
+        vertical_alignment = np.abs(eye_center_y - face_center_y) < (face.height() * 0.3)
 
         # If both horizontal and vertical alignment are satisfied, return True (relaxed gaze)
         if horizontal_alignment and vertical_alignment:
@@ -79,7 +81,7 @@ def process_eye_contact(video_path: str):
 
     eye_contact_count = 0
     frame_count = 0
-    frame_skip_rate = 12  
+    frame_skip_rate = 6  
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -92,7 +94,7 @@ def process_eye_contact(video_path: str):
 
         frame_count += 1
 
-        # Check for eye contact in the current frame
+         # Check for eye contact in the current frame
         if eye_contact(frame):
             eye_contact_count += 1
 
@@ -100,5 +102,5 @@ def process_eye_contact(video_path: str):
     cap.release()
 
     # Calculate eye contact percentage
-    eye_contact_ratio = (eye_contact_count / frame_count) * 100 if frame_count > 0 else 0
+    eye_contact_ratio = (eye_contact_count / frame_count) * 550 if frame_count > 0 else 0
     return {"eye_contact_percentage": eye_contact_ratio}

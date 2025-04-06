@@ -75,7 +75,7 @@ async def create_questions(
         if hasattr(response, 'error') and response.error:
             raise HTTPException(status_code=500, detail="Failed to create questions")
     
-    return {'message': "Questions Created Successfully"}
+    return {"response": job_description, "file:": file }
     
 @router.get('/get/{interview_id}/', response_model=GetQuestionsResponse)
 def get_questions(interview_id: str, request: Request, supabase: Client = Depends(get_supabase)):

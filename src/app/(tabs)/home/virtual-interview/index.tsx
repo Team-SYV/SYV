@@ -24,7 +24,7 @@ import {
   StatusBar,
 } from "react-native";
 import { getQuestions } from "@/api/question";
-import { createFeedback, generateResponse } from "@/api/feedback";
+import { createVirtualFeedback, generateResponse } from "@/api/feedback";
 import { createRatings } from "@/api/ratings";
 import { transcribeAudio } from "@/api/transcription";
 import { eyeContact } from "@/api/eyeContact";
@@ -54,7 +54,7 @@ const VirtualInterview = () => {
   const [questionIds, setQuestionIds] = useState([]);
   const [answers, setAnswers] = useState([]);
   const [answerIds, setAnswerIds] = useState([]);
-  const [recordedVideos, setRecordedVideos] = useState<string[]>([]);
+  // const [recordedVideos, setRecordedVideos] = useState<string[]>([]);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isQuestionLoading, setIsQuestionLoading] = useState<boolean>(false);
@@ -174,37 +174,34 @@ const VirtualInterview = () => {
   useEffect(() => {
     const handleFeedbackRatings = async () => {
       try {
-        for (let i = 0; i < 5; i++) {
-          const token = await getToken({ template: "supabase" });
+        const token = await getToken({ template: "supabase" });
 
-          const feedbackResponse = await createFeedback(
+        const feedbackResponse = await createVirtualFeedback(
+          {
+            interview_id: interviewId,
+            answers: answers,
+            questions: questions,
+            wpm: paceOfSpeech,
+            eye_contact: eyeContacts,
+          },
+          token
+        );
+
+        if (feedbackResponse?.ratings_data) {
+          await createRatings(
             {
               interview_id: interviewId,
-              answer: answers[i],
-              question: questions[i],
-              pace_of_speech: paceOfSpeech[i],
-              eye_contact: eyeContacts[i],
-              answer_id: answerIds[i],
+              answer_relevance:
+                feedbackResponse.ratings_data.answer_relevance_rating,
+              eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
+              grammar: feedbackResponse.ratings_data.grammar_rating,
+              pace_of_speech:
+                feedbackResponse.ratings_data.pace_of_speech_rating,
+              filler_words: feedbackResponse.ratings_data.filler_words_rating,
             },
             token
           );
-
-          if (feedbackResponse?.ratings_data) {
-            await createRatings(
-              {
-                interview_id: interviewId,
-                answer_relevance:
-                  feedbackResponse.ratings_data.answer_relevance_rating,
-                eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
-                grammar: feedbackResponse.ratings_data.grammar_rating,
-                pace_of_speech:
-                  feedbackResponse.ratings_data.pace_of_speech_rating,
-                filler_words: feedbackResponse.ratings_data.filler_words_rating,
-              },
-              token
-            );
-            hasGeneratedFeedback.current = true;
-          }
+          hasGeneratedFeedback.current = true;
         }
       } catch (error) {
         console.error("Error during feedback creation:", error);
@@ -572,9 +569,9 @@ const VirtualInterview = () => {
           await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
           return;
         }
-        if (counter.current === 0) {
-          setRecordedVideos((prevVideos) => [...prevVideos, recordedVideo.uri]);
-        }
+        // if (counter.current === 0) {
+        //   setRecordedVideos((prevVideos) => [...prevVideos, recordedVideo.uri]);
+        // }
         await recording.stopAndUnloadAsync();
         const uri = recording.getURI();
 
@@ -614,7 +611,7 @@ const VirtualInterview = () => {
       router.push({
         pathname: `/home/virtual-interview/feedback`,
         params: {
-          videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
+          // videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
           interviewId: interviewId,
         },
       });

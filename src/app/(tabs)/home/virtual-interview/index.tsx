@@ -73,13 +73,13 @@ const VirtualInterview = () => {
   >(null);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const hasFetchedQuestions = useRef(false);
-  const hasGeneratedFeedback = useRef(false);
+  const [hasFetchedQuestions, setHasFetchedQuestions] = useState(false);
+  const [hasGeneratedFeedback, setHasGeneratedFeedback] = useState(false);
+  const [isFinished, setIsFinished] = useState(false);
+  const [isSatisfied, setIsSatisfied] = useState(false);
   const exitPage = useRef(false);
-  const isSatisfied = useRef(false);
-  const isFinished = useRef(false);
 
-  const counter = useRef(0);
+  const [counter, setCounter] = useState(0);
 
   const defaultSpeechData = (): SpeechData => ({
     audio: "",
@@ -115,10 +115,10 @@ const VirtualInterview = () => {
 
   // Fetches interview questions
   useEffect(() => {
-    const fetchQuestions = async () => {
-      if (hasFetchedQuestions.current) return;
-      hasFetchedQuestions.current = true;
+    if (hasFetchedQuestions) return;
 
+    const fetchQuestions = async () => {
+      setHasFetchedQuestions(true);
       try {
         setIsQuestionLoading(true);
         const token = await getToken();
@@ -129,11 +129,11 @@ const VirtualInterview = () => {
         setQuestions(response.questions);
 
         if (response.questions.length > 0) {
-          const firsQuestionId = uuid.v4() as string;
+          const firstQuestionId = uuid.v4() as string;
           setMessages((prevMessages) => [
             ...prevMessages,
             {
-              id: firsQuestionId,
+              id: firstQuestionId,
               role: Role.Bot,
               content: "",
               question: true,
@@ -144,13 +144,12 @@ const VirtualInterview = () => {
             /^\d+\.\s*/,
             ""
           );
-
           const viseme = await createSpeech(cleanedQuestion, token);
           setSpeechData(viseme);
 
           setMessages((prevMessages) =>
             prevMessages.map((message) =>
-              message.id === firsQuestionId
+              message.id === firstQuestionId
                 ? {
                     ...message,
                     content: response.questions[0],
@@ -160,7 +159,7 @@ const VirtualInterview = () => {
             )
           );
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error", error.message);
       } finally {
         setIsQuestionLoading(false);
@@ -168,10 +167,12 @@ const VirtualInterview = () => {
     };
 
     fetchQuestions();
-  }, [interviewId]);
+  }, [interviewId, hasFetchedQuestions]);
 
   // Triggers feedback generation and stores ratings when 10 eye contact data points are collected.
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
     const handleFeedbackRatings = async () => {
       try {
         const token = await getToken({ template: "supabase" });
@@ -179,8 +180,8 @@ const VirtualInterview = () => {
         const feedbackResponse = await createVirtualFeedback(
           {
             interview_id: interviewId,
-            answers: answers,
-            questions: questions,
+            answers,
+            questions,
             wpm: paceOfSpeech,
             eye_contact: eyeContacts,
           },
@@ -201,26 +202,39 @@ const VirtualInterview = () => {
             },
             token
           );
-          hasGeneratedFeedback.current = true;
+          setHasGeneratedFeedback(true);
         }
       } catch (error) {
         console.error("Error during feedback creation:", error);
       } finally {
-        setTimeout(() => setIsModalVisible(true), 8000);
+        timeoutId = setTimeout(() => setIsModalVisible(true), 8000);
       }
     };
+
     if (
       answers.length === answerIds.length &&
       answerIds.length === 5 &&
-      !hasGeneratedFeedback.current &&
-      isFinished.current &&
+      !hasGeneratedFeedback &&
+      isFinished &&
       eyeContacts.length >= 5
     ) {
-      hasGeneratedFeedback.current = true;
       setIsLastQuestion(true);
       handleFeedbackRatings();
     }
-  }, [eyeContacts, answers, paceOfSpeech, questions, interviewId, getToken]);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [
+    answers,
+    answerIds,
+    eyeContacts,
+    interviewId,
+    questions,
+    paceOfSpeech,
+    hasGeneratedFeedback,
+    isFinished,
+  ]);
 
   useEffect(() => {
     const handleLastMessage = async () => {
@@ -239,12 +253,13 @@ const VirtualInterview = () => {
           feedback: false,
         },
       ]);
-      isFinished.current = true;
+      setIsFinished(true);
     };
-    if (messages.length === 34) {
+
+    if (messages.length === 34 && !isFinished) {
       handleLastMessage();
     }
-  }, [messages]);
+  }, [messages, isFinished]);
 
   // Scroll to the bottom whenever messages update
   useEffect(() => {
@@ -326,7 +341,7 @@ const VirtualInterview = () => {
           token
         );
 
-        if (counter.current === 0) {
+        if (counter === 0) {
           setAnswers((prevAnswers) => [
             ...prevAnswers,
             transcription.transcript,
@@ -388,8 +403,8 @@ const VirtualInterview = () => {
       const token = await getToken({ template: "supabase" });
 
       // Handle feedback generation
-      if (counter.current === 2 && currentQuestionIndex < 5) {
-        isSatisfied.current = true;
+      if (counter === 2 && currentQuestionIndex < 5) {
+        setIsSatisfied(true);
         form.append("type", "1");
         const feedback = await generateResponse(form, token);
         const cleanedQuestion = feedback.replace(/^\d+\.\s*/, "");
@@ -408,8 +423,8 @@ const VirtualInterview = () => {
               : message
           )
         );
-      } else if (!isSatisfied.current) {
-        counter.current++;
+      } else if (!isSatisfied) {
+        setCounter((prev) => prev + 1);
         form.append("type", "0");
         const feedback = await generateResponse(form, token);
         const cleanedQuestion = feedback.replace(/^\d+\.\s*/, "");
@@ -426,9 +441,9 @@ const VirtualInterview = () => {
       }
 
       // Handle next question
-      if (isSatisfied.current && counter.current === 2) {
-        counter.current = 0;
-        isSatisfied.current = false;
+      if (isSatisfied && counter === 2) {
+        setCounter(0);
+        setIsSatisfied(false);
 
         setCurrentQuestionIndex((prevIndex) => {
           const nextIndex = prevIndex + 1;
@@ -517,13 +532,13 @@ const VirtualInterview = () => {
   // Manages transcription, answer submission, eye contact, and ends the interview.
   const handleAPI = async (videoUri: string, audioUri: string) => {
     try {
-      if (counter.current === 0) {
+      if (counter === 0) {
         processEyeContact(videoUri);
       }
 
       await handleAnswer(audioUri);
 
-      if (isSatisfied.current === true) {
+      if (isSatisfied === true) {
         await handleEnd();
       }
     } catch (error) {
@@ -602,7 +617,7 @@ const VirtualInterview = () => {
   // Navigates to the feedback page
   const handleNext = () => {
     setIsLoading(true);
-    if (hasGeneratedFeedback.current) {
+    if (hasGeneratedFeedback) {
       setExit(false);
       setIsLoading(false);
       setIsModalVisible(false);

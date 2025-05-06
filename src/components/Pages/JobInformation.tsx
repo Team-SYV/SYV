@@ -139,7 +139,6 @@ const JobInformation: React.FC<JobInformationProps> = ({
       }
     };
     transcribeJobDescription();
-
   }, [formData.selectedJobDescription, transcribed]);
 
   useEffect(() => {
@@ -170,7 +169,6 @@ const JobInformation: React.FC<JobInformationProps> = ({
       }));
 
       setResumeTranscribed(true);
-     
     };
     scrapeResume();
   }, [formData.selectedResume, resumeTranscribed]);
@@ -193,6 +191,20 @@ const JobInformation: React.FC<JobInformationProps> = ({
   const handleNextStep = useCallback(async () => {
     if (activeStep === steps.length - 1) {
       await handleSubmit();
+      return;
+    }
+
+    if (activeStep === 0 && formData.selectedJobDescription) {
+      if (!transcribed) {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        Toast.show({
+          type: "error",
+          text1: "Transcription is still in progress. Please wait.",
+          position: "bottom",
+          bottomOffset: 85,
+        });
+        return;
+      }
     }
 
     if (!validateStep(activeStep, formData)) {
@@ -219,7 +231,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
     if (activeStep < steps.length - 1) {
       setActiveStep((prevStep) => prevStep + 1);
     }
-  }, [activeStep, formData]);
+  }, [activeStep, formData, transcribed]);
 
   // Moves to previous step
   const handlePrevStep = useCallback(() => {
@@ -415,6 +427,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
                       formData={formData}
                       updateFormData={updateFormData}
                       handleNextStep={handleNextStep}
+                      transcribed={transcribed}
                     />
                   </>
                 )}

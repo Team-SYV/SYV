@@ -13,6 +13,7 @@ const StepContent: React.FC<StepContentProps> = ({
   formData,
   updateFormData,
   handleNextStep,
+  transcribed,
 }) => {
   const [shouldProceed, setShouldProceed] = useState(false);
 
@@ -31,6 +32,7 @@ const StepContent: React.FC<StepContentProps> = ({
             updateFormData("selectedJobDescription", file)
           }
           selectedFile={formData.selectedJobDescription}
+          transcriptionProgress={transcribed ? 1 : 0}
         />
       );
 

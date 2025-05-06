@@ -415,6 +415,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
                       formData={formData}
                       updateFormData={updateFormData}
                       handleNextStep={handleNextStep}
+                      transcribed={transcribed}
                     />
                   </>
                 )}

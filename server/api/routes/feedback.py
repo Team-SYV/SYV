@@ -96,7 +96,7 @@ async def create_virtual_feedback(feedback_data: CreateVirtualFeedbackInput, req
     validated_user_id = validate_token(auth_header)
 
      # Validate the input
-    required_fields = ['interview_id', 'answer', 'question']
+    required_fields = ['interview_id', 'answers', 'questions']
     for field in required_fields:
         if not feedback_data.model_dump().get(field):
             raise HTTPException(status_code=400, detail=f"Missing required field: {field}")

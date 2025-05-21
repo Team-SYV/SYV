@@ -452,10 +452,9 @@ const JobInformation: React.FC<JobInformationProps> = ({
           <CustomButton
             title={activeStep === steps.length - 1 ? "Submit" : "Next"}
             onPress={handleNextStep}
-            containerStyles={`
-    h-14 rounded-xl mb-4 w-1/2 mx-2 bg-[#00AACE]
-    ${isDisabled ? "opacity-60" : ""}
-  `}
+            containerStyles={`h-14 rounded-xl mb-4 w-1/2 mx-2 bg-[#00AACE] ${
+              isDisabled ? "opacity-60" : ""
+            }`}
             textStyles="text-white text-[16px] font-semibold text-base"
             isLoading={loading}
             disabled={isDisabled}

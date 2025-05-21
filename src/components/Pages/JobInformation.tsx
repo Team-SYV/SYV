@@ -345,6 +345,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
           text1: "Your resume is not fit for the job description.",
           position: "bottom",
           bottomOffset: 85,
+          visibilityTime: 1500,
         });
         return;
       } else {
@@ -386,9 +387,11 @@ const JobInformation: React.FC<JobInformationProps> = ({
     } catch (error) {
       console.error("Error skipping file upload", error.message);
     } finally {
-      setIsSubmitting(false);
-      setHasChanges(false);
-      setLoading(false);
+      setTimeout(() => {
+        setIsSubmitting(false);
+        setHasChanges(false);
+        setLoading(false);
+      }, 1500);
     }
   };
 

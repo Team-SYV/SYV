@@ -59,6 +59,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
   const [activeStep, setActiveStep] = useState<number>(0);
   const [errors, setErrors] = useState<{ [key: number]: string }>({});
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
   const [jobDescription, setJobDescription] = useState("");
@@ -333,6 +334,8 @@ const JobInformation: React.FC<JobInformationProps> = ({
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const token = await getToken({ template: "supabase" });
       const valid = await validate(jobDescription, resume, token);
@@ -383,6 +386,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
     } catch (error) {
       console.error("Error skipping file upload", error.message);
     } finally {
+      setIsSubmitting(false);
       setHasChanges(false);
       setLoading(false);
     }
@@ -390,6 +394,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
 
   const isDisabled =
     loading ||
+    isSubmitting ||
     (activeStep === 0 && !transcribed) ||
     (activeStep === 1 && !resumeTranscribed);
 
@@ -445,9 +450,12 @@ const JobInformation: React.FC<JobInformationProps> = ({
           <CustomButton
             title="Prev"
             onPress={handlePrevStep}
-            containerStyles="border border-[#00AACE] h-14 rounded-xl mb-4 w-1/2 mx-2"
+            containerStyles={`border border-[#00AACE] h-14 rounded-xl mb-4 w-1/2 mx-2 ${
+              activeStep === 0 ? "opacity-50" : ""
+            }`}
             textStyles="text-[#00AACE] text-[16px] font-semibold text-base"
             isLoading={loading}
+            disabled={activeStep === 0}
           />
           <CustomButton
             title={activeStep === steps.length - 1 ? "Submit" : "Next"}

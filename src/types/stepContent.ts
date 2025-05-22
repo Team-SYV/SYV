@@ -5,4 +5,5 @@ export interface StepContentProps {
   formData: JobInfo;
   updateFormData: (key: string, value: string, callback?: () => void) => void;
   handleNextStep: () => void;
+  transcribed?: boolean;
 }

@@ -105,7 +105,7 @@ const ResumeUpload: React.FC<ResumeUploadProps> = ({
           />
           {uploadProgress > 0 && uploadProgress < 1 && (
             <Text className="text-center mt-2 text-[12px]">
-              {Math.round(uploadProgress * 100)}% Uploading...
+              {Math.round(uploadProgress * 100)}% Transcribing...
             </Text>
           )}
         </View>

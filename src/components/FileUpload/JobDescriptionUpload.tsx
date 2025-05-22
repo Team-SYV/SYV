@@ -1,33 +1,78 @@
 import { Text, View, TouchableOpacity, Alert } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import * as DocumentPicker from "expo-document-picker";
 import { Ionicons } from "@expo/vector-icons";
 import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
 import ProgressBar from "react-native-progress/Bar";
 
 type JobDescriptionUploadProps = {
-  onFileSelect;
-  selectedFile;
+  onFileSelect: (file: any) => void;
+  selectedFile: any;
+  transcriptionProgress?: number;
 };
 
 const JobDescriptionUpload: React.FC<JobDescriptionUploadProps> = ({
   onFileSelect,
   selectedFile,
+  transcriptionProgress = 0,
 }) => {
   const [fileName, setFileName] = useState("");
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [animatedProgress, setAnimatedProgress] = useState(0);
+  const animationRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Update fileName when selectedFile changes
   useEffect(() => {
     if (selectedFile) {
       setFileName(selectedFile.name);
+    } else {
+      setFileName("");
+      setAnimatedProgress(0);
+      if (animationRef.current) {
+        clearInterval(animationRef.current);
+      }
     }
   }, [selectedFile]);
 
-// Select a file
+  // Simulate progress animation when a file is selected and transcription is not complete
+  useEffect(() => {
+    if (selectedFile && transcriptionProgress < 1) {
+      // Start animation only if transcription is not complete
+      let progress = 0;
+      setAnimatedProgress(0);
+      if (animationRef.current) {
+        clearInterval(animationRef.current);
+      }
+
+      // Simulate progress over 5 seconds
+      animationRef.current = setInterval(() => {
+        progress += 0.02;
+        setAnimatedProgress(Math.min(progress, 0.95));
+        if (progress >= 0.95) {
+          clearInterval(animationRef.current!);
+        }
+      }, 100);
+    }
+
+    // When transcription completes, snap to 100%
+    if (transcriptionProgress === 1) {
+      setAnimatedProgress(1);
+      if (animationRef.current) {
+        clearInterval(animationRef.current);
+      }
+    }
+
+    return () => {
+      if (animationRef.current) {
+        clearInterval(animationRef.current);
+      }
+    };
+  }, [selectedFile, transcriptionProgress]);
+
+  // Select a file
   const handleFilePick = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ["application/pdf", "image/*"], 
+        type: ["application/pdf", "image/*"],
       });
 
       if (result.canceled) {
@@ -37,16 +82,6 @@ const JobDescriptionUpload: React.FC<JobDescriptionUploadProps> = ({
       } else if (result.assets && result.assets.length > 0) {
         setFileName(result.assets[0].name);
         onFileSelect(result.assets[0]);
-
-        let progress = 0;
-        const interval = setInterval(() => {
-          progress += 0.1;
-          setUploadProgress(progress);
-          if (progress >= 1) {
-            clearInterval(interval);
-            setUploadProgress(1);
-          }
-        }, 100);
       } else {
         Alert.alert("Error", "There was an issue picking the file.");
       }
@@ -58,8 +93,11 @@ const JobDescriptionUpload: React.FC<JobDescriptionUploadProps> = ({
   // Remove a file
   const handleRemoveFile = () => {
     setFileName("");
-    setUploadProgress(0);
+    setAnimatedProgress(0);
     onFileSelect(null);
+    if (animationRef.current) {
+      clearInterval(animationRef.current);
+    }
   };
 
   return (
@@ -96,19 +134,21 @@ const JobDescriptionUpload: React.FC<JobDescriptionUploadProps> = ({
           <Text className="text-[12px] text-center mt-2">No file selected</Text>
         )}
 
-        <View className="mt-2">
-          <ProgressBar
-            progress={uploadProgress}
-            width={null}
-            color={uploadProgress === 1 ? "green" : "gray"}
-            borderColor="transparent"
-          />
-          {uploadProgress > 0 && uploadProgress < 1 && (
-            <Text className="text-center mt-2 text-[12px]">
-              {Math.round(uploadProgress * 100)}% Uploading...
-            </Text>
-          )}
-        </View>
+        {fileName && (
+          <View className="mt-2">
+            <ProgressBar
+              progress={animatedProgress}
+              width={null}
+              color={animatedProgress === 1 ? "green" : "gray"}
+              borderColor="transparent"
+            />
+            {animatedProgress > 0 && animatedProgress < 1 && (
+              <Text className="text-center mt-2 text-[12px]">
+                {Math.round(animatedProgress * 100)}% Transcribing...
+              </Text>
+            )}
+          </View>
+        )}
       </View>
     </View>
   );

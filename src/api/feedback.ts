@@ -62,7 +62,7 @@ export const generateResponse = async (formData: FormData, token: string) => {
       }
     );
 
-    return response.data.follow_up_question;
+    return response.data;
   } catch (error) {
     console.error("Error response from server:", error.response);
 

@@ -76,7 +76,6 @@ const VirtualInterview = () => {
   const [hasFetchedQuestions, setHasFetchedQuestions] = useState(false);
   const [hasGeneratedFeedback, setHasGeneratedFeedback] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
-  const [isSatisfied, setIsSatisfied] = useState(false);
   const exitPage = useRef(false);
 
   const [counter, setCounter] = useState(0);
@@ -169,7 +168,7 @@ const VirtualInterview = () => {
     fetchQuestions();
   }, [interviewId, hasFetchedQuestions]);
 
-  // Triggers feedback generation and stores ratings when 10 eye contact data points are collected.
+  // Triggers feedback generation and stores ratings when 5 eye contact data points are collected.
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
 
@@ -256,10 +255,10 @@ const VirtualInterview = () => {
       setIsFinished(true);
     };
 
-    if (messages.length === 34 && !isFinished) {
+    if (currentQuestionIndex === 5 && !isFinished) {
       handleLastMessage();
     }
-  }, [messages, isFinished]);
+  }, [currentQuestionIndex, isFinished]);
 
   // Scroll to the bottom whenever messages update
   useEffect(() => {
@@ -383,6 +382,10 @@ const VirtualInterview = () => {
 
   // Handles the feedback for the answer
   const handleAnswerFeedback = async (answer, question) => {
+    if (counter >= 2) {
+      return;
+    }
+
     const feedbackMessageId = uuid.v4();
     const feedbackMessage = {
       id: feedbackMessageId,
@@ -397,60 +400,28 @@ const VirtualInterview = () => {
     const form = new FormData();
     form.append("previous_question", question);
     form.append("previous_answer", answer);
-    form.append("next_question", questions[currentQuestionIndex + 1]);
+    form.append("next_question", questions[currentQuestionIndex + 1] || "");
 
     try {
       const token = await getToken({ template: "supabase" });
 
-      // Handle feedback generation
-      if (counter === 2 && currentQuestionIndex < 5) {
-        setIsSatisfied(true);
-        form.append("type", "1");
-        const feedback = await generateResponse(form, token);
-        const cleanedQuestion = feedback.replace(/^\d+\.\s*/, "");
-        const viseme = await createSpeech(
-          `${cleanedQuestion}                     ${questions[
-            currentQuestionIndex + 1
-          ].replace(/^\d+\.\s*/, "")}`,
-          token
-        );
-        setSpeechData(viseme);
+      // Generate follow-up question
+      const feedback = await generateResponse(form, token);
 
-        setMessages((prevMessages) =>
-          prevMessages.map((message) =>
-            message.id === feedbackMessageId
-              ? { ...message, content: cleanedQuestion, feedback: false }
-              : message
-          )
-        );
-      } else if (!isSatisfied) {
-        setCounter((prev) => prev + 1);
-        form.append("type", "0");
-        const feedback = await generateResponse(form, token);
-        const cleanedQuestion = feedback.replace(/^\d+\.\s*/, "");
-        const viseme = await createSpeech(cleanedQuestion, token);
-        setSpeechData(viseme);
+      const cleanedQuestion = feedback.follow_up_question.replace(
+        /^\d+\.\s*/,
+        ""
+      );
+      const viseme = await createSpeech(cleanedQuestion, token);
+      setSpeechData(viseme);
 
-        setMessages((prevMessages) =>
-          prevMessages.map((message) =>
-            message.id === feedbackMessageId
-              ? { ...message, content: cleanedQuestion, feedback: false }
-              : message
-          )
-        );
-      }
-
-      // Handle next question
-      if (isSatisfied && counter === 2) {
-        setCounter(0);
-        setIsSatisfied(false);
-
-        setCurrentQuestionIndex((prevIndex) => {
-          const nextIndex = prevIndex + 1;
-          handleNextQuestion(nextIndex, token);
-          return nextIndex;
-        });
-      }
+      setMessages((prevMessages) =>
+        prevMessages.map((message) =>
+          message.id === feedbackMessageId
+            ? { ...message, content: cleanedQuestion, feedback: false }
+            : message
+        )
+      );
     } catch (error) {
       console.error("Error generating feedback or speech:", error);
     } finally {
@@ -458,36 +429,26 @@ const VirtualInterview = () => {
     }
   };
 
-  const handleNextQuestion = async (nextIndex: number, token: string) => {
-    if (nextIndex < 5) {
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: uuid.v4(),
-          role: Role.Bot,
-          content: questions[nextIndex],
-          feedback: false,
-        },
-      ]);
-    }
-  };
-
   // Process the eye contact
   const processEyeContact = async (videoUri: string): Promise<void> => {
-    const videoFile = {
-      uri: videoUri,
-      type: "video/mp4",
-      name: videoUri.split("/").pop(),
-    } as unknown as File;
+    try {
+      const videoFile = {
+        uri: videoUri,
+        type: "video/mp4",
+        name: videoUri.split("/").pop(),
+      } as unknown as File;
 
-    const token = await getToken({ template: "supabase" });
-    const eyeContactData = await eyeContact(videoFile, token);
+      const token = await getToken({ template: "supabase" });
+      const eyeContactData = await eyeContact(videoFile, token);
 
-    if (eyeContactData) {
-      setEyeContacts((prevEyeContacts) => [
-        ...prevEyeContacts,
-        eyeContactData.eye_contact,
-      ]);
+      if (eyeContactData) {
+        setEyeContacts((prevEyeContacts) => [
+          ...prevEyeContacts,
+          eyeContactData.eye_contact,
+        ]);
+      }
+    } catch (error) {
+      console.error("Error processing eye contact:", error);
     }
   };
 
@@ -533,12 +494,23 @@ const VirtualInterview = () => {
   const handleAPI = async (videoUri: string, audioUri: string) => {
     try {
       if (counter === 0) {
-        processEyeContact(videoUri);
+        // Run eye contact processing in the background for main questions
+        processEyeContact(videoUri).catch((error) => {
+          console.error("Background eye contact processing failed:", error);
+        });
       }
 
       await handleAnswer(audioUri);
 
-      if (isSatisfied === true) {
+      // Increment counter after handling answer
+      setCounter((prev) => {
+        const newCounter = prev + 1;
+        return newCounter;
+      });
+
+      // Move to next main question after two follow-up questions
+      if (counter === 2) {
+        setCounter(0);
         await handleEnd();
       }
     } catch (error) {
@@ -592,7 +564,7 @@ const VirtualInterview = () => {
 
         if (uri) {
           await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-          handleAPI(recordedVideo.uri, uri);
+          await handleAPI(recordedVideo.uri, uri);
         } else {
           console.error("No valid audio URI found.");
         }

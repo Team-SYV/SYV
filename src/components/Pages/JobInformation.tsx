@@ -263,7 +263,15 @@ const JobInformation: React.FC<JobInformationProps> = ({
       if (key === "selectedJobDescription") {
         setTranscribed(false);
         setJobDescription("");
+        newState = {
+          ...newState,
+          selectedIndustry: null,
+          selectedJobRole: null,
+          selectedCompany: null,
+          selectedExperienceLevel: null,
+        };
       }
+
       if (key === "selectedResume") {
         setResumeTranscribed(false);
         setResume("");

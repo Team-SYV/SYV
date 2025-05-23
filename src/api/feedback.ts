@@ -1,4 +1,5 @@
 import { FeedbackData } from "@/types/feedbackData";
+import { VirtualFeedbackData } from "@/types/virtualFeedbackData";
 import axios from "axios";
 
 const api = axios.create({
@@ -10,8 +11,27 @@ export const createFeedback = async (
   token: string
 ) => {
   try {
+    const response = await api.post("/api/feedback/create/", feedbackData, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.detail || "Failed to generate feedback"
+    );
+  }
+};
+
+export const createVirtualFeedback = async (
+  feedbackData: VirtualFeedbackData,
+  token: string
+) => {
+  try {
     const response = await api.post(
-      "/api/feedback/create/",
+      "/api/feedback/create/virtual/",
       feedbackData,
       {
         headers: {
@@ -22,12 +42,12 @@ export const createFeedback = async (
     );
     return response.data;
   } catch (error) {
+    console.error("Error response from server:", error.response);
     throw new Error(
       error.response?.data?.detail || "Failed to generate feedback"
     );
   }
 };
-
 
 export const generateResponse = async (formData: FormData, token: string) => {
   try {
@@ -42,10 +62,10 @@ export const generateResponse = async (formData: FormData, token: string) => {
       }
     );
 
-    return response.data.follow_up_question;
+    return response.data;
   } catch (error) {
     console.error("Error response from server:", error.response);
-    
+
     throw new Error(
       error.response?.data?.detail || "Failed to generate answer feedback"
     );

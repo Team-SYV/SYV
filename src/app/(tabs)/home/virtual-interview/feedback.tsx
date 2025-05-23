@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Video, ResizeMode } from "expo-av";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import ConfirmationModal from "@/components/Modal/ConfirmationModal";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -20,17 +19,15 @@ import {
 import Ratings from "@/components/Rating/Ratings";
 import { RatingsData } from "@/types/ratingsData";
 import { useAuth } from "@clerk/clerk-expo";
-import { getFeedback} from "@/api/feedback";
+import { getFeedback } from "@/api/feedback";
 import { getRatings } from "@/api/ratings";
 import { cleanQuestion } from "@/utils/cleanQuestion";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
 const Feedback: React.FC = () => {
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
-  const flatListRef = useRef<FlatList<string>>(null);
+  const flatListRef = useRef<FlatList<any>>(null);
   const [contentOffset, setContentOffset] = useState(0);
 
   const [isExpanded, setIsExpanded] = useState<Record<string, boolean>>({});
@@ -38,24 +35,16 @@ const Feedback: React.FC = () => {
 
   const [feedbackItem, setFeedbackItem] = useState([]);
   const [ratings, setRatings] = useState<RatingsData>();
-
   const [loading, setLoading] = useState(true);
   const [isConfirmationVisible, setIsConfirmationVisible] = useState(false);
   const [isOnPage, setIsOnPage] = useState(true);
 
-  const { videoURIs, interviewId } = useLocalSearchParams();
-  const parsedVideos: string[] =
-    typeof videoURIs === "string" ? (JSON.parse(videoURIs) as string[]) : [];
-  const videosWithRatings = [...parsedVideos, "ratings"];
+  const { interviewId } = useLocalSearchParams();
   const { getToken } = useAuth();
 
   // Android back button
   useEffect(() => {
     const backAction = () => {
-      if (isFullScreen) {
-        setIsFullScreen(false);
-        return true;
-      }
 
       if (isOnPage) {
         setIsConfirmationVisible(true);
@@ -71,32 +60,19 @@ const Feedback: React.FC = () => {
     );
 
     return () => backHandler.remove();
-  }, [isFullScreen, isOnPage]);
+  }, [isOnPage]);
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollX.setValue(event.nativeEvent.contentOffset.x);
     setContentOffset(event.nativeEvent.contentOffset.x);
   };
-
-  // Handle full-screen exit
-  const handleExitFullScreen = () => {
-    setIsFullScreen(false);
-
-    setTimeout(() => {
-      flatListRef.current?.scrollToOffset({
-        offset: contentOffset,
-        animated: true,
-      });
-    }, 5);
-  };
-
-  // Fetch questions, feedback and ratings
+  
+    // Fetch questions, feedback and ratings
   useEffect(() => {
     const fetch = async () => {
       try {
         const token = await getToken({ template: "supabase" });
         setLoading(true);
-
         const fetchedFeedback = await getFeedback(interviewId, token);
         setFeedbackItem(fetchedFeedback);
         const fetchedRatings = await getRatings(interviewId, token);
@@ -119,10 +95,7 @@ const Feedback: React.FC = () => {
 
   const handleTextLayout = (key: string, event) => {
     const { lines } = event.nativeEvent;
-    setIsClamped((prev) => ({
-      ...prev,
-      [key]: lines.length > 3,
-    }));
+    setIsClamped((prev) => ({ ...prev, [key]: lines.length > 3 }));
   };
 
   const renderExpandableSection = (
@@ -140,7 +113,6 @@ const Feedback: React.FC = () => {
         >
           {content || "No feedback available"}
         </Text>
-
         {content && isClamped[key] && (
           <TouchableOpacity onPress={() => toggleExpand(key)}>
             <Text className="text-sm font-base text-[#0092B1] mt-1">
@@ -190,33 +162,14 @@ const Feedback: React.FC = () => {
             <Text className="font-semibold text-[13px]">
               Question {index + 1}
             </Text>
-
             <Text className="text-sm text-[13px]">
               {cleanQuestion(feedback.question)}
             </Text>
-          </View>
-          <View style={styles.videoContainer}>
-            <TouchableOpacity
-              onPress={() => {
-                setSelectedVideo(item);
-                setIsFullScreen(true);
-              }}
-              className="rounded-md bg-[#00AACE] py-[8px] px-3 mt-2"
-            >
-              <Text className="text-white font-medium text-[12px] text-center">
-                View Video
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
 
         <ScrollView className="mt-5">
           <View className="px-4">
-          {renderExpandableSection(
-              "Answer",
-              feedback.answer,
-              `answer-${index}`
-            )}
             {renderExpandableSection(
               "Answer Relevance",
               feedback.answer_relevance,
@@ -253,11 +206,14 @@ const Feedback: React.FC = () => {
       </View>
     );
   };
+
+  const feedbackData = [...feedbackItem, "ratings"];
+
   return (
     <View className="flex-1 bg-white">
       <Stack.Screen
         options={{
-          headerShown: !isFullScreen,
+          headerShown: true,
           headerStyle: {
             backgroundColor: "white",
           },
@@ -273,28 +229,10 @@ const Feedback: React.FC = () => {
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#00AACE" />
         </View>
-      ) : isFullScreen ? (
-        <View style={styles.fullScreenVideoContainer}>
-          <TouchableOpacity
-            onPress={() => handleExitFullScreen()}
-            className="absolute right-4 top-14 z-10"
-          >
-            <AntDesign name="closecircle" size={33} color="#A92703" />
-          </TouchableOpacity>
-
-          <Video
-            source={{ uri: selectedVideo }}
-            style={styles.fullScreenVideo}
-            useNativeControls
-            resizeMode={ResizeMode.COVER}
-            shouldPlay
-            isLooping={false}
-          />
-        </View>
       ) : (
         <Animated.FlatList
           ref={flatListRef}
-          data={videosWithRatings}
+          data={feedbackData}
           keyExtractor={(item) => item}
           renderItem={renderFeedbackItem}
           horizontal
@@ -304,15 +242,14 @@ const Feedback: React.FC = () => {
         />
       )}
 
-      {!isFullScreen && !loading && (
+      {!loading && (
         <View className="absolute top-[5px] flex-row justify-center w-full">
-          {videosWithRatings.map((_, index) => {
+          {feedbackData.map((_, index) => {
             const inputRange = [
               (index - 1) * width,
               index * width,
               (index + 1) * width,
             ];
-
             const opacity = scrollX.interpolate({
               inputRange,
               outputRange: [0.3, 1, 0.3],
@@ -327,9 +264,7 @@ const Feedback: React.FC = () => {
                 }
               >
                 <Animated.View
-                  style={{
-                    opacity,
-                  }}
+                  style={{ opacity }}
                   className="w-[22px] h-[9px] rounded-full bg-[#00AACE] mx-[4px]"
                 />
               </TouchableOpacity>
@@ -368,22 +303,7 @@ const styles = StyleSheet.create({
   questionContainer: {
     width: "70%",
   },
-  videoContainer: {
-    width: "30%",
-    paddingLeft: 10,
-  },
-  fullScreenVideoContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "black",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  fullScreenVideo: {
-    width,
-    height,
-  },
+
+ 
+
 });

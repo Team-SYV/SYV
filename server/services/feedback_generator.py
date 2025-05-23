@@ -104,16 +104,6 @@ def generate_feedback_virtual(questions, answers, wpm, eye_contact):
     if not questions:
         raise ValueError("Questions cannot be empty.")
 
-    # Generate individual feedback data
-    individual_feedback = []
-    for i in range(len(questions)):
-        feedback_item = {
-            "question": questions[i],
-            "answer": answers[i],
-            "wpm": wpm[i],
-            "eye_contact": eye_contact[i],
-        }
-        individual_feedback.append(feedback_item)
 
     # Calculate mean WPM and eye contact ratings
     mean_wpm_rating = (sum(get_wpm_rating(w) for w in wpm)) / len(wpm)
@@ -132,12 +122,12 @@ def generate_feedback_virtual(questions, answers, wpm, eye_contact):
         
     """
 
-    for feedback in individual_feedback:
-        prompt += f"""
-            - Question: "{feedback['question']}"
-            - Answer: "{feedback['answer']}"
-            - WPM: {feedback['wpm']}
-            - Eye Contact: {feedback['eye_contact']}%
+    prompt += f"""
+        Evaluate the following based on the given input:
+            - Question: "{questions}"
+            - Answer: "{answers}"
+            - WPM: {wpm}
+            - Eye Contact: {eye_contact}%
         """
 
     prompt += f"""

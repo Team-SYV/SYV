@@ -24,7 +24,7 @@ import {
   StatusBar,
 } from "react-native";
 import { getQuestions } from "@/api/question";
-import { createFeedback, generateResponse } from "@/api/feedback";
+import { createVirtualFeedback, generateResponse } from "@/api/feedback";
 import { createRatings } from "@/api/ratings";
 import { transcribeAudio } from "@/api/transcription";
 import { eyeContact } from "@/api/eyeContact";
@@ -54,7 +54,7 @@ const VirtualInterview = () => {
   const [questionIds, setQuestionIds] = useState([]);
   const [answers, setAnswers] = useState([]);
   const [answerIds, setAnswerIds] = useState([]);
-  const [recordedVideos, setRecordedVideos] = useState<string[]>([]);
+  // const [recordedVideos, setRecordedVideos] = useState<string[]>([]);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isQuestionLoading, setIsQuestionLoading] = useState<boolean>(false);
@@ -73,13 +73,12 @@ const VirtualInterview = () => {
   >(null);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const hasFetchedQuestions = useRef(false);
-  const hasGeneratedFeedback = useRef(false);
+  const [hasFetchedQuestions, setHasFetchedQuestions] = useState(false);
+  const [hasGeneratedFeedback, setHasGeneratedFeedback] = useState(false);
+  const [isFinished, setIsFinished] = useState(false);
   const exitPage = useRef(false);
-  const isSatisfied = useRef(false);
-  const isFinished = useRef(false);
 
-  const counter = useRef(0);
+  const [counter, setCounter] = useState(0);
 
   const defaultSpeechData = (): SpeechData => ({
     audio: "",
@@ -115,10 +114,10 @@ const VirtualInterview = () => {
 
   // Fetches interview questions
   useEffect(() => {
-    const fetchQuestions = async () => {
-      if (hasFetchedQuestions.current) return;
-      hasFetchedQuestions.current = true;
+    if (hasFetchedQuestions) return;
 
+    const fetchQuestions = async () => {
+      setHasFetchedQuestions(true);
       try {
         setIsQuestionLoading(true);
         const token = await getToken();
@@ -129,11 +128,11 @@ const VirtualInterview = () => {
         setQuestions(response.questions);
 
         if (response.questions.length > 0) {
-          const firsQuestionId = uuid.v4() as string;
+          const firstQuestionId = uuid.v4() as string;
           setMessages((prevMessages) => [
             ...prevMessages,
             {
-              id: firsQuestionId,
+              id: firstQuestionId,
               role: Role.Bot,
               content: "",
               question: true,
@@ -144,13 +143,12 @@ const VirtualInterview = () => {
             /^\d+\.\s*/,
             ""
           );
-
           const viseme = await createSpeech(cleanedQuestion, token);
           setSpeechData(viseme);
 
           setMessages((prevMessages) =>
             prevMessages.map((message) =>
-              message.id === firsQuestionId
+              message.id === firstQuestionId
                 ? {
                     ...message,
                     content: response.questions[0],
@@ -160,7 +158,7 @@ const VirtualInterview = () => {
             )
           );
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error", error.message);
       } finally {
         setIsQuestionLoading(false);
@@ -168,62 +166,74 @@ const VirtualInterview = () => {
     };
 
     fetchQuestions();
-  }, [interviewId]);
+  }, [interviewId, hasFetchedQuestions]);
 
-  // Triggers feedback generation and stores ratings when 10 eye contact data points are collected.
+  // Triggers feedback generation and stores ratings when 5 eye contact data points are collected.
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
     const handleFeedbackRatings = async () => {
       try {
-        for (let i = 0; i < 5; i++) {
-          const token = await getToken({ template: "supabase" });
+        const token = await getToken({ template: "supabase" });
 
-          const feedbackResponse = await createFeedback(
+        const feedbackResponse = await createVirtualFeedback(
+          {
+            interview_id: interviewId,
+            answers,
+            questions,
+            pace_of_speech: paceOfSpeech,
+            eye_contact: eyeContacts,
+          },
+          token
+        );
+
+        if (feedbackResponse?.ratings_data) {
+          await createRatings(
             {
               interview_id: interviewId,
-              answer: answers[i],
-              question: questions[i],
-              pace_of_speech: paceOfSpeech[i],
-              eye_contact: eyeContacts[i],
-              answer_id: answerIds[i],
+              answer_relevance:
+                feedbackResponse.ratings_data.answer_relevance_rating,
+              eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
+              grammar: feedbackResponse.ratings_data.grammar_rating,
+              pace_of_speech:
+                feedbackResponse.ratings_data.pace_of_speech_rating,
+              filler_words: feedbackResponse.ratings_data.filler_words_rating,
             },
             token
           );
-
-          if (feedbackResponse?.ratings_data) {
-            await createRatings(
-              {
-                interview_id: interviewId,
-                answer_relevance:
-                  feedbackResponse.ratings_data.answer_relevance_rating,
-                eye_contact: feedbackResponse.ratings_data.eye_contact_rating,
-                grammar: feedbackResponse.ratings_data.grammar_rating,
-                pace_of_speech:
-                  feedbackResponse.ratings_data.pace_of_speech_rating,
-                filler_words: feedbackResponse.ratings_data.filler_words_rating,
-              },
-              token
-            );
-            hasGeneratedFeedback.current = true;
-          }
+          setHasGeneratedFeedback(true);
         }
       } catch (error) {
         console.error("Error during feedback creation:", error);
       } finally {
-        setTimeout(() => setIsModalVisible(true), 8000);
+        timeoutId = setTimeout(() => setIsModalVisible(true), 8000);
       }
     };
+
     if (
       answers.length === answerIds.length &&
       answerIds.length === 5 &&
-      !hasGeneratedFeedback.current &&
-      isFinished.current &&
+      !hasGeneratedFeedback &&
+      isFinished &&
       eyeContacts.length >= 5
     ) {
-      hasGeneratedFeedback.current = true;
       setIsLastQuestion(true);
       handleFeedbackRatings();
     }
-  }, [eyeContacts, answers, paceOfSpeech, questions, interviewId, getToken]);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [
+    answers,
+    answerIds,
+    eyeContacts,
+    interviewId,
+    questions,
+    paceOfSpeech,
+    hasGeneratedFeedback,
+    isFinished,
+  ]);
 
   useEffect(() => {
     const handleLastMessage = async () => {
@@ -242,12 +252,13 @@ const VirtualInterview = () => {
           feedback: false,
         },
       ]);
-      isFinished.current = true;
+      setIsFinished(true);
     };
-    if (messages.length === 34) {
+
+    if (currentQuestionIndex === 5 && !isFinished) {
       handleLastMessage();
     }
-  }, [messages]);
+  }, [currentQuestionIndex, isFinished]);
 
   // Scroll to the bottom whenever messages update
   useEffect(() => {
@@ -329,7 +340,7 @@ const VirtualInterview = () => {
           token
         );
 
-        if (counter.current === 0) {
+        if (counter === 0) {
           setAnswers((prevAnswers) => [
             ...prevAnswers,
             transcription.transcript,
@@ -371,6 +382,10 @@ const VirtualInterview = () => {
 
   // Handles the feedback for the answer
   const handleAnswerFeedback = async (answer, question) => {
+    if (counter >= 2) {
+      return;
+    }
+
     const feedbackMessageId = uuid.v4();
     const feedbackMessage = {
       id: feedbackMessageId,
@@ -385,60 +400,28 @@ const VirtualInterview = () => {
     const form = new FormData();
     form.append("previous_question", question);
     form.append("previous_answer", answer);
-    form.append("next_question", questions[currentQuestionIndex + 1]);
+    form.append("next_question", questions[currentQuestionIndex + 1] || "");
 
     try {
       const token = await getToken({ template: "supabase" });
 
-      // Handle feedback generation
-      if (counter.current === 2 && currentQuestionIndex < 5) {
-        isSatisfied.current = true;
-        form.append("type", "1");
-        const feedback = await generateResponse(form, token);
-        const cleanedQuestion = feedback.replace(/^\d+\.\s*/, "");
-        const viseme = await createSpeech(
-          `${cleanedQuestion}                     ${questions[
-            currentQuestionIndex + 1
-          ].replace(/^\d+\.\s*/, "")}`,
-          token
-        );
-        setSpeechData(viseme);
+      // Generate follow-up question
+      const feedback = await generateResponse(form, token);
 
-        setMessages((prevMessages) =>
-          prevMessages.map((message) =>
-            message.id === feedbackMessageId
-              ? { ...message, content: cleanedQuestion, feedback: false }
-              : message
-          )
-        );
-      } else if (!isSatisfied.current) {
-        counter.current++;
-        form.append("type", "0");
-        const feedback = await generateResponse(form, token);
-        const cleanedQuestion = feedback.replace(/^\d+\.\s*/, "");
-        const viseme = await createSpeech(cleanedQuestion, token);
-        setSpeechData(viseme);
+      const cleanedQuestion = feedback.follow_up_question.replace(
+        /^\d+\.\s*/,
+        ""
+      );
+      const viseme = await createSpeech(cleanedQuestion, token);
+      setSpeechData(viseme);
 
-        setMessages((prevMessages) =>
-          prevMessages.map((message) =>
-            message.id === feedbackMessageId
-              ? { ...message, content: cleanedQuestion, feedback: false }
-              : message
-          )
-        );
-      }
-
-      // Handle next question
-      if (isSatisfied.current && counter.current === 2) {
-        counter.current = 0;
-        isSatisfied.current = false;
-
-        setCurrentQuestionIndex((prevIndex) => {
-          const nextIndex = prevIndex + 1;
-          handleNextQuestion(nextIndex, token);
-          return nextIndex;
-        });
-      }
+      setMessages((prevMessages) =>
+        prevMessages.map((message) =>
+          message.id === feedbackMessageId
+            ? { ...message, content: cleanedQuestion, feedback: false }
+            : message
+        )
+      );
     } catch (error) {
       console.error("Error generating feedback or speech:", error);
     } finally {
@@ -446,57 +429,66 @@ const VirtualInterview = () => {
     }
   };
 
-  const handleNextQuestion = async (nextIndex: number, token: string) => {
-    if (nextIndex < 5) {
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: uuid.v4(),
-          role: Role.Bot,
-          content: questions[nextIndex],
-          feedback: false,
-        },
-      ]);
-    }
-  };
-
   // Process the eye contact
   const processEyeContact = async (videoUri: string): Promise<void> => {
-    const videoFile = {
-      uri: videoUri,
-      type: "video/mp4",
-      name: videoUri.split("/").pop(),
-    } as unknown as File;
+    try {
+      const videoFile = {
+        uri: videoUri,
+        type: "video/mp4",
+        name: videoUri.split("/").pop(),
+      } as unknown as File;
 
-    const token = await getToken({ template: "supabase" });
-    const eyeContactData = await eyeContact(videoFile, token);
+      const token = await getToken({ template: "supabase" });
+      const eyeContactData = await eyeContact(videoFile, token);
 
-    if (eyeContactData) {
-      setEyeContacts((prevEyeContacts) => [
-        ...prevEyeContacts,
-        eyeContactData.eye_contact,
-      ]);
+      if (eyeContactData) {
+        setEyeContacts((prevEyeContacts) => [
+          ...prevEyeContacts,
+          eyeContactData.eye_contact,
+        ]);
+      }
+    } catch (error) {
+      console.error("Error processing eye contact:", error);
     }
   };
 
   // Advances to the next question or ends the interview with a thank you message if it's the last question.
   const handleEnd = async () => {
     const isLastMessage = currentQuestionIndex === questions.length - 1;
-    const nextQuestionId = uuid.v4() as string;
 
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      {
-        id: nextQuestionId,
-        role: Role.Bot,
-        content: "",
-        question: true,
-      },
-    ]);
+    if (isLastMessage) {
+      const token = await getToken({ template: "supabase" });
+      const lastMessage =
+        "Thank you for your time and participation. This concludes your virtual interview.";
+      const viseme = await createSpeech(lastMessage, token);
+      setSpeechData(viseme);
 
-    setIsQuestionLoading(true);
-    try {
-      if (!isLastMessage) {
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          id: uuid.v4(),
+          role: Role.Bot,
+          content: lastMessage,
+          feedback: false,
+        },
+      ]);
+      setIsFinished(true);
+      setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+    } else {
+      const nextQuestionId = uuid.v4() as string;
+
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          id: nextQuestionId,
+          role: Role.Bot,
+          content: "",
+          question: true,
+        },
+      ]);
+
+      setIsQuestionLoading(true);
+      try {
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
         setMessages((prevMessages) =>
           prevMessages.map((message) =>
@@ -509,24 +501,35 @@ const VirtualInterview = () => {
               : message
           )
         );
+      } catch (error) {
+        console.error("Error generating speech:", error);
+      } finally {
+        setIsQuestionLoading(false);
       }
-    } catch (error) {
-      console.error("Error generating speech:", error);
-    } finally {
-      setIsQuestionLoading(false);
     }
   };
 
   // Manages transcription, answer submission, eye contact, and ends the interview.
   const handleAPI = async (videoUri: string, audioUri: string) => {
     try {
-      if (counter.current === 0) {
-        processEyeContact(videoUri);
+      if (counter === 0) {
+        // Run eye contact processing in the background for main questions
+        processEyeContact(videoUri).catch((error) => {
+          console.error("Background eye contact processing failed:", error);
+        });
       }
 
       await handleAnswer(audioUri);
 
-      if (isSatisfied.current === true) {
+      // Increment counter after handling answer
+      setCounter((prev) => {
+        const newCounter = prev + 1;
+        return newCounter;
+      });
+
+      // Move to next main question after two follow-up questions
+      if (counter === 2) {
+        setCounter(0);
         await handleEnd();
       }
     } catch (error) {
@@ -572,15 +575,15 @@ const VirtualInterview = () => {
           await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
           return;
         }
-        if (counter.current === 0) {
-          setRecordedVideos((prevVideos) => [...prevVideos, recordedVideo.uri]);
-        }
+        // if (counter.current === 0) {
+        //   setRecordedVideos((prevVideos) => [...prevVideos, recordedVideo.uri]);
+        // }
         await recording.stopAndUnloadAsync();
         const uri = recording.getURI();
 
         if (uri) {
           await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-          handleAPI(recordedVideo.uri, uri);
+          await handleAPI(recordedVideo.uri, uri);
         } else {
           console.error("No valid audio URI found.");
         }
@@ -605,7 +608,7 @@ const VirtualInterview = () => {
   // Navigates to the feedback page
   const handleNext = () => {
     setIsLoading(true);
-    if (hasGeneratedFeedback.current) {
+    if (hasGeneratedFeedback) {
       setExit(false);
       setIsLoading(false);
       setIsModalVisible(false);
@@ -614,7 +617,7 @@ const VirtualInterview = () => {
       router.push({
         pathname: `/home/virtual-interview/feedback`,
         params: {
-          videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
+          // videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
           interviewId: interviewId,
         },
       });

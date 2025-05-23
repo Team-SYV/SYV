@@ -171,11 +171,6 @@ const Feedback: React.FC = () => {
         <ScrollView className="mt-5">
           <View className="px-4">
             {renderExpandableSection(
-              "Answer",
-              feedback.answer,
-              `answer-${index}`
-            )}
-            {renderExpandableSection(
               "Answer Relevance",
               feedback.answer_relevance,
               `answerRelevance-${index}`

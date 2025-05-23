@@ -181,7 +181,7 @@ const VirtualInterview = () => {
             interview_id: interviewId,
             answers,
             questions,
-            wpm: paceOfSpeech,
+            pace_of_speech: paceOfSpeech,
             eye_contact: eyeContacts,
           },
           token
@@ -455,21 +455,40 @@ const VirtualInterview = () => {
   // Advances to the next question or ends the interview with a thank you message if it's the last question.
   const handleEnd = async () => {
     const isLastMessage = currentQuestionIndex === questions.length - 1;
-    const nextQuestionId = uuid.v4() as string;
 
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      {
-        id: nextQuestionId,
-        role: Role.Bot,
-        content: "",
-        question: true,
-      },
-    ]);
+    if (isLastMessage) {
+      const token = await getToken({ template: "supabase" });
+      const lastMessage =
+        "Thank you for your time and participation. This concludes your virtual interview.";
+      const viseme = await createSpeech(lastMessage, token);
+      setSpeechData(viseme);
 
-    setIsQuestionLoading(true);
-    try {
-      if (!isLastMessage) {
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          id: uuid.v4(),
+          role: Role.Bot,
+          content: lastMessage,
+          feedback: false,
+        },
+      ]);
+      setIsFinished(true);
+      setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+    } else {
+      const nextQuestionId = uuid.v4() as string;
+
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          id: nextQuestionId,
+          role: Role.Bot,
+          content: "",
+          question: true,
+        },
+      ]);
+
+      setIsQuestionLoading(true);
+      try {
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
         setMessages((prevMessages) =>
           prevMessages.map((message) =>
@@ -482,11 +501,11 @@ const VirtualInterview = () => {
               : message
           )
         );
+      } catch (error) {
+        console.error("Error generating speech:", error);
+      } finally {
+        setIsQuestionLoading(false);
       }
-    } catch (error) {
-      console.error("Error generating speech:", error);
-    } finally {
-      setIsQuestionLoading(false);
     }
   };
 

@@ -210,22 +210,26 @@ async def get_feedback(interview_id: str, request: Request, supabase: Client = D
 
     if hasattr(feedback_response, 'error') and feedback_response.error:
         raise HTTPException(status_code=500, detail="Failed to retrieve feedback")
-    
 
     # Retrieve answers for the feedback
-    answer_ids = [feedback['answer_id'] for feedback in feedback_response.data]
-    answers_response = supabase.table('answer').select('answer_id, answer, question_id').in_('answer_id', answer_ids).execute()
-    if hasattr(answers_response, 'error') and answers_response.error:
-        raise HTTPException(status_code=500, detail="Failed to retrieve answers")
+    answer_ids = [feedback['answer_id'] for feedback in feedback_response.data if feedback['answer_id'] is not None]
+    
+    # Initialize answers_data and questions_data as empty dicts to avoid KeyError later
+    answers_data = {}
+    questions_data = {}
+    
+    if answer_ids: 
+        answers_response = supabase.table('answer').select('answer_id, answer, question_id').in_('answer_id', answer_ids).execute()
+        if hasattr(answers_response, 'error') and answers_response.error:
+            raise HTTPException(status_code=500, detail="Failed to retrieve answers")
+        answers_data = {answer['answer_id']: answer for answer in answers_response.data}
 
-    answers_data = {answer['answer_id']: answer for answer in answers_response.data}
-
-    question_ids = list(set(answer['question_id'] for answer in answers_data.values()))
-    questions_response = supabase.table('questions').select('question_id, question, created_at').in_('question_id', question_ids).execute()
-    if hasattr(questions_response, 'error') and questions_response.error:
-        raise HTTPException(status_code=500, detail="Failed to retrieve questions")
-
-    questions_data = {question['question_id']: question for question in questions_response.data}
+        question_ids = list(set(answer['question_id'] for answer in answers_data.values()))
+        if question_ids:  
+            questions_response = supabase.table('questions').select('question_id, question, created_at').in_('question_id', question_ids).execute()
+            if hasattr(questions_response, 'error') and questions_response.error:
+                raise HTTPException(status_code=500, detail="Failed to retrieve questions")
+            questions_data = {question['question_id']: question for question in questions_response.data}
 
     feedback_list = [
         GetFeedbackResponse(
@@ -237,8 +241,8 @@ async def get_feedback(interview_id: str, request: Request, supabase: Client = D
             pace_of_speech=feedback.get('pace_of_speech'),
             filler_words=feedback.get('filler_words'),
             tips=feedback.get('tips'),
-            answer=answers_data.get(feedback['answer_id'])['answer'],
-            question=questions_data[answers_data.get(feedback['answer_id'])['question_id']]['question'],
+            answer=answers_data.get(feedback['answer_id'], {}).get('answer') if feedback['answer_id'] else None,
+            question=questions_data.get(answers_data.get(feedback['answer_id'], {}).get('question_id'), {}).get('question') if feedback['answer_id'] else None,
         )
         for feedback in feedback_response.data
     ]

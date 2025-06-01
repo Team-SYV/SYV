@@ -31,10 +31,10 @@ def generate_feedback(question, answer, wpm, eye_contact):
         - **Eye Contact Percentage**: {eye_contact}%
 
         **Provide a thorough and detailed feedback on:**
-        1. **Grammar**: Start with "Your" and evaluate grammatical accuracy, focusing on errors like subject-verb agreement, sentence structure, tense consistency, and article usage. Provide specific corrections for errors and suggest improved versions of the sentences. Rate this aspect out of 5.
-        2. **Relevance**: Start with "Your" and assess how well the answer addresses the question. Suggest a better response if necessary. Rate out of 5.
-        3. **Filler Words**: Start with "Your" and note excessive use of fillers (e.g., "um," "uh"). Suggest ways to reduce them. Rate out of 5.
-        4. **Pace of Speech**: Start with "Your" and evaluate pace based on {wpm} WPM. Comment if it's too fast, slow, or appropriate.
+        1. **Grammar**:  Start with "Your" and evaluate grammatical accuracy based on a 1–5 scale (1: very limited range with frequent errors impeding communication; 2: limited range with frequent errors that may hinder communication; 3: mix of simple and complex structures with frequent error-free sentences but some persistent errors; 4: wide range of structures with mostly error-free sentences and occasional inappropriacies; 5: precise, accurate structures with only native-like errors). Focus on errors like subject-verb agreement, sentence structure, tense consistency, and article usage. Provide specific corrections for errors and suggest improved versions of the sentences. Rate this aspect out of 5.
+        2. **Relevance**:  Start with "Your" and assess how well the answer addresses the question based on a 1–5 scale (1: minimal coherence with disjointed or memorized responses; 2: slow speech with frequent pauses disrupting coherence and limited topic development; 3: sustained speech with some effort and generally relevant topic development; 4: fluent speech with occasional content-related hesitations and coherent, relevant topic development; 5: fully coherent, relevant, and extended topic development with seamless cohesion). Suggest a better response if necessary. Rate out of 5.
+        3. **Filler Words**: Start with "Your" and note excessive use of fillers (e.g., "um," "uh") based on a 1–5 scale (1: excessive fillers and pauses disrupting speech; 2: frequent fillers disrupting flow; 3: noticeable fillers indicating language access issues but maintaining coherence; 4: occasional fillers used mostly for content planning; 5: minimal fillers used only for content preparation). Suggest ways to reduce them. Rate out of 5.
+        4. **Pace of Speech**: Start with "Your" and evaluate pace based on {wpm} WPM and a 1–5 scale (1: very slow pace [<80 WPM] with long pauses limiting communication; 2: slow or uneven pace [80–110 WPM] with frequent pauses; 3: variable pace [100–130 WPM] with noticeable hesitations; 4: generally appropriate pace [120–140 WPM] with occasional hesitations; 5: natural, consistent pace [130–150 WPM] with minimal hesitation). Comment if it's too fast, slow, or appropriate. Rate out of 5.
         5. **Eye Contact**: Start with "Your" and evaluate eye contact effectiveness ({eye_contact}%). Suggest improvements if necessary.
         6. **Tips**: Provide an ideal response to the question based on the given answer. If the given answer is incorrect, lacking, or no answer is provided, suggest an ideal response that directly addresses the question as though you were the one answering it.
 
@@ -110,27 +110,23 @@ def generate_feedback_virtual(questions, answers, wpm, eye_contact):
     mean_eye_contact_rating = sum(get_eye_contact_rating(e) for e in eye_contact) / len(eye_contact)
 
     # Construct the prompt
-    prompt = """
+    prompt = f"""
         Imagine you are my instructor providing feedback on my interview performance.  
         
         Based on the interviewee's answers to the following questions, provide detailed feedback on their overall performance, focusing on:
-        1. **Grammar**: Start with "Your" and evaluate grammatical accuracy, focusing on errors like subject-verb agreement, sentence structure, tense consistency, and article usage. Provide specific corrections for errors and suggest improved versions of the sentences. Rate this aspect out of 5.
-        2. **Relevance**: Start with "Your" and assess how well the answer addresses the question. Suggest a better response if necessary. Rate out of 5.
-        3. **Filler Words**: Start with "Your" and note excessive use of fillers (e.g., "um," "uh"). Suggest ways to reduce them. Rate out of 5 where 5 has no use of fillers and 1 is excessive use of fillers.
-        4. **Pace of Speech**: Start with "Your" and evaluate pace based on {wpm} WPM. Comment if it's too fast, slow, or appropriate.
+        1. **Grammar**:  Start with "Your" and evaluate grammatical accuracy based on a 1–5 scale (1: very limited range with frequent errors impeding communication; 2: limited range with frequent errors that may hinder communication; 3: mix of simple and complex structures with frequent error-free sentences but some persistent errors; 4: wide range of structures with mostly error-free sentences and occasional inappropriacies; 5: precise, accurate structures with only native-like errors). Focus on errors like subject-verb agreement, sentence structure, tense consistency, and article usage. Provide specific corrections for errors and suggest improved versions of the sentences. Rate this aspect out of 5.
+        2. **Relevance**:  Start with "Your" and assess how well the answer addresses the question based on a 1–5 scale (1: minimal coherence with disjointed or memorized responses; 2: slow speech with frequent pauses disrupting coherence and limited topic development; 3: sustained speech with some effort and generally relevant topic development; 4: fluent speech with occasional content-related hesitations and coherent, relevant topic development; 5: fully coherent, relevant, and extended topic development with seamless cohesion). Suggest a better response if necessary. Rate out of 5.
+        3. **Filler Words**: Start with "Your" and note excessive use of fillers (e.g., "um," "uh") based on a 1–5 scale (1: excessive fillers and pauses disrupting speech; 2: frequent fillers disrupting flow; 3: noticeable fillers indicating language access issues but maintaining coherence; 4: occasional fillers used mostly for content planning; 5: minimal fillers used only for content preparation). Suggest ways to reduce them. Rate out of 5.
+        4. **Pace of Speech**: Start with "Your" and evaluate pace based on {wpm} WPM and a 1–5 scale (1: very slow pace [<80 WPM] with long pauses limiting communication; 2: slow or uneven pace [80–110 WPM] with frequent pauses; 3: variable pace [100–130 WPM] with noticeable hesitations; 4: generally appropriate pace [120–140 WPM] with occasional hesitations; 5: natural, consistent pace [130–150 WPM] with minimal hesitation). Comment if it's too fast, slow, or appropriate. Rate out of 5.
         5. **Eye Contact**: Start with "Your" and evaluate eye contact effectiveness ({eye_contact}%). Suggest improvements if necessary.
-        
-    """
-
-    prompt += f"""
-        Evaluate the following based on the given input:
+        6. **Tips**: Provide an ideal response to the question based on the given answer. If the given answer is incorrect, lacking, or no answer is provided, suggest an ideal response that directly addresses the question as though you were the one answering it.
+    
+          Evaluate the following based on the given input:
             - Question: "{questions}"
             - Answer: "{answers}"
             - WPM: {wpm}
             - Eye Contact: {eye_contact}%
-        """
-
-    prompt += f"""
+            
         Additionally, rate each category out of 5.
         Format your response in the following JSON structure:
          {{

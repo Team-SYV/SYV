@@ -13,6 +13,7 @@ def validate(job_description: str, resume: str):
         A strong match means the resume demonstrates all key skills, qualifications, and experience levels explicitly required in the job description. 
         Ignore superficial similarities and focus on specific requirements like years of experience.
         Return only 'true' if the resume meets all key requirements; otherwise, return 'false'.
+        Only return 'true' or 'false' without any additional text.
     """
     try:
         completion = client.chat.completions.create(

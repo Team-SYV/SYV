@@ -54,7 +54,6 @@ const VirtualInterview = () => {
   const [questionIds, setQuestionIds] = useState([]);
   const [answers, setAnswers] = useState([]);
   const [answerIds, setAnswerIds] = useState([]);
-  // const [recordedVideos, setRecordedVideos] = useState<string[]>([]);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isQuestionLoading, setIsQuestionLoading] = useState<boolean>(false);
@@ -400,8 +399,8 @@ const VirtualInterview = () => {
     const form = new FormData();
     form.append("previous_question", question);
     form.append("previous_answer", answer);
+    form.append("type", counter === 0 || 1 ? "0" : "1");
     form.append("next_question", questions[currentQuestionIndex + 1] || "");
-
     try {
       const token = await getToken({ template: "supabase" });
 
@@ -475,27 +474,76 @@ const VirtualInterview = () => {
       setIsFinished(true);
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
     } else {
-      const nextQuestionId = uuid.v4() as string;
-
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: nextQuestionId,
-          role: Role.Bot,
-          content: "",
-          question: true,
-        },
-      ]);
-
       setIsQuestionLoading(true);
       try {
+        const token = await getToken({ template: "supabase" });
+        const nextQuestion = questions[currentQuestionIndex + 1];
+        const cleanedQuestion = nextQuestion.replace(/^\d+\.\s*/, "");
+
+        // Add transitional bot response for all main questions except the first
+        if (currentQuestionIndex >= 0) {
+          const transitionMessageId = uuid.v4() as string;
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            {
+              id: transitionMessageId,
+              role: Role.Bot,
+              content: "",
+              feedback: true,
+            },
+          ]);
+
+          const form = new FormData();
+          form.append("previous_question", questions[currentQuestionIndex]);
+          form.append("previous_answer", answers[answers.length - 1] || "");
+          form.append("type", "2");
+          form.append("next_question", nextQuestion || "");
+          const transitionResponse = await generateResponse(form, token);
+          const cleanedTransition =
+            transitionResponse.follow_up_question.replace(/^\d+\.\s*/, "");
+
+          setMessages((prevMessages) =>
+            prevMessages.map((message) =>
+              message.id === transitionMessageId
+                ? {
+                    ...message,
+                    content: cleanedTransition,
+                    feedback: false,
+                  }
+                : message
+            )
+          );
+
+          // Combine transition and next question for speech
+          const combinedSpeech = `${cleanedTransition} ${cleanedQuestion}`;
+          const viseme = await createSpeech(combinedSpeech, token);
+          setSpeechData(viseme);
+        } else {
+          // For the second question (no transition), only speak the question
+          const viseme = await createSpeech(cleanedQuestion, token);
+          setSpeechData(viseme);
+        }
+
+        // Add the next main question
+        const nextQuestionId = uuid.v4() as string;
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: nextQuestionId,
+            role: Role.Bot,
+            content: "",
+            question: true,
+          },
+        ]);
+
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+
         setMessages((prevMessages) =>
           prevMessages.map((message) =>
             message.id === nextQuestionId
               ? {
                   ...message,
-                  content: questions[currentQuestionIndex + 1],
+                  content: nextQuestion,
                   question: false,
                 }
               : message
@@ -575,9 +623,6 @@ const VirtualInterview = () => {
           await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
           return;
         }
-        // if (counter.current === 0) {
-        //   setRecordedVideos((prevVideos) => [...prevVideos, recordedVideo.uri]);
-        // }
         await recording.stopAndUnloadAsync();
         const uri = recording.getURI();
 
@@ -617,7 +662,6 @@ const VirtualInterview = () => {
       router.push({
         pathname: `/home/virtual-interview/feedback`,
         params: {
-          // videoURIs: encodeURIComponent(JSON.stringify(recordedVideos)),
           interviewId: interviewId,
         },
       });

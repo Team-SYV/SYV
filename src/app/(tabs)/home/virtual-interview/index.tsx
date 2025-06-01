@@ -400,8 +400,8 @@ const VirtualInterview = () => {
     const form = new FormData();
     form.append("previous_question", question);
     form.append("previous_answer", answer);
+    form.append("type", counter === 0 ? "0" : "1");
     form.append("next_question", questions[currentQuestionIndex + 1] || "");
-
     try {
       const token = await getToken({ template: "supabase" });
 

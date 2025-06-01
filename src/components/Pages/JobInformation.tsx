@@ -59,6 +59,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
   const [activeStep, setActiveStep] = useState<number>(0);
   const [errors, setErrors] = useState<{ [key: number]: string }>({});
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
   const [jobDescription, setJobDescription] = useState("");
@@ -93,10 +94,10 @@ const JobInformation: React.FC<JobInformationProps> = ({
         const jobDetails = JSON.parse(jobDescriptionResponse.job_details);
 
         jobDetails.job_description = jobDetails.job_description
-        .replace(/\\u2018|\\u2019/g, "'")
-        .replace(/\s+/g, " ")
-        .trim();
-        
+          .replace(/\\u2018|\\u2019/g, "'")
+          .replace(/\s+/g, " ")
+          .trim();
+
         setFormData((prevState) => ({
           ...prevState,
           selectedIndustry: jobDetails.industry,
@@ -191,6 +192,20 @@ const JobInformation: React.FC<JobInformationProps> = ({
   const handleNextStep = useCallback(async () => {
     if (activeStep === steps.length - 1) {
       await handleSubmit();
+      return;
+    }
+
+    if (activeStep === 0 && formData.selectedJobDescription) {
+      if (!transcribed) {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        Toast.show({
+          type: "error",
+          text1: "Transcription is still in progress. Please wait.",
+          position: "bottom",
+          bottomOffset: 85,
+        });
+        return;
+      }
     }
 
     if (!validateStep(activeStep, formData)) {
@@ -217,7 +232,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
     if (activeStep < steps.length - 1) {
       setActiveStep((prevStep) => prevStep + 1);
     }
-  }, [activeStep, formData]);
+  }, [activeStep, formData, transcribed]);
 
   // Moves to previous step
   const handlePrevStep = useCallback(() => {
@@ -243,6 +258,23 @@ const JobInformation: React.FC<JobInformationProps> = ({
           ...newState,
           selectedJobRole: null,
         };
+      }
+
+      if (key === "selectedJobDescription") {
+        setTranscribed(false);
+        setJobDescription("");
+        newState = {
+          ...newState,
+          selectedIndustry: null,
+          selectedJobRole: null,
+          selectedCompany: null,
+          selectedExperienceLevel: null,
+        };
+      }
+
+      if (key === "selectedResume") {
+        setResumeTranscribed(false);
+        setResume("");
       }
 
       if (callback) {
@@ -310,6 +342,8 @@ const JobInformation: React.FC<JobInformationProps> = ({
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const token = await getToken({ template: "supabase" });
       const valid = await validate(jobDescription, resume, token);
@@ -319,6 +353,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
           text1: "Your resume is not fit for the job description.",
           position: "bottom",
           bottomOffset: 85,
+          visibilityTime: 1500,
         });
         return;
       } else {
@@ -360,10 +395,19 @@ const JobInformation: React.FC<JobInformationProps> = ({
     } catch (error) {
       console.error("Error skipping file upload", error.message);
     } finally {
-      setHasChanges(false);
-      setLoading(false);
+      setTimeout(() => {
+        setIsSubmitting(false);
+        setHasChanges(false);
+        setLoading(false);
+      }, 1500);
     }
   };
+
+  const isDisabled =
+    loading ||
+    isSubmitting ||
+    (activeStep === 0 && !transcribed) ||
+    (activeStep === 1 && !resumeTranscribed);
 
   return (
     <SafeAreaView className="flex-1 bg-white pt-2">
@@ -404,6 +448,7 @@ const JobInformation: React.FC<JobInformationProps> = ({
                       formData={formData}
                       updateFormData={updateFormData}
                       handleNextStep={handleNextStep}
+                      transcribed={transcribed}
                     />
                   </>
                 )}
@@ -416,17 +461,22 @@ const JobInformation: React.FC<JobInformationProps> = ({
           <CustomButton
             title="Prev"
             onPress={handlePrevStep}
-            containerStyles="border border-[#00AACE] h-14 rounded-xl mb-4 w-1/2 mx-2"
+            containerStyles={`border border-[#00AACE] h-14 rounded-xl mb-4 w-1/2 mx-2 ${
+              activeStep === 0 ? "opacity-50" : ""
+            }`}
             textStyles="text-[#00AACE] text-[16px] font-semibold text-base"
             isLoading={loading}
+            disabled={activeStep === 0}
           />
           <CustomButton
             title={activeStep === steps.length - 1 ? "Submit" : "Next"}
             onPress={handleNextStep}
-            containerStyles="bg-[#00AACE] h-14 rounded-xl mb-4 w-1/2 mx-2"
+            containerStyles={`h-14 rounded-xl mb-4 w-1/2 mx-2 bg-[#00AACE] ${
+              isDisabled ? "opacity-60" : ""
+            }`}
             textStyles="text-white text-[16px] font-semibold text-base"
             isLoading={loading}
-            disabled={loading}
+            disabled={isDisabled}
           />
         </View>
 

@@ -85,6 +85,78 @@ async def create_record_feedback(feedback_data: CreateRecordFeedbackInput, reque
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to create feedback")
 
+@router.post("/create/virtual/", response_model=CreateFeedbackResponse)
+async def create_virtual_feedback(feedback_data: CreateVirtualFeedbackInput, request: Request, supabase: Client = Depends(get_supabase)):
+    
+    # Validate the token
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header is missing")
+
+    validated_user_id = validate_token(auth_header)
+
+     # Validate the input
+    required_fields = ['interview_id', 'answers', 'questions']
+    for field in required_fields:
+        if not feedback_data.model_dump().get(field):
+            raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+
+    # Ensure `wpm` and `eye_contact` are present, even if their values are zero
+    if feedback_data.pace_of_speech is None or feedback_data.eye_contact is None:
+        raise HTTPException(status_code=400, detail="Missing required field: wpm or eye_contact")
+    
+    try:
+        # Check if the interview exists
+        interview_response = supabase.table('interview').select('user_id').eq('interview_id', feedback_data.interview_id).execute()
+        if not interview_response.data:
+            raise HTTPException(status_code=404, detail="Interview not found")
+
+        if hasattr(interview_response, 'error') and interview_response.error:
+            raise HTTPException(status_code=500, detail="Failed to retrieve interview details")
+        
+        # Check if the user is authorized
+        user_id = interview_response.data[0]['user_id']
+
+        if user_id != validated_user_id:
+            raise HTTPException(status_code=403, detail="You are not authorized to generate feedback for this interview")
+
+        # Generate feedback
+        question = feedback_data.questions
+        answer = feedback_data.answers
+        wpm = feedback_data.pace_of_speech
+        eye_contact = feedback_data.eye_contact
+
+        feedback = generate_feedback_virtual(question, answer, wpm, eye_contact)
+
+        # Prepare feedback and ratings data
+        feedback_data = {
+            "grammar": feedback.get("grammar", ""),
+            "answer_relevance": feedback.get("relevance", ""),
+            "filler_words": feedback.get("filler", ""),
+            "pace_of_speech": feedback.get("pace_of_speech", ""),
+            "eye_contact": feedback.get("eye_contact", ""),
+            "tips": feedback.get("tips", ""),
+            "interview_id": feedback_data.interview_id
+        }
+
+        ratings_data = {
+            "grammar_rating": feedback.get("grammar_rating", 0),
+            "answer_relevance_rating": feedback.get("relevance_rating", 0),
+            "filler_words_rating": feedback.get("filler_rating", 0),
+            "pace_of_speech_rating": feedback.get("pace_of_speech_rating", 0),
+            "eye_contact_rating": feedback.get("eye_contact_rating", 0),
+        }
+
+        # Insert feedback into the database
+        response = supabase.table('feedback').insert(feedback_data).execute()
+        if hasattr(response, 'error') and response.error:
+            raise HTTPException(status_code=500, detail="Failed to create feedback")
+
+        return CreateFeedbackResponse(feedback_id=response.data[0]['feedback_id'], ratings_data=ratings_data)
+    
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to create feedback")
+
 @router.post("/create/virtual/response/")
 async def generate_response(
     request: Request,
@@ -138,22 +210,26 @@ async def get_feedback(interview_id: str, request: Request, supabase: Client = D
 
     if hasattr(feedback_response, 'error') and feedback_response.error:
         raise HTTPException(status_code=500, detail="Failed to retrieve feedback")
-    
 
     # Retrieve answers for the feedback
-    answer_ids = [feedback['answer_id'] for feedback in feedback_response.data]
-    answers_response = supabase.table('answer').select('answer_id, answer, question_id').in_('answer_id', answer_ids).execute()
-    if hasattr(answers_response, 'error') and answers_response.error:
-        raise HTTPException(status_code=500, detail="Failed to retrieve answers")
+    answer_ids = [feedback['answer_id'] for feedback in feedback_response.data if feedback['answer_id'] is not None]
+    
+    # Initialize answers_data and questions_data as empty dicts to avoid KeyError later
+    answers_data = {}
+    questions_data = {}
+    
+    if answer_ids: 
+        answers_response = supabase.table('answer').select('answer_id, answer, question_id').in_('answer_id', answer_ids).execute()
+        if hasattr(answers_response, 'error') and answers_response.error:
+            raise HTTPException(status_code=500, detail="Failed to retrieve answers")
+        answers_data = {answer['answer_id']: answer for answer in answers_response.data}
 
-    answers_data = {answer['answer_id']: answer for answer in answers_response.data}
-
-    question_ids = list(set(answer['question_id'] for answer in answers_data.values()))
-    questions_response = supabase.table('questions').select('question_id, question, created_at').in_('question_id', question_ids).execute()
-    if hasattr(questions_response, 'error') and questions_response.error:
-        raise HTTPException(status_code=500, detail="Failed to retrieve questions")
-
-    questions_data = {question['question_id']: question for question in questions_response.data}
+        question_ids = list(set(answer['question_id'] for answer in answers_data.values()))
+        if question_ids:  
+            questions_response = supabase.table('questions').select('question_id, question, created_at').in_('question_id', question_ids).execute()
+            if hasattr(questions_response, 'error') and questions_response.error:
+                raise HTTPException(status_code=500, detail="Failed to retrieve questions")
+            questions_data = {question['question_id']: question for question in questions_response.data}
 
     feedback_list = [
         GetFeedbackResponse(
@@ -165,8 +241,8 @@ async def get_feedback(interview_id: str, request: Request, supabase: Client = D
             pace_of_speech=feedback.get('pace_of_speech'),
             filler_words=feedback.get('filler_words'),
             tips=feedback.get('tips'),
-            answer=answers_data.get(feedback['answer_id'])['answer'],
-            question=questions_data[answers_data.get(feedback['answer_id'])['question_id']]['question'],
+            answer=answers_data.get(feedback['answer_id'], {}).get('answer') if feedback['answer_id'] else None,
+            question=questions_data.get(answers_data.get(feedback['answer_id'], {}).get('question_id'), {}).get('question') if feedback['answer_id'] else None,
         )
         for feedback in feedback_response.data
     ]

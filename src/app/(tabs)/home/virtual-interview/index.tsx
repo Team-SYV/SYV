@@ -400,7 +400,7 @@ const VirtualInterview = () => {
     const form = new FormData();
     form.append("previous_question", question);
     form.append("previous_answer", answer);
-    form.append("type", counter === 0 ? "0" : "1");
+    form.append("type", counter === 0 || 1 ? "0" : "1");
     form.append("next_question", questions[currentQuestionIndex + 1] || "");
     try {
       const token = await getToken({ template: "supabase" });
@@ -490,6 +490,15 @@ const VirtualInterview = () => {
       setIsQuestionLoading(true);
       try {
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+        
+        const cleanedQuestion = questions[currentQuestionIndex + 1].replace(
+          /^\d+\.\s*/,
+          ""
+        );
+        const token = await getToken({ template: "supabase" });
+        const viseme = await createSpeech(questions[cleanedQuestion], token);
+        setSpeechData(viseme);
+
         setMessages((prevMessages) =>
           prevMessages.map((message) =>
             message.id === nextQuestionId

@@ -158,14 +158,14 @@ const Feedback: React.FC = () => {
     return (
       <View style={styles.itemContainer}>
         <View className="flex-row items-center px-4 mt-4">
-          <View style={styles.questionContainer}>
+         {/* <View style={styles.questionContainer}>
             <Text className="font-semibold text-[13px]">
               Question {index + 1}
             </Text>
             <Text className="text-sm text-[13px]">
               {cleanQuestion(feedback.question)}
             </Text>
-          </View>
+          </View>*/}
         </View>
 
         <ScrollView className="mt-5">
